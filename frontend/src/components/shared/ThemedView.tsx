@@ -1,12 +1,11 @@
 import { View, type ViewProps } from 'react-native';
 
-import { useThemeColor } from '@/src/utils/useThemeColor';
+import { useSettings } from '@/src/contexts/SettingsContext';
+import { darkTheme, lightTheme } from '@/src/constants/theme';
 
 export type ThemedViewProps = ViewProps & {
-  lightColor?: string;
-  darkColor?: string;
   style?: ViewProps['style'];
-  // Additional props can be added here if needed
+  variant?: 'default' | 'surface';
 };
 
 //HELLO: This component is used to create a themed view that adapts to light and dark modes.
@@ -14,8 +13,11 @@ export type ThemedViewProps = ViewProps & {
 // and applies it to the View component. Additional styles can be passed via the style prop.
 // It can also accept lightColor and darkColor props to override the default theme colors.
 // It is useful for creating consistent UI elements that respect the user's theme preference.
-export function ThemedView({ style, lightColor, darkColor, ...otherProps }: ThemedViewProps) {
-  const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'background');
+export function ThemedView({ style, variant = 'default', ...otherProps }: ThemedViewProps) {
+  const { isDarkMode } = useSettings();
+  const theme = isDarkMode ? darkTheme : lightTheme;
+  
+  const backgroundColor = variant === 'surface' ? theme.surface : theme.background;
 
   return <View style={[{ backgroundColor }, style]} {...otherProps} />;
 }

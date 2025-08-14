@@ -1,75 +1,71 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/src/components/shared/HelloWave';
-import ParallaxScrollView from '@/src/components/layout/ParallaxScrollView';
+import React from 'react';
+import { StyleSheet, ScrollView, View } from 'react-native';
+import { NextPrayer } from '@/src/components/home/NextPrayer';
+import { DailyContent } from '@/src/components/home/DailyContent';
+import { QuickActions } from '@/src/components/home/QuickActions';
 import { ThemedText } from '@/src/components/shared/ThemedText';
 import { ThemedView } from '@/src/components/shared/ThemedView';
+import HijriDate from 'hijri-date';
+import { useSettings } from '@/src/contexts/SettingsContext';
+import { darkTheme, lightTheme } from '@/src/constants/theme';
 
 export default function HomeScreen() {
+  const date = new Date();
+  const formattedDate = date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  
+  const hijriDate = new HijriDate();
+  const formattedHijriDate = hijriDate.format('d MMMM yyyy');
+
+  const { isDarkMode } = useSettings();
+  const theme = isDarkMode ? darkTheme : lightTheme;
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <ThemedView style={styles.safeArea}>
+      <ScrollView 
+        style={[styles.container, { backgroundColor: theme.background }]}
+        contentContainerStyle={styles.contentContainer}
+      >
+        {/* Header Section */}
+        <View style={styles.header}>
+          <ThemedText style={[styles.dateText, { color: theme.primary }]}>{formattedDate}</ThemedText>
+          <ThemedText type="subtitle">{formattedHijriDate}</ThemedText>
+        </View>
+
+        {/* Next Prayer Section */}
+        <NextPrayer />
+
+        {/* Daily Content Section */}
+        <DailyContent />
+
+        {/* Quick Actions Grid */}
+        <QuickActions />
+      </ScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  safeArea: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+  },
+  contentContainer: {
+    padding: 20,
+  },
+  header: {
     alignItems: 'center',
-    gap: 8,
+    marginBottom: 20,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+  dateText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  }
 });

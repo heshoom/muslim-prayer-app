@@ -1,4 +1,8 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { ThemedText } from './ThemedText';
+import { ThemedView } from './ThemedView';
+import { useSettings } from '@/src/contexts/SettingsContext';
+import { darkTheme, lightTheme } from '@/src/constants/theme';
 
 // Function to convert 24-hour time to 12-hour AM/PM format
 export const convertTo12Hour = (time: string): string => {
@@ -14,33 +18,51 @@ type PrayerCardProps = {
   time: string;
 };
 
-export const PrayerCard = ({ name, time }: PrayerCardProps) => (
-  <View style={styles.prayerCard}>
-    <Text style={styles.prayerName}>{name}</Text>
-    <Text style={styles.prayerTime}>{convertTo12Hour(time)}</Text>
-  </View>
-);
+export const PrayerCard = ({ name, time }: PrayerCardProps) => {
+  const { isDarkMode } = useSettings();
+  const theme = isDarkMode ? darkTheme : lightTheme;
+
+  return (
+    <ThemedView 
+      style={[
+        styles.prayerCard, 
+        { 
+          backgroundColor: theme.surface,
+          borderLeftColor: theme.primary 
+        }
+      ]}
+    >
+      <ThemedText style={[styles.prayerName, { color: theme.text.primary }]}>
+        {name}
+      </ThemedText>
+      <ThemedText style={[styles.prayerTime, { color: theme.text.secondary }]}>
+        {convertTo12Hour(time)}
+      </ThemedText>
+    </ThemedView>
+  );
+};
 
 const styles = StyleSheet.create({
   prayerCard: {
     width: '48%',
-    backgroundColor: '#f0f4f8',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
     marginBottom: 15,
     borderLeftWidth: 4,
-    borderLeftColor: '#2980b9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   prayerName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2c3e50',
   },
   prayerTime: {
     fontSize: 22,
     fontWeight: '300',
     marginTop: 5,
-    color: '#34495e'
   },
 });

@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
 import {
   StyleSheet,
-  Text,
-  View,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
   ActivityIndicator,
   Platform,
   ScrollView
@@ -14,6 +11,10 @@ import * as Location from 'expo-location';
 import { PrayerCard } from '@/src/components/shared/PrayerCard';
 import { PrayerTimes } from '@/src/types/prayerTimes';
 import { prayerTimesApi } from '@/src/services/prayerTimesApi';
+import { ThemedView } from '@/src/components/shared/ThemedView';
+import { ThemedText } from '@/src/components/shared/ThemedText';
+import { useSettings } from '@/src/contexts/SettingsContext';
+import { darkTheme, lightTheme } from '@/src/constants/theme';
 
 export default function PrayerTimesScreen() {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTimes | null>(null);
@@ -95,62 +96,79 @@ export default function PrayerTimesScreen() {
     setLoading(false);
   };
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Muslim Prayer Times</Text>
-          <Text style={styles.subtitle}>Enter a city or use your location</Text>
-        </View>
+  const { isDarkMode } = useSettings();
+  const theme = isDarkMode ? darkTheme : lightTheme;
 
-        <View style={styles.searchForm}>
+  return (
+    <ThemedView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <ThemedView style={styles.header}>
+          <ThemedText style={[styles.title, { color: theme.primary }]}>Muslim Prayer Times</ThemedText>
+          <ThemedText type="subtitle">Enter a city or use your location</ThemedText>
+        </ThemedView>
+
+        <ThemedView style={styles.searchForm}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              backgroundColor: theme.surface,
+              color: theme.text.primary,
+              borderColor: theme.border
+            }]}
             placeholder="Enter city name..."
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.text.secondary}
             value={inputCity}
             onChangeText={setInputCity}
           />
-          <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-            <Text style={styles.buttonText}>Search</Text>
+          <TouchableOpacity 
+            style={[styles.searchButton, { backgroundColor: theme.primary }]} 
+            onPress={handleSearch}
+          >
+            <ThemedText style={styles.buttonText}>Search</ThemedText>
           </TouchableOpacity>
-        </View>
+        </ThemedView>
 
-        <TouchableOpacity style={styles.locationButton} onPress={handleGeoLocation}>
-          <Text style={styles.locationButtonText}>Use My Location</Text>
+        <TouchableOpacity 
+          style={[styles.locationButton, { 
+            backgroundColor: theme.surface,
+            borderColor: theme.primary 
+          }]} 
+          onPress={handleGeoLocation}
+        >
+          <ThemedText style={[styles.locationButtonText, { color: theme.primary }]}>
+            Use My Location
+          </ThemedText>
         </TouchableOpacity>
 
-        <View style={styles.mainContent}>
+        <ThemedView style={styles.mainContent}>
           {loading ? (
-            <ActivityIndicator size="large" color="#2980b9" />
+            <ActivityIndicator size="large" color={theme.primary} />
           ) : error ? (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
+            <ThemedView style={[styles.errorContainer, { borderColor: theme.error }]}>
+              <ThemedText style={[styles.errorText, { color: theme.error }]}>{error}</ThemedText>
+            </ThemedView>
           ) : prayerTimes ? (
-            <View style={styles.prayerTimesContainer}>
-              <Text style={styles.locationHeader}>Prayer Times for {city}</Text>
-              <Text style={styles.dateHeader}>{date}</Text>
-              <View style={styles.grid}>
+            <ThemedView style={[styles.prayerTimesContainer, { backgroundColor: theme.surface }]}>
+              <ThemedText type="title">Prayer Times for {city}</ThemedText>
+              <ThemedText type="subtitle">{date}</ThemedText>
+              <ThemedView style={styles.grid}>
                 <PrayerCard name="Fajr" time={prayerTimes.Fajr} />
                 <PrayerCard name="Dhuhr" time={prayerTimes.Dhuhr} />
                 <PrayerCard name="Asr" time={prayerTimes.Asr} />
                 <PrayerCard name="Maghrib" time={prayerTimes.Maghrib} />
                 <PrayerCard name="Isha" time={prayerTimes.Isha} />
                 <PrayerCard name="Sunrise" time={prayerTimes.Sunrise} />
-              </View>
-            </View>
+              </ThemedView>
+            </ThemedView>
           ) : null}
-        </View>
+        </ThemedView>
       </ScrollView>
-    </SafeAreaView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f0f4f8',
   },
   container: {
     flexGrow: 1,
@@ -164,12 +182,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2980b9',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#7f8c8d',
-    marginTop: 4,
   },
   searchForm: {
     flexDirection: 'row',
@@ -178,17 +190,13 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: 50,
-    borderColor: '#dce4ec',
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 15,
-    backgroundColor: '#fff',
     fontSize: 16,
-    color: '#333'
   },
   searchButton: {
     height: 50,
-    backgroundColor: '#2980b9',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -201,8 +209,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   locationButton: {
-    backgroundColor: '#fff',
-    borderColor: '#2980b9',
     borderWidth: 1,
     height: 50,
     justifyContent: 'center',
@@ -211,7 +217,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   locationButtonText: {
-    color: '#2980b9',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -221,45 +226,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorContainer: {
-    backgroundColor: '#fbeaea',
     padding: 15,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e4a1a1',
   },
   errorText: {
-    color: '#c0392b',
     fontSize: 16,
     textAlign: 'center',
   },
   prayerTimesContainer: {
     width: '100%',
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  locationHeader: {
-    fontSize: 24,
-    fontWeight: '300',
-    textAlign: 'center',
-    marginBottom: 5,
-    textTransform: 'capitalize',
-    color: '#2c3e50',
-  },
-  dateHeader: {
-    fontSize: 16,
-    color: '#7f8c8d',
-    textAlign: 'center',
-    marginBottom: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    marginTop: 20,
   },
 });
