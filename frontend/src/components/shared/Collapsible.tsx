@@ -1,11 +1,11 @@
 import { PropsWithChildren, useState } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { ThemedText } from '@/src/components/shared/ThemedText';
+import { ThemedView } from '@/src/components/shared/ThemedView';
+import { IconSymbol } from '@/src/components/shared/IconSymbol';
+import { Colors } from '@/src/constants/Colors';
+import { useColorScheme } from '@/src/utils/useColorScheme';
 
 //Hello, this is a collapsible component that can be used to show or hide content based on user interaction.
 //It uses a chevron icon to indicate whether the content is expanded or collapsed.
