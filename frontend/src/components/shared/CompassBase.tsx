@@ -1,5 +1,4 @@
 import React from 'react';
-import { View } from 'react-native';
 import Svg, { Circle, Line, G, Text } from 'react-native-svg';
 
 interface CompassBaseProps {

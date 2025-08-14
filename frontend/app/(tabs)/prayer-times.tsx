@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -32,7 +32,7 @@ export default function PrayerTimesScreen() {
   const [useLocation, setUseLocation] = useState(settings.location.useGPS);
 
   // Handler for the "Use My Location" button
-  const handleGeoLocation = async () => {
+  const handleGeoLocation = useCallback(async () => {
     setLoading(true);
     setError(null);
     setPrayerTimes(null);
@@ -66,11 +66,12 @@ export default function PrayerTimesScreen() {
       } else {
         setError('Could not determine prayer times for your location.');
       }
-    } catch (err) {
+    } catch (error) {
+      console.error('Location error:', error);
       setError('Failed to get location or prayer times.');
     }
     setLoading(false);
-  };
+  }, [schedulePrayerNotifications, settings]);
 
   // Effect for fetching prayer times by city name
   useEffect(() => {
@@ -98,7 +99,8 @@ export default function PrayerTimesScreen() {
           setError('City not found. Please try another city.');
           setPrayerTimes(null);
         }
-      } catch (err) {
+      } catch (error) {
+        console.error('City fetch error:', error);
         setError('Could not fetch prayer times. Please check your connection.');
         setPrayerTimes(null);
       }
@@ -106,7 +108,7 @@ export default function PrayerTimesScreen() {
     };
 
     fetchPrayerTimesByCity();
-  }, [city, settings.prayer.calculationMethod, settings.prayer.madhab]);
+  }, [city, settings.prayer.calculationMethod, settings.prayer.madhab, schedulePrayerNotifications, settings]);
 
   // Effect to auto-use GPS when settings change
   useEffect(() => {
@@ -117,7 +119,7 @@ export default function PrayerTimesScreen() {
       setCity(settings.location.city);
       setInputCity(settings.location.city);
     }
-  }, [settings.location.useGPS, settings.location.city]);
+  }, [settings.location.useGPS, settings.location.city, city, useLocation, handleGeoLocation]);
 
   // Handler for the search button
   const handleSearch = () => {

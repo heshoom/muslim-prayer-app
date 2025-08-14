@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from '@/src/components/shared/ThemedText';
@@ -36,7 +36,7 @@ export default function PrayerTrackerScreen() {
   const { t } = useTranslation();
   
   const [tracking, setTracking] = useState<PrayerTracking>({});
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const selectedDate = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     loadPrayerTracking();

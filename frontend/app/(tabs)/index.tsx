@@ -9,7 +9,6 @@ import { ThemedView } from '@/src/components/shared/ThemedView';
 import HijriDate from 'hijri-date';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
-import { useTranslation } from '@/src/i18n';
 
 export default function HomeScreen() {
   const date = new Date();

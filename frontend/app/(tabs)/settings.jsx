@@ -11,9 +11,8 @@ import {
   Alert,
   I18nManager,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import { FontAwesome5 } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { lightTheme, darkTheme } from '@/src/constants/theme';
 import { CustomPicker } from '@/src/components/shared/CustomPicker';

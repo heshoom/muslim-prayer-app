@@ -16,7 +16,8 @@ export const DailyContent = () => {
       try {
         const data = await quranApi.getRandomVerse();
         setVerse(data);
-      } catch (err) {
+      } catch (error) {
+        console.error('Failed to load verse:', error);
         setError('Failed to load verse of the day');
       } finally {
         setLoading(false);
@@ -59,7 +60,7 @@ export const DailyContent = () => {
       <View style={[styles.hadithContainer, { borderTopColor: theme.border }]}>
         <ThemedText style={[styles.sectionTitle, { color: theme.primary }]}>Hadith of the Day</ThemedText>
         <ThemedText style={[styles.hadithText, { color: theme.text.primary }]}>
-          "The key to Paradise is prayer, and the key to prayer is cleanliness."
+          &ldquo;The key to Paradise is prayer, and the key to prayer is cleanliness.&rdquo;
         </ThemedText>
         <ThemedText style={[styles.verseReference, { color: theme.text.secondary }]}>Ahmad</ThemedText>
       </View>

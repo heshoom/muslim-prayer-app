@@ -1,21 +1,23 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "Muslim Prayer Times",
+    "slug": "muslim-prayer-times",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
+    "scheme": "muslim-prayer-times",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.muslimprayer.times"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "package": "com.muslimprayer.times",
       "edgeToEdgeEnabled": true
     },
     "web": {
@@ -44,6 +46,10 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "privacy": "unlisted",
+    "description": "A comprehensive Islamic prayer times app with notifications, Qibla direction, and mosque finder.",
+    "keywords": ["prayer", "islam", "muslim", "qibla", "mosque", "islamic"],
+    "primaryColor": "#2980b9"
   }
 }

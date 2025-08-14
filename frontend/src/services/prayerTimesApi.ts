@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { getCalculationMethodNumber } from '@/src/utils/calculationMethods';
@@ -53,7 +53,7 @@ export const prayerTimesApi = {
       return response.data;
     } catch (error) {
       console.error('API Error:', error);
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
         console.error('Response:', error.response?.data);
         console.error('Status:', error.response?.status);
       }
@@ -90,7 +90,7 @@ export const prayerTimesApi = {
       return response.data;
     } catch (error) {
       console.error('API Error:', error);
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
         console.error('Response:', error.response?.data);
         console.error('Status:', error.response?.status);
         if (error.code === 'ECONNABORTED') {

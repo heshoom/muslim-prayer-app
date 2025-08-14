@@ -7,7 +7,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SettingsProvider, useSettings } from '@/src/contexts/SettingsContext';
 import { NotificationProvider } from '@/src/contexts/NotificationContext';
-import { darkTheme, lightTheme } from '@/src/constants/theme';
 
 function RootLayoutNav() {
   const { isDarkMode } = useSettings();

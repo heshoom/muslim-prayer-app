@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, View, FlatList, TouchableOpacity, Linking, Platform, Alert } from 'react-native';
 import { ThemedText } from '../shared/ThemedText';
 import { ThemedView } from '../shared/ThemedView';
@@ -6,21 +6,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
 import { useTranslation } from '@/src/i18n';
-import { prayerTimesApi } from '@/src/services/prayerTimesApi';
 import * as Location from 'expo-location';
-
-// Calculate distance between two points using Haversine formula
-const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-  const R = 3959; // Radius of the Earth in miles
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-};
 
 interface Mosque {
   place_id: string;
@@ -46,16 +32,12 @@ export const NearbyMosques = () => {
   const { isDarkMode } = useSettings();
   const theme = isDarkMode ? darkTheme : lightTheme;
   const { t } = useTranslation();
-  const [mosques, setMosques] = useState<Mosque[]>([]);
+  const [mosques] = useState<Mosque[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
 
-  useEffect(() => {
-    findNearbyMosques();
-  }, []);
-
-  const findNearbyMosques = async () => {
+  const findNearbyMosques = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -92,7 +74,11 @@ export const NearbyMosques = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    findNearbyMosques();
+  }, [findNearbyMosques]);
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 3959; // Earth's radius in miles

@@ -20,7 +20,6 @@ export const QiblaCompass = () => {
   const theme = isDarkMode ? darkTheme : lightTheme;
   const [heading, setHeading] = useState(0);
   const [qiblaAngle, setQiblaAngle] = useState(0);
-  const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isCalibrating, setIsCalibrating] = useState(true);
 
@@ -46,8 +45,6 @@ export const QiblaCompass = () => {
         const location = await Location.getCurrentPositionAsync({});
         if (!mounted) return;
         
-        setLocation(location);
-
         // Calculate Qibla direction
         const qiblaAngle = calculateQiblaDirection(
           location.coords.latitude,
