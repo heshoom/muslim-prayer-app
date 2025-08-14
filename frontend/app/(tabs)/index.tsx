@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, ScrollView, View } from 'react-native';
+import { StyleSheet, ScrollView, View, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NextPrayer } from '@/src/components/home/NextPrayer';
 import { DailyContent } from '@/src/components/home/DailyContent';
 import { QuickActions } from '@/src/components/home/QuickActions';
@@ -8,6 +9,7 @@ import { ThemedView } from '@/src/components/shared/ThemedView';
 import HijriDate from 'hijri-date';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
+import { useTranslation } from '@/src/i18n';
 
 export default function HomeScreen() {
   const date = new Date();
@@ -23,12 +25,23 @@ export default function HomeScreen() {
 
   const { isDarkMode } = useSettings();
   const theme = isDarkMode ? darkTheme : lightTheme;
+  const insets = useSafeAreaInsets();
+  
+  // Calculate bottom padding to avoid tab bar overlap
+  const bottomPadding = Platform.OS === 'ios' ? 100 : 80; // Increased for iOS
 
   return (
-    <ThemedView style={styles.safeArea}>
+    <ThemedView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <ScrollView 
         style={[styles.container, { backgroundColor: theme.background }]}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[
+          styles.contentContainer, 
+          { 
+            paddingTop: insets.top + 10,
+            paddingBottom: bottomPadding 
+          }
+        ]}
+        showsVerticalScrollIndicator={false}
       >
         {/* Header Section */}
         <View style={styles.header}>

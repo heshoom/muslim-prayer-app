@@ -3,15 +3,7 @@ import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
-
-// Function to convert 24-hour time to 12-hour AM/PM format
-export const convertTo12Hour = (time: string): string => {
-  if (!time) return '';
-  let [hours, minutes] = time.split(':').map(Number);
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12 || 12; // Convert 0 -> 12 and 13-23 -> 1-11
-  return `${hours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-};
+import { formatTime } from '@/src/utils/timeUtils';
 
 type PrayerCardProps = {
   name: string;
@@ -19,8 +11,10 @@ type PrayerCardProps = {
 };
 
 export const PrayerCard = ({ name, time }: PrayerCardProps) => {
-  const { isDarkMode } = useSettings();
+  const { isDarkMode, settings } = useSettings();
   const theme = isDarkMode ? darkTheme : lightTheme;
+
+  const formattedTime = formatTime(time, settings.appearance.timeFormat);
 
   return (
     <ThemedView 
@@ -36,7 +30,7 @@ export const PrayerCard = ({ name, time }: PrayerCardProps) => {
         {name}
       </ThemedText>
       <ThemedText style={[styles.prayerTime, { color: theme.text.secondary }]}>
-        {convertTo12Hour(time)}
+        {formattedTime}
       </ThemedText>
     </ThemedView>
   );

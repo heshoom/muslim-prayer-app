@@ -7,10 +7,12 @@ import { IconSymbol } from '@/src/components/shared/IconSymbol';
 import TabBarBackground from '@/src/components/shared/TabBarBackground';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
 import { useSettings } from '@/src/contexts/SettingsContext';
+import { useTranslation } from '@/src/i18n';
 
 export default function TabLayout() {
   const { isDarkMode } = useSettings();
   const theme = isDarkMode ? darkTheme : lightTheme;
+  const { t } = useTranslation();
 
   return (
     <Tabs
@@ -33,28 +35,21 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('home'),
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="prayer-times"
         options={{
-          title: 'Prayer Times',
+          title: t('prayerTimes'),
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="clock.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Settings',
+          title: t('settings'),
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="gear" color={color} />,
         }}
       />

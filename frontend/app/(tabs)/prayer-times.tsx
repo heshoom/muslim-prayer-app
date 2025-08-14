@@ -8,58 +8,28 @@ import {
   ScrollView
 } from 'react-native';
 import * as Location from 'expo-location';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PrayerCard } from '@/src/components/shared/PrayerCard';
 import { PrayerTimes } from '@/src/types/prayerTimes';
 import { prayerTimesApi } from '@/src/services/prayerTimesApi';
 import { ThemedView } from '@/src/components/shared/ThemedView';
 import { ThemedText } from '@/src/components/shared/ThemedText';
 import { useSettings } from '@/src/contexts/SettingsContext';
+import { useNotifications } from '@/src/contexts/NotificationContext';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
+import { useTranslation } from '@/src/i18n';
+import { formatDate } from '@/src/utils/timeUtils';
 
 export default function PrayerTimesScreen() {
+  const { settings } = useSettings();
+  const { schedulePrayerNotifications } = useNotifications();
   const [prayerTimes, setPrayerTimes] = useState<PrayerTimes | null>(null);
-  const [city, setCity] = useState('New York');
-  const [inputCity, setInputCity] = useState('New York');
+  const [city, setCity] = useState(settings.location.city || 'New York');
+  const [inputCity, setInputCity] = useState(settings.location.city || 'New York');
   const [date, setDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Effect for fetching prayer times by city name
-  useEffect(() => {
-    if (!city) {
-      setLoading(false);
-      return;
-    }
-
-    const fetchPrayerTimesByCity = async () => {
-      setLoading(true);
-      setError(null);
-      setPrayerTimes(null);
-      try {
-        const data = await prayerTimesApi.getPrayerTimesByCity(city);
-        if (data.code === 200) {
-          setPrayerTimes(data.data.timings);
-          setDate(data.data.date.readable);
-        } else {
-          setError('City not found. Please try another city.');
-          setPrayerTimes(null);
-        }
-      } catch (err) {
-        setError('Could not fetch prayer times. Please check your connection.');
-        setPrayerTimes(null);
-      }
-      setLoading(false);
-    };
-
-    fetchPrayerTimesByCity();
-  }, [city]);
-
-  // Handler for the search button
-  const handleSearch = () => {
-    if (inputCity.trim()) {
-      setCity(inputCity);
-    }
-  };
+  const [useLocation, setUseLocation] = useState(settings.location.useGPS);
 
   // Handler for the "Use My Location" button
   const handleGeoLocation = async () => {
@@ -78,15 +48,21 @@ export default function PrayerTimesScreen() {
       let location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
 
-      const data = await prayerTimesApi.getPrayerTimesByCoordinates(latitude, longitude);
+      const data = await prayerTimesApi.getPrayerTimesByCoordinates(latitude, longitude, settings);
 
       if (data.code === 200) {
-        setPrayerTimes(data.data.timings);
+        const times = data.data.timings;
+        setPrayerTimes(times);
         setDate(data.data.date.readable);
         const timezone = data.data.meta.timezone;
         const locationName = timezone.split('/')[1].replace(/_/g, ' ');
         setCity(locationName);
         setInputCity(locationName);
+        
+        // Schedule notifications for prayer times
+        if (settings.notifications.enabled) {
+          await schedulePrayerNotifications(times);
+        }
       } else {
         setError('Could not determine prayer times for your location.');
       }
@@ -96,15 +72,79 @@ export default function PrayerTimesScreen() {
     setLoading(false);
   };
 
+  // Effect for fetching prayer times by city name
+  useEffect(() => {
+    if (!city) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchPrayerTimesByCity = async () => {
+      setLoading(true);
+      setError(null);
+      setPrayerTimes(null);
+      try {
+        const data = await prayerTimesApi.getPrayerTimesByCity(city, settings);
+        if (data.code === 200) {
+          const times = data.data.timings;
+          setPrayerTimes(times);
+          setDate(data.data.date.readable);
+          
+          // Schedule notifications for prayer times
+          if (settings.notifications.enabled) {
+            await schedulePrayerNotifications(times);
+          }
+        } else {
+          setError('City not found. Please try another city.');
+          setPrayerTimes(null);
+        }
+      } catch (err) {
+        setError('Could not fetch prayer times. Please check your connection.');
+        setPrayerTimes(null);
+      }
+      setLoading(false);
+    };
+
+    fetchPrayerTimesByCity();
+  }, [city, settings.prayer.calculationMethod, settings.prayer.madhab]);
+
+  // Effect to auto-use GPS when settings change
+  useEffect(() => {
+    if (settings.location.useGPS && !useLocation) {
+      setUseLocation(true);
+      handleGeoLocation();
+    } else if (!settings.location.useGPS && settings.location.city !== city) {
+      setCity(settings.location.city);
+      setInputCity(settings.location.city);
+    }
+  }, [settings.location.useGPS, settings.location.city]);
+
+  // Handler for the search button
+  const handleSearch = () => {
+    if (inputCity.trim()) {
+      setCity(inputCity);
+    }
+  };
+
   const { isDarkMode } = useSettings();
   const theme = isDarkMode ? darkTheme : lightTheme;
+  const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   return (
-    <ThemedView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
+    <ThemedView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+      <ScrollView 
+        contentContainerStyle={[
+          styles.container,
+          { 
+            paddingTop: insets.top + 10,
+            paddingBottom: Platform.OS === 'ios' ? 100 : 80
+          }
+        ]}
+      >
         <ThemedView style={styles.header}>
-          <ThemedText style={[styles.title, { color: theme.primary }]}>Muslim Prayer Times</ThemedText>
-          <ThemedText type="subtitle">Enter a city or use your location</ThemedText>
+          <ThemedText style={[styles.title, { color: theme.primary }]}>{t('muslimPrayerTimes')}</ThemedText>
+          <ThemedText type="subtitle">{t('enterCityOrLocation')}</ThemedText>
         </ThemedView>
 
         <ThemedView style={styles.searchForm}>
@@ -114,7 +154,7 @@ export default function PrayerTimesScreen() {
               color: theme.text.primary,
               borderColor: theme.border
             }]}
-            placeholder="Enter city name..."
+            placeholder={t('searchCity')}
             placeholderTextColor={theme.text.secondary}
             value={inputCity}
             onChangeText={setInputCity}
@@ -135,7 +175,7 @@ export default function PrayerTimesScreen() {
           onPress={handleGeoLocation}
         >
           <ThemedText style={[styles.locationButtonText, { color: theme.primary }]}>
-            Use My Location
+            {t('useMyLocation')}
           </ThemedText>
         </TouchableOpacity>
 
@@ -149,7 +189,26 @@ export default function PrayerTimesScreen() {
           ) : prayerTimes ? (
             <ThemedView style={[styles.prayerTimesContainer, { backgroundColor: theme.surface }]}>
               <ThemedText type="title">Prayer Times for {city}</ThemedText>
-              <ThemedText type="subtitle">{date}</ThemedText>
+              <ThemedText type="subtitle">
+                {formatDate(date, settings.appearance.showHijriDates)}
+              </ThemedText>
+              
+              {/* Notification Status */}
+              {settings.notifications.enabled && (
+                <ThemedView style={styles.notificationStatus}>
+                  <ThemedText style={[styles.notificationText, { color: theme.primary }]}>
+                    🔔 {t('notificationsEnabled')}
+                  </ThemedText>
+                </ThemedView>
+              )}
+              
+              {/* Settings Status */}
+              <ThemedView style={styles.settingsStatus}>
+                <ThemedText style={[styles.settingsText, { color: theme.text.secondary }]}>
+                  Method: {settings.prayer.calculationMethod} | Madhab: {settings.prayer.madhab} | Format: {settings.appearance.timeFormat}
+                </ThemedText>
+              </ThemedView>
+              
               <ThemedView style={styles.grid}>
                 <PrayerCard name="Fajr" time={prayerTimes.Fajr} />
                 <PrayerCard name="Dhuhr" time={prayerTimes.Dhuhr} />
@@ -249,6 +308,23 @@ const styles = StyleSheet.create({
         elevation: 3,
       },
     }),
+  },
+  notificationStatus: {
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  notificationText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  settingsStatus: {
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  settingsText: {
+    fontSize: 12,
+    opacity: 0.7,
   },
   grid: {
     flexDirection: 'row',

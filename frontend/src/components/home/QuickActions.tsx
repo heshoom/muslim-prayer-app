@@ -6,6 +6,7 @@ import { ThemedView } from '../shared/ThemedView';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
+import { useTranslation } from '@/src/i18n';
 
 type QuickAction = {
   title: string;
@@ -13,36 +14,37 @@ type QuickAction = {
   onPress: () => void;
 };
 
-const actions: QuickAction[] = [
-  { 
-    title: 'Qibla Direction', 
-    icon: 'compass', 
-    onPress: () => router.push('/qibla')
-  },
-  { 
-    title: 'Prayer Tracker', 
-    icon: 'tasks', 
-    onPress: () => {} // To be implemented
-  },
-  { 
-    title: 'Nearby Mosques', 
-    icon: 'mosque', 
-    onPress: () => {} // To be implemented
-  },
-  { 
-    title: 'Daily Dhikr', 
-    icon: 'pray', 
-    onPress: () => {} // To be implemented
-  },
-];
-
 export const QuickActions = () => {
   const { isDarkMode } = useSettings();
   const theme = isDarkMode ? darkTheme : lightTheme;
+  const { t } = useTranslation();
+
+  const actions: QuickAction[] = [
+    { 
+      title: t('qiblaDirection'), 
+      icon: 'compass', 
+      onPress: () => router.push('/qibla')
+    },
+    { 
+      title: t('prayerTracker'), 
+      icon: 'tasks', 
+      onPress: () => router.push('/prayer-tracker')
+    },
+    // { 
+    //   title: t('nearbyMosques'), 
+    //   icon: 'mosque', 
+    //   onPress: () => router.push('/mosques')
+    // },
+    { 
+      title: t('dailyDhikr'), 
+      icon: 'pray', 
+      onPress: () => router.push('/daily-dhikr')
+    },
+  ];
 
   return (
     <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
-      <ThemedText style={[styles.title, { color: theme.primary }]}>Quick Actions</ThemedText>
+      <ThemedText style={[styles.title, { color: theme.primary }]}>{t('quickActions')}</ThemedText>
       <View style={styles.grid}>
         {actions.map((action, index) => (
           <TouchableOpacity
@@ -63,7 +65,6 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 12,
     padding: 20,
-    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

@@ -3,9 +3,10 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
-import { View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SettingsProvider, useSettings } from '@/src/contexts/SettingsContext';
+import { NotificationProvider } from '@/src/contexts/NotificationContext';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
 
 function RootLayoutNav() {
@@ -19,7 +20,7 @@ function RootLayoutNav() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: isDarkMode ? darkTheme.background : lightTheme.background }}>
+    <SafeAreaProvider>
       <ThemeProvider value={isDarkMode ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -27,14 +28,16 @@ function RootLayoutNav() {
         </Stack>
         <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       </ThemeProvider>
-    </View>
+    </SafeAreaProvider>
   );
 }
 
 export default function RootLayout() {
   return (
     <SettingsProvider>
-      <RootLayoutNav />
+      <NotificationProvider>
+        <RootLayoutNav />
+      </NotificationProvider>
     </SettingsProvider>
   );
 }

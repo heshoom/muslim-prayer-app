@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Dimensions, Platform } from 'react-native';
 import { ThemedText } from '../shared/ThemedText';
 import { ThemedView } from '../shared/ThemedView';
+import { useSettings } from '@/src/contexts/SettingsContext';
+import { darkTheme, lightTheme } from '@/src/constants/theme';
+import { useTranslation } from '@/src/i18n';
 import * as Location from 'expo-location';
 import { DeviceMotion } from 'expo-sensors';
 import { CompassBase } from './CompassBase';
@@ -12,28 +15,37 @@ const MECCA_COORDS = {
 };
 
 export const QiblaCompass = () => {
+  const { isDarkMode } = useSettings();
+  const { t } = useTranslation();
+  const theme = isDarkMode ? darkTheme : lightTheme;
   const [heading, setHeading] = useState(0);
   const [qiblaAngle, setQiblaAngle] = useState(0);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isCalibrating, setIsCalibrating] = useState(true);
 
   // Check if running on mobile device
   const isMobileDevice = Platform.OS === 'ios' || Platform.OS === 'android';
 
   useEffect(() => {
     if (!isMobileDevice) {
-      setErrorMsg('The Qibla compass requires a mobile device with motion sensors. Please use this feature on your phone or tablet.');
+      setErrorMsg(t('qiblaRequiresMobile') || 'The Qibla compass requires a mobile device with motion sensors. Please use this feature on your phone or tablet.');
       return;
     }
+    
+    let mounted = true;
+    
     (async () => {
       try {
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
-          setErrorMsg('Permission to access location was denied');
+          setErrorMsg(t('locationPermissionDenied') || 'Permission to access location was denied');
           return;
         }
 
         const location = await Location.getCurrentPositionAsync({});
+        if (!mounted) return;
+        
         setLocation(location);
 
         // Calculate Qibla direction
@@ -42,35 +54,47 @@ export const QiblaCompass = () => {
           location.coords.longitude
         );
         setQiblaAngle(qiblaAngle);
+        setIsCalibrating(false);
 
         // Start compass updates
         if (Platform.OS === 'ios') {
           DeviceMotion.setUpdateInterval(100);
           const subscription = DeviceMotion.addListener(data => {
-            if (data.rotation) {
-              const heading = -data.rotation.gamma * (180 / Math.PI);
-              setHeading(heading);
+            if (data.rotation && mounted) {
+              // Better heading calculation for iOS
+              const heading = Math.atan2(data.rotation.beta, data.rotation.alpha) * (180 / Math.PI);
+              setHeading((heading + 360) % 360);
             }
           });
 
           return () => {
+            mounted = false;
             subscription.remove();
           };
         } else {
           // For Android
           const subscription = await Location.watchHeadingAsync(data => {
-            setHeading(data.trueHeading);
+            if (mounted) {
+              setHeading(data.trueHeading || data.magHeading);
+            }
           });
 
           return () => {
+            mounted = false;
             subscription.remove();
           };
         }
       } catch (error: any) {
-        setErrorMsg('Error accessing compass: ' + (error.message || 'Unknown error'));
+        if (mounted) {
+          setErrorMsg(t('compassError') || 'Error accessing compass: ' + (error.message || 'Unknown error'));
+        }
       }
     })();
-  }, []);
+    
+    return () => {
+      mounted = false;
+    };
+  }, [isMobileDevice, t]);
 
   const calculateQiblaDirection = (latitude: number, longitude: number) => {
     const lat1 = latitude * (Math.PI / 180);
@@ -91,30 +115,61 @@ export const QiblaCompass = () => {
 
   if (errorMsg) {
     return (
-      <ThemedView style={styles.container}>
-        <ThemedText style={styles.error}>{errorMsg}</ThemedText>
+      <ThemedView style={[styles.container, { backgroundColor: theme.background }]}>
+        <ThemedText style={[styles.error, { color: theme.error }]}>{errorMsg}</ThemedText>
       </ThemedView>
     );
   }
 
-  const rotationStyle = {
-    transform: [{ rotate: `${heading}deg` }]
-  };
+  if (isCalibrating) {
+    return (
+      <ThemedView style={[styles.container, { backgroundColor: theme.background }]}>
+        <ThemedText style={[styles.calibrating, { color: theme.text.primary }]}>
+          {t('calibratingCompass') || 'Calibrating compass...'}
+        </ThemedText>
+      </ThemedView>
+    );
+  }
 
-  const qiblaStyle = {
-    transform: [{ rotate: `${qiblaAngle}deg` }]
-  };
+  // Calculate the relative angle between current heading and Qibla direction
+  const relativeQiblaAngle = (qiblaAngle - heading + 360) % 360;
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.compassContainer}>
-        <View style={[styles.compass, rotationStyle]}>
-          <CompassBase />
-          <View style={[styles.qiblaIndicator, qiblaStyle]} />
+        <View style={styles.compass}>
+          <CompassBase theme={theme} />
+          
+          {/* Qibla direction indicator */}
+          <View 
+            style={[
+              styles.qiblaPointer, 
+              { 
+                transform: [{ rotate: `${relativeQiblaAngle}deg` }]
+              }
+            ]} 
+          >
+            {/* Arrow pointing to Qibla */}
+            <View style={[styles.qiblaArrowHead, { borderBottomColor: theme.primary }]} />
+            <View style={[styles.qiblaLine, { backgroundColor: theme.primary }]} />
+          </View>
+          
+          {/* Center dot */}
+          <View style={[styles.centerDot, { backgroundColor: theme.primary }]} />
         </View>
       </View>
-      <ThemedText style={styles.instructions}>
-        Point your phone's top edge towards the arrow direction to find Qibla
+      
+      <ThemedView style={[styles.infoContainer, { backgroundColor: theme.surface }]}>
+        <ThemedText style={[styles.heading, { color: theme.text.primary }]}>
+          {t('currentHeading') || 'Heading'}: {Math.round(heading)}°
+        </ThemedText>
+        <ThemedText style={[styles.qiblaDirection, { color: theme.primary }]}>
+          {t('qiblaAngle') || 'Qibla'}: {Math.round(qiblaAngle)}°
+        </ThemedText>
+      </ThemedView>
+      
+      <ThemedText style={[styles.instructions, { color: theme.text.secondary }]}>
+        {t('qiblaInstructions') || 'Hold your phone flat and rotate until the green arrow points up to find Qibla direction'}
       </ThemedText>
     </ThemedView>
   );
@@ -126,7 +181,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#fff',
   },
   compassContainer: {
     width: Dimensions.get('window').width * 0.8,
@@ -141,24 +195,71 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
   },
-  qiblaIndicator: {
+  qiblaPointer: {
     position: 'absolute',
-    width: 4,
-    height: '50%',
-    backgroundColor: '#e74c3c',
-    top: 0,
+    top: '50%',
     left: '50%',
-    marginLeft: -2,
+    width: 6,
+    height: '45%',
+    marginTop: '-22.5%', // Half of height to center the rotation point
+    marginLeft: -3,
     zIndex: 2,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  qiblaArrowHead: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 12,
+    borderRightWidth: 12,
+    borderBottomWidth: 24,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    marginBottom: 2,
+  },
+  qiblaLine: {
+    width: 6,
+    height: '70%',
+    borderRadius: 3,
+  },
+  centerDot: {
+    position: 'absolute',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    top: '50%',
+    left: '50%',
+    marginTop: -6,
+    marginLeft: -6,
+    zIndex: 3,
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 20,
+    padding: 15,
+    borderRadius: 8,
+  },
+  heading: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  qiblaDirection: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  calibrating: {
+    fontSize: 18,
+    textAlign: 'center',
   },
   instructions: {
     marginTop: 20,
     textAlign: 'center',
-    fontSize: 16,
-    color: '#7f8c8d',
+    fontSize: 14,
+    lineHeight: 20,
   },
   error: {
-    color: '#e74c3c',
     textAlign: 'center',
     fontSize: 16,
     marginHorizontal: 20,

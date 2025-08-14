@@ -9,45 +9,68 @@ import {
   ScrollView,
   Platform,
   Alert,
+  I18nManager,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { lightTheme, darkTheme } from '@/src/constants/theme';
+import { CustomPicker } from '@/src/components/shared/CustomPicker';
+import { useTranslation } from '@/src/i18n';
 
 const Settings = () => {
   const { settings, updateSettings, isDarkMode } = useSettings();
   const theme = isDarkMode ? darkTheme : lightTheme;
+  const insets = useSafeAreaInsets();
+  const { t, isRTL } = useTranslation();
 
   const handleSave = () => {
     Alert.alert(
-      'Settings Saved',
-      'Your preferences have been updated.',
-      [{ text: 'OK' }]
+      t('settingsSaved'),
+      t('preferencesUpdated'),
+      [{ text: t('ok') }]
     );
   };
 
-  const styles = getStyles(theme, isDarkMode);
+  const handleLanguageChange = (newLanguage) => {
+    updateSettings('appearance', 'language', newLanguage);
+    // Force RTL layout update for Arabic and Urdu
+    const shouldBeRTL = ['ar', 'ur'].includes(newLanguage);
+    I18nManager.forceRTL(shouldBeRTL);
+  };
+
+  const styles = getStyles(theme, isDarkMode, isRTL());
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Settings</Text>
-          <Text style={styles.subtitle}>Customize your app preferences</Text>
-        </View>
-
+    <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
+        <Text style={styles.title}>{t('settings')}</Text>
+        <Text style={styles.subtitle}>{t('customizePreferences')}</Text>
+      </View>
+      
+      <ScrollView 
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: Platform.OS === 'ios' ? 60 : 60 }
+        ]}
+        bounces={true}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.settingsContainer}>
           {/* Notifications Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <FontAwesome5 name="bell" size={20} color="#2980b9" />
-              <Text style={styles.sectionTitle}>Notifications</Text>
+              <Text style={styles.sectionTitle}>{t('notifications')}</Text>
             </View>
             
-            <View style={styles.settingItem}>
+            <View style={[styles.settingItem, styles.switchItem]}>
               <View style={styles.settingHeader}>
-                <Text style={styles.settingTitle}>Enable Notifications</Text>
+                <View style={styles.settingTextContainer}>
+                  <Text style={styles.settingTitle}>{t('enableNotifications')}</Text>
+                  <Text style={styles.settingDescription}>{t('receivePrayerAlerts')}</Text>
+                </View>
                 <Switch
                   value={settings.notifications.enabled}
                   onValueChange={(value) => updateSettings('notifications', 'enabled', value)}
@@ -55,14 +78,16 @@ const Settings = () => {
                   thumbColor={settings.notifications.enabled ? '#fff' : '#f4f3f4'}
                 />
               </View>
-              <Text style={styles.settingDescription}>Receive prayer time alerts</Text>
             </View>
 
             {settings.notifications.enabled && (
               <>
-                <View style={styles.settingItem}>
+                <View style={[styles.settingItem, styles.switchItem]}>
                   <View style={styles.settingHeader}>
-                    <Text style={styles.settingTitle}>Adhan Sound</Text>
+                    <View style={styles.settingTextContainer}>
+                      <Text style={styles.settingTitle}>{t('adhanSound')}</Text>
+                      <Text style={styles.settingDescription}>{t('playAdhanAtPrayerTimes')}</Text>
+                    </View>
                     <Switch
                       value={settings.notifications.adhan}
                       onValueChange={(value) => updateSettings('notifications', 'adhan', value)}
@@ -72,9 +97,12 @@ const Settings = () => {
                   </View>
                 </View>
 
-                <View style={styles.settingItem}>
+                <View style={[styles.settingItem, styles.switchItem]}>
                   <View style={styles.settingHeader}>
-                    <Text style={styles.settingTitle}>Vibrate</Text>
+                    <View style={styles.settingTextContainer}>
+                      <Text style={styles.settingTitle}>{t('vibrate')}</Text>
+                      <Text style={styles.settingDescription}>{t('vibrateWithNotifications')}</Text>
+                    </View>
                     <Switch
                       value={settings.notifications.vibrate}
                       onValueChange={(value) => updateSettings('notifications', 'vibrate', value)}
@@ -84,9 +112,12 @@ const Settings = () => {
                   </View>
                 </View>
 
-                <View style={styles.settingItem}>
+                <View style={[styles.settingItem, styles.switchItem]}>
                   <View style={styles.settingHeader}>
-                    <Text style={styles.settingTitle}>Pre-prayer Reminder</Text>
+                    <View style={styles.settingTextContainer}>
+                      <Text style={styles.settingTitle}>{t('prePrayerReminder')}</Text>
+                      <Text style={styles.settingDescription}>Get notified before prayer time</Text>
+                    </View>
                     <Switch
                       value={settings.notifications.prePrayer}
                       onValueChange={(value) => updateSettings('notifications', 'prePrayer', value)}
@@ -95,17 +126,21 @@ const Settings = () => {
                     />
                   </View>
                   {settings.notifications.prePrayer && (
-                    <View style={styles.pickerContainer}>
-                      <Picker
+                    <View style={[styles.settingItem, styles.pickerItem]}>
+                      <Text style={styles.settingTitle}>Reminder Time</Text>
+                      <Text style={styles.settingDescription}>How early to be notified</Text>
+                      <CustomPicker
                         selectedValue={settings.notifications.prePrayerTime}
                         onValueChange={(value) => updateSettings('notifications', 'prePrayerTime', value)}
-                        style={styles.picker}
-                      >
-                        <Picker.Item label="5 minutes before" value={5} />
-                        <Picker.Item label="10 minutes before" value={10} />
-                        <Picker.Item label="15 minutes before" value={15} />
-                        <Picker.Item label="30 minutes before" value={30} />
-                      </Picker>
+                        items={[
+                          { label: `5 ${t('minutesBefore')}`, value: 5 },
+                          { label: `10 ${t('minutesBefore')}`, value: 10 },
+                          { label: `15 ${t('minutesBefore')}`, value: 15 },
+                          { label: `30 ${t('minutesBefore')}`, value: 30 },
+                        ]}
+                        title="Select Reminder Time"
+                        theme={theme}
+                      />
                     </View>
                   )}
                 </View>
@@ -117,43 +152,48 @@ const Settings = () => {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <FontAwesome5 name="paint-brush" size={20} color="#2980b9" />
-              <Text style={styles.sectionTitle}>Appearance</Text>
+              <Text style={styles.sectionTitle}>{t('appearance')}</Text>
             </View>
 
-            <View style={styles.settingItem}>
-              <Text style={styles.settingTitle}>Theme</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={settings.appearance.theme}
-                  onValueChange={(value) => updateSettings('appearance', 'theme', value)}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="Light" value="light" />
-                  <Picker.Item label="Dark" value="dark" />
-                  <Picker.Item label="System Default" value="system" />
-                </Picker>
-              </View>
+            <View style={[styles.settingItem, styles.pickerItem]}>
+              <Text style={styles.settingTitle}>{t('theme')}</Text>
+              <Text style={styles.settingDescription}>{t('choosePreferredAppearance')}</Text>
+              <CustomPicker
+                selectedValue={settings.appearance.theme}
+                onValueChange={(value) => updateSettings('appearance', 'theme', value)}
+                items={[
+                  { label: t('light'), value: 'light' },
+                  { label: t('dark'), value: 'dark' },
+                  { label: t('systemDefault'), value: 'system' },
+                ]}
+                title={t('selectTheme')}
+                theme={theme}
+              />
             </View>
 
-            <View style={styles.settingItem}>
-              <Text style={styles.settingTitle}>Language</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={settings.appearance.language}
-                  onValueChange={(value) => updateSettings('appearance', 'language', value)}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="English" value="en" />
-                  <Picker.Item label="العربية" value="ar" />
-                  <Picker.Item label="اردو" value="ur" />
-                  <Picker.Item label="Türkçe" value="tr" />
-                </Picker>
-              </View>
+            <View style={[styles.settingItem, styles.pickerItem]}>
+              <Text style={styles.settingTitle}>{t('language')}</Text>
+              <Text style={styles.settingDescription}>{t('selectPreferredLanguage')}</Text>
+              <CustomPicker
+                selectedValue={settings.appearance.language}
+                onValueChange={handleLanguageChange}
+                items={[
+                  { label: 'English', value: 'en' },
+                  { label: 'العربية', value: 'ar' },
+                  { label: 'اردو', value: 'ur' },
+                  { label: 'Türkçe', value: 'tr' },
+                ]}
+                title={t('selectLanguage')}
+                theme={theme}
+              />
             </View>
 
-            <View style={styles.settingItem}>
+            <View style={[styles.settingItem, styles.switchItem]}>
               <View style={styles.settingHeader}>
-                <Text style={styles.settingTitle}>Show Hijri Dates</Text>
+                <View style={styles.settingTextContainer}>
+                  <Text style={styles.settingTitle}>{t('showHijriDates')}</Text>
+                  <Text style={styles.settingDescription}>{t('displayIslamicCalendarDates')}</Text>
+                </View>
                 <Switch
                   value={settings.appearance.showHijriDates}
                   onValueChange={(value) => updateSettings('appearance', 'showHijriDates', value)}
@@ -163,18 +203,19 @@ const Settings = () => {
               </View>
             </View>
 
-            <View style={styles.settingItem}>
-              <Text style={styles.settingTitle}>Time Format</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={settings.appearance.timeFormat}
-                  onValueChange={(value) => updateSettings('appearance', 'timeFormat', value)}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="24-hour" value="24h" />
-                  <Picker.Item label="12-hour" value="12h" />
-                </Picker>
-              </View>
+            <View style={[styles.settingItem, styles.pickerItem]}>
+              <Text style={styles.settingTitle}>{t('timeFormat')}</Text>
+              <Text style={styles.settingDescription}>{t('chooseTimeDisplay')}</Text>
+              <CustomPicker
+                selectedValue={settings.appearance.timeFormat}
+                onValueChange={(value) => updateSettings('appearance', 'timeFormat', value)}
+                items={[
+                  { label: t('24hour'), value: '24h' },
+                  { label: t('12hour'), value: '12h' },
+                ]}
+                title={t('selectTimeFormat')}
+                theme={theme}
+              />
             </View>
           </View>
 
@@ -182,38 +223,40 @@ const Settings = () => {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <FontAwesome5 name="calculator" size={20} color="#2980b9" />
-              <Text style={styles.sectionTitle}>Prayer Calculations</Text>
+              <Text style={styles.sectionTitle}>{t('prayerCalculations')}</Text>
             </View>
 
-            <View style={styles.settingItem}>
-              <Text style={styles.settingTitle}>Calculation Method</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={settings.prayer.calculationMethod}
-                  onValueChange={(value) => updateSettings('prayer', 'calculationMethod', value)}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="Muslim World League" value="mwl" />
-                  <Picker.Item label="Islamic Society of North America" value="isna" />
-                  <Picker.Item label="Egyptian General Authority" value="egypt" />
-                  <Picker.Item label="Umm Al-Qura University" value="makkah" />
-                  <Picker.Item label="University of Islamic Sciences, Karachi" value="karachi" />
-                </Picker>
-              </View>
+            <View style={[styles.settingItem, styles.pickerItem]}>
+              <Text style={styles.settingTitle}>{t('calculationMethod')}</Text>
+              <Text style={styles.settingDescription}>{t('methodForCalculating')}</Text>
+              <CustomPicker
+                selectedValue={settings.prayer.calculationMethod}
+                onValueChange={(value) => updateSettings('prayer', 'calculationMethod', value)}
+                items={[
+                  { label: t('muslimWorldLeague'), value: 'mwl' },
+                  { label: t('isna'), value: 'isna' },
+                  { label: t('egyptianGeneralAuthority'), value: 'egypt' },
+                  { label: t('ummAlQura'), value: 'makkah' },
+                  { label: t('universityOfKarachi'), value: 'karachi' },
+                ]}
+                title={t('selectCalculationMethod')}
+                theme={theme}
+              />
             </View>
 
-            <View style={styles.settingItem}>
-              <Text style={styles.settingTitle}>Madhab (Asr Calculation)</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={settings.prayer.madhab}
-                  onValueChange={(value) => updateSettings('prayer', 'madhab', value)}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="Shafi'i, Maliki, Hanbali" value="shafi" />
-                  <Picker.Item label="Hanafi" value="hanafi" />
-                </Picker>
-              </View>
+            <View style={[styles.settingItem, styles.pickerItem]}>
+              <Text style={styles.settingTitle}>{t('madhab')}</Text>
+              <Text style={styles.settingDescription}>{t('schoolOfThought')}</Text>
+              <CustomPicker
+                selectedValue={settings.prayer.madhab}
+                onValueChange={(value) => updateSettings('prayer', 'madhab', value)}
+                items={[
+                  { label: t('shafiMalikiHanbali'), value: 'shafi' },
+                  { label: t('hanafi'), value: 'hanafi' },
+                ]}
+                title={t('selectMadhab')}
+                theme={theme}
+              />
             </View>
           </View>
 
@@ -221,12 +264,15 @@ const Settings = () => {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <FontAwesome5 name="map-marker-alt" size={20} color="#2980b9" />
-              <Text style={styles.sectionTitle}>Location</Text>
+              <Text style={styles.sectionTitle}>{t('location')}</Text>
             </View>
 
-            <View style={styles.settingItem}>
+            <View style={[styles.settingItem, styles.switchItem]}>
               <View style={styles.settingHeader}>
-                <Text style={styles.settingTitle}>Use GPS Location</Text>
+                <View style={styles.settingTextContainer}>
+                  <Text style={styles.settingTitle}>{t('useGPSLocation')}</Text>
+                  <Text style={styles.settingDescription}>{t('automaticallyDetectLocation')}</Text>
+                </View>
                 <Switch
                   value={settings.location.useGPS}
                   onValueChange={(value) => updateSettings('location', 'useGPS', value)}
@@ -234,32 +280,36 @@ const Settings = () => {
                   thumbColor={settings.location.useGPS ? '#fff' : '#f4f3f4'}
                 />
               </View>
-              <Text style={styles.settingDescription}>Automatically detect location</Text>
             </View>
 
             {!settings.location.useGPS && (
-              <>
-                <View style={styles.settingItem}>
-                  <Text style={styles.settingTitle}>City</Text>
-                  <View style={styles.pickerContainer}>
-                    <Picker
-                      selectedValue={settings.location.city}
-                      onValueChange={(value) => updateSetting('location', 'city', value)}
-                      style={styles.picker}
-                    >
-                      <Picker.Item label="New York" value="New York" />
-                      <Picker.Item label="London" value="London" />
-                      <Picker.Item label="Dubai" value="Dubai" />
-                      <Picker.Item label="Istanbul" value="Istanbul" />
-                    </Picker>
-                  </View>
-                </View>
-              </>
+              <View style={[styles.settingItem, styles.pickerItem]}>
+                <Text style={styles.settingTitle}>{t('city')}</Text>
+                <Text style={styles.settingDescription}>Select your city for prayer times</Text>
+                <CustomPicker
+                  selectedValue={settings.location.city}
+                  onValueChange={(value) => updateSettings('location', 'city', value)}
+                  items={[
+                    { label: 'New York', value: 'New York' },
+                    { label: 'London', value: 'London' },
+                    { label: 'Dubai', value: 'Dubai' },
+                    { label: 'Istanbul', value: 'Istanbul' },
+                    { label: 'Riyadh', value: 'Riyadh' },
+                    { label: 'Cairo', value: 'Cairo' },
+                    { label: 'Karachi', value: 'Karachi' },
+                    { label: 'Jakarta', value: 'Jakarta' },
+                    { label: 'Kuala Lumpur', value: 'Kuala Lumpur' },
+                    { label: 'Dhaka', value: 'Dhaka' },
+                  ]}
+                  title="Select City"
+                  theme={theme}
+                />
+              </View>
             )}
           </View>
 
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>Save Changes</Text>
+            <Text style={styles.saveButtonText}>{t('saveChanges')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -267,97 +317,118 @@ const Settings = () => {
   );
 };
 
-const getStyles = (theme, isDarkMode) => StyleSheet.create({
+const getStyles = (theme, isDarkMode, isRTL = false) => StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: theme.background,
   },
   container: {
     flexGrow: 1,
-    padding: 20,
-    paddingTop: Platform.OS === 'android' ? 40 : 20,
+    paddingBottom: 20,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    backgroundColor: theme.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: theme.primary,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: theme.text.secondary,
     marginTop: 4,
   },
   settingsContainer: {
-    backgroundColor: theme.surface,
-    borderRadius: 12,
-    padding: 20,
-    ...theme.card.shadow,
+    flex: 1,
+    backgroundColor: theme.background,
   },
   section: {
-    marginBottom: 30,
+    marginTop: 16,
+    backgroundColor: theme.surface,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: theme.border,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
-    paddingBottom: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: isDarkMode ? theme.surface : theme.background,
     borderBottomWidth: 1,
     borderBottomColor: theme.border,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '600',
     color: theme.primary,
     marginLeft: 10,
   },
   settingItem: {
-    marginBottom: 20,
+    paddingHorizontal: 16,
+    paddingVertical: Platform.OS === 'ios' ? 8 : 12,
+    backgroundColor: theme.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+    minHeight: Platform.OS === 'ios' ? 44 : 48,
+  },
+  switchItem: {
+    paddingVertical: Platform.OS === 'ios' ? 6 : 8,
   },
   settingHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    minHeight: 28,
+  },
+  settingTextContainer: {
+    flex: 1,
+    paddingRight: 16,
   },
   settingTitle: {
     fontSize: 16,
-    fontWeight: '600',
     color: theme.text.primary,
-    marginBottom: 8,
-    flex: 1,
+    marginBottom: 2,
   },
   settingDescription: {
-    fontSize: 14,
+    fontSize: 13,
     color: theme.text.secondary,
-    marginTop: 4,
+    lineHeight: 16,
   },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: 8,
-    backgroundColor: isDarkMode ? theme.input : theme.surface,
-    marginTop: 5,
-  },
-  picker: {
-    height: 50,
-    color: theme.text.primary,
+  pickerItem: {
+    paddingVertical: Platform.OS === 'ios' ? 8 : 8,
   },
   saveButton: {
+    marginHorizontal: 16,
+    marginTop: 20,
+    marginBottom: Platform.OS === 'ios' ? 40 : 20,
     backgroundColor: theme.primary,
     height: 50,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 8,
-    marginTop: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   saveButtonText: {
     color: theme.text.inverse,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
 });
 
