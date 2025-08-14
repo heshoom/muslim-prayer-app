@@ -19,7 +19,7 @@ const getApiUrl = () => {
     return `http://${LOCAL_IP}:3000/api`;
   }
   // Production URL
-  return 'https://your-production-api-url.com/api';  // TODO: Replace with your actual production API URL
+  return 'https://muslim-prayer-app-9oud.vercel.app/api';
 };
 
 const API_URL = getApiUrl();
