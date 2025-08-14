@@ -5,16 +5,17 @@ import { Platform } from 'react-native';
 import { HapticTab } from '@/src/components/layout/HapticTab';
 import { IconSymbol } from '@/src/components/shared/IconSymbol';
 import TabBarBackground from '@/src/components/shared/TabBarBackground';
-import { Colors } from '@/src/constants/Colors';
-import { useColorScheme } from '@/src/utils/useColorScheme';
+import { darkTheme, lightTheme } from '@/src/constants/theme';
+import { useSettings } from '@/src/contexts/SettingsContext';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const { isDarkMode } = useSettings();
+  const theme = isDarkMode ? darkTheme : lightTheme;
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: theme.tint,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
@@ -22,8 +23,11 @@ export default function TabLayout() {
           ios: {
             // Use a transparent background on iOS to show the blur effect
             position: 'absolute',
+            backgroundColor: theme.tabBarBackground,
           },
-          default: {},
+          default: {
+            backgroundColor: theme.tabBarBackground,
+          },
         }),
       }}>
       <Tabs.Screen
@@ -37,7 +41,7 @@ export default function TabLayout() {
         name="prayer-times"
         options={{
           title: 'Prayer Times',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="clock.fill" color={color} />,
         }}
       />
       <Tabs.Screen

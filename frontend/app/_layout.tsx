@@ -3,27 +3,38 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+import { View } from 'react-native';
 
-import { useColorScheme } from '@/src/utils/useColorScheme';
+import { SettingsProvider, useSettings } from '@/src/contexts/SettingsContext';
+import { darkTheme, lightTheme } from '@/src/constants/theme';
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+function RootLayoutNav() {
+  const { isDarkMode } = useSettings();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
   if (!loaded) {
-    // Async font loading only occurs in development.
     return null;
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <View style={{ flex: 1, backgroundColor: isDarkMode ? darkTheme.background : lightTheme.background }}>
+      <ThemeProvider value={isDarkMode ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+      </ThemeProvider>
+    </View>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <SettingsProvider>
+      <RootLayoutNav />
+    </SettingsProvider>
   );
 }
