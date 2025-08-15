@@ -17,6 +17,46 @@ app.use((req, res, next) => {
   next();
 });
 
+// Root endpoint - API welcome page
+app.get('/', (req, res) => {
+  res.json({
+    name: 'Muslim Prayer App API',
+    version: '1.0.0',
+    description: 'Backend API for Muslim Prayer Times application',
+    status: 'active',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/api/health',
+      test: '/api/test',
+      prayer_times: {
+        by_city: '/api/prayer-times/by-city?city=CityName&country=CountryCode&method=2&school=0',
+        by_coordinates: '/api/prayer-times/by-coordinates?latitude=40.7128&longitude=-74.0060&method=2&school=0'
+      }
+    },
+    calculation_methods: {
+      '1': 'University of Islamic Sciences, Karachi',
+      '2': 'Islamic Society of North America (ISNA)',
+      '3': 'Muslim World League (MWL)',
+      '4': 'Umm al-Qura, Makkah',
+      '5': 'Egyptian General Authority of Survey',
+      '7': 'Institute of Geophysics, University of Tehran',
+      '8': 'Gulf Region',
+      '9': 'Kuwait',
+      '10': 'Qatar',
+      '11': 'Majlis Ugama Islam Singapura, Singapore',
+      '12': 'Union Organization islamic de France',
+      '13': 'Diyanet İşleri Başkanlığı, Turkey',
+      '14': 'Spiritual Administration of Muslims of Russia'
+    },
+    schools: {
+      '0': 'Shafi (or the standard way)',
+      '1': 'Hanafi'
+    },
+    documentation: 'https://github.com/heshoom/muslim-prayer-app',
+    contact: 'Built with ❤️ for the Muslim community'
+  });
+});
+
 // Test endpoint
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working!', timestamp: new Date().toISOString() });
