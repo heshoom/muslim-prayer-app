@@ -7,6 +7,7 @@ import { getNextPrayer, NextPrayerInfo } from '../../utils/prayerTimeUtils';
 import * as Location from 'expo-location';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
+import { useTranslation } from '@/src/i18n';
 
 export const NextPrayer = () => {
   const [nextPrayer, setNextPrayer] = useState<NextPrayerInfo | null>(null);
@@ -15,6 +16,7 @@ export const NextPrayer = () => {
   const [currentLocation, setCurrentLocation] = useState<string>('');
   const { isDarkMode, settings } = useSettings();
   const theme = isDarkMode ? darkTheme : lightTheme;
+  const { t } = useTranslation();
 
   useEffect(() => {
     const fetchPrayerTimes = async () => {
@@ -30,7 +32,7 @@ export const NextPrayer = () => {
           // Use GPS coordinates
           let { status } = await Location.requestForegroundPermissionsAsync();
           if (status !== 'granted') {
-            setError('Please enable location services to get accurate prayer times for your area.');
+            setError(t('locationPermissionDenied'));
             setLoading(false);
             return;
           }
@@ -81,7 +83,7 @@ export const NextPrayer = () => {
   if (loading) {
     return (
       <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
-        <ThemedText style={{ color: theme.text.primary }}>Loading prayer times...</ThemedText>
+        <ThemedText style={{ color: theme.text.primary }}>{t('loadingPrayerTimes')}</ThemedText>
       </ThemedView>
     );
   }
@@ -97,7 +99,7 @@ export const NextPrayer = () => {
   if (!nextPrayer) {
     return (
       <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
-        <ThemedText style={{ color: theme.text.primary }}>Unable to determine next prayer time.</ThemedText>
+        <ThemedText style={{ color: theme.text.primary }}>{t('unableToDetermineNextPrayer')}</ThemedText>
       </ThemedView>
     );
   }
@@ -105,9 +107,9 @@ export const NextPrayer = () => {
   return (
     <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
       <View style={styles.content}>
-        <ThemedText style={[styles.label, { color: theme.text.secondary }]}>Next Prayer</ThemedText>
+        <ThemedText style={[styles.label, { color: theme.text.secondary }]}>{t('nextPrayer')}</ThemedText>
         <ThemedText style={[styles.prayerName, { color: theme.primary }]}>
-          {nextPrayer.name} at {nextPrayer.location}
+          {t(nextPrayer.name.toLowerCase())} at {nextPrayer.location}
         </ThemedText>
         <ThemedText style={[styles.time, { color: theme.text.primary }]}>{nextPrayer.time}</ThemedText>
         <ThemedText style={[styles.countdown, { color: theme.text.secondary }]}>

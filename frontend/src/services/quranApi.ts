@@ -52,21 +52,37 @@ class QuranApiService {
     return dateString.split('-').reduce((acc, part) => acc + parseInt(part), 0);
   }
 
-  async getDailyVerse(): Promise<QuranVerse> {
+  // Map language codes to Quran API edition identifiers
+  private getTranslationEdition(language: string): string {
+    switch (language) {
+      case 'ar':
+        return 'ar.muyassar'; // Arabic simplified
+      case 'ur':
+        return 'ur.jalandhry'; // Urdu translation
+      case 'tr':
+        return 'tr.diyanet'; // Turkish translation
+      case 'en':
+      default:
+        return 'en.sahih'; // English Sahih International
+    }
+  }
+
+  async getDailyVerse(language: string = 'en'): Promise<QuranVerse> {
     try {
       const today = this.getCurrentDateString();
+      const cacheKeyWithLang = `${this.cacheKey}_${language}`;
       
-      // Check if we have a cached verse for today
-      const cachedData = await AsyncStorage.getItem(this.cacheKey);
+      // Check if we have a cached verse for today and this language
+      const cachedData = await AsyncStorage.getItem(cacheKeyWithLang);
       if (cachedData) {
         const parsed: CachedVerse = JSON.parse(cachedData);
         if (parsed.date === today) {
-          console.log('Using cached verse for today');
+          console.log(`Using cached verse for today (${language})`);
           return parsed.verse;
         }
       }
 
-      console.log('Fetching new verse for today');
+      console.log(`Fetching new verse for today (${language})`);
       
       // Generate deterministic random numbers based on today's date
       const seed = this.dateToSeed(today);
@@ -80,26 +96,29 @@ class QuranApiService {
       // Get a deterministic verse from this surah
       const ayah = Math.floor(this.seededRandom(seed + 1) * numberOfAyahs) + 1;
       
-      // Get both Arabic and English translations
-      const [arabicResponse, englishResponse] = await Promise.all([
+      // Get the translation edition for the specified language
+      const translationEdition = this.getTranslationEdition(language);
+      
+      // Get both Arabic and translated versions
+      const [arabicResponse, translationResponse] = await Promise.all([
         fetch(`${this.baseUrl}/ayah/${surah}:${ayah}`),
-        fetch(`${this.baseUrl}/ayah/${surah}:${ayah}/en.sahih`)
+        fetch(`${this.baseUrl}/ayah/${surah}:${ayah}/${translationEdition}`)
       ]);
 
       const arabicData: QuranResponse = await arabicResponse.json();
-      const englishData: QuranResponse = await englishResponse.json();
+      const translationData: QuranResponse = await translationResponse.json();
 
       const verse: QuranVerse = {
         ...arabicData.data,
-        translation: englishData.data.text
+        translation: translationData.data.text
       };
 
-      // Cache the verse with today's date
+      // Cache the verse with today's date and language
       const cacheData: CachedVerse = {
         verse,
         date: today
       };
-      await AsyncStorage.setItem(this.cacheKey, JSON.stringify(cacheData));
+      await AsyncStorage.setItem(cacheKeyWithLang, JSON.stringify(cacheData));
 
       return verse;
     } catch (error) {

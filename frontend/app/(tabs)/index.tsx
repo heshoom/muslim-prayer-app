@@ -9,8 +9,14 @@ import { ThemedView } from "@/src/components/shared/ThemedView";
 import moment from "moment-hijri";
 import { useSettings } from "@/src/contexts/SettingsContext";
 import { darkTheme, lightTheme } from "@/src/constants/theme";
+import { useTranslation } from "@/src/i18n";
 
 export default function HomeScreen() {
+  const { isDarkMode } = useSettings();
+  const theme = isDarkMode ? darkTheme : lightTheme;
+  const { t, getHijriMonths } = useTranslation();
+  const insets = useSafeAreaInsets();
+
   const date = new Date();
   const formattedDate = date.toLocaleDateString("en-US", {
     weekday: "long",
@@ -27,18 +33,9 @@ export default function HomeScreen() {
   const hijriMonth = hijriMoment.iMonth(); // 0-based index
   const hijriYear = hijriMoment.iYear();
   
-  // English transliteration of Hijri months
-  const hijriMonthsEn = [
-    "Muharram", "Safar", "Rabi' al-Awwal", "Rabi' al-Thani",
-    "Jumada al-Awwal", "Jumada al-Thani", "Rajab", "Sha'ban",
-    "Ramadan", "Shawwal", "Dhu al-Qi'dah", "Dhu al-Hijjah"
-  ];
-  
-  const formattedHijriDate = `${hijriDay} ${hijriMonthsEn[hijriMonth]} ${hijriYear}`;
-
-  const { isDarkMode } = useSettings();
-  const theme = isDarkMode ? darkTheme : lightTheme;
-  const insets = useSafeAreaInsets();
+  // Get localized Hijri month names from translations
+  const hijriMonths = getHijriMonths();
+  const formattedHijriDate = `${hijriDay} ${hijriMonths[hijriMonth]} ${hijriYear}`;
 
   // Calculate bottom padding to avoid tab bar overlap
   const bottomPadding = Platform.OS === "ios" ? 100 : 80; // Increased for iOS

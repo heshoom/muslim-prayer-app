@@ -29,9 +29,14 @@ export const useTranslation = () => {
     return typeof value === 'string' ? value : key;
   };
 
+  const getHijriMonths = (): string[] => {
+    const currentTranslations = translations[currentLanguage as keyof typeof translations];
+    return currentTranslations?.hijriMonths || translations.en.hijriMonths;
+  };
+
   const getCurrentLanguage = () => currentLanguage;
   
   const isRTL = () => ['ar', 'ur'].includes(currentLanguage);
 
-  return { t, getCurrentLanguage, isRTL };
+  return { t, getCurrentLanguage, isRTL, getHijriMonths };
 };

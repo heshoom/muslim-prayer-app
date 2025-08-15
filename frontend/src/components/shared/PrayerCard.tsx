@@ -4,6 +4,7 @@ import { ThemedView } from './ThemedView';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
 import { formatTime } from '@/src/utils/timeUtils';
+import { useTranslation } from '@/src/i18n';
 
 type PrayerCardProps = {
   name: string;
@@ -13,8 +14,29 @@ type PrayerCardProps = {
 export const PrayerCard = ({ name, time }: PrayerCardProps) => {
   const { isDarkMode, settings } = useSettings();
   const theme = isDarkMode ? darkTheme : lightTheme;
+  const { t } = useTranslation();
 
   const formattedTime = formatTime(time, settings.appearance.timeFormat);
+  
+  // Map English prayer names to translation keys
+  const getTranslatedName = (englishName: string) => {
+    switch (englishName.toLowerCase()) {
+      case 'fajr':
+        return t('fajr');
+      case 'sunrise':
+        return t('sunrise');
+      case 'dhuhr':
+        return t('dhuhr');
+      case 'asr':
+        return t('asr');
+      case 'maghrib':
+        return t('maghrib');
+      case 'isha':
+        return t('isha');
+      default:
+        return englishName;
+    }
+  };
 
   return (
     <ThemedView 
@@ -27,7 +49,7 @@ export const PrayerCard = ({ name, time }: PrayerCardProps) => {
       ]}
     >
       <ThemedText style={[styles.prayerName, { color: theme.text.primary }]}>
-        {name}
+        {getTranslatedName(name)}
       </ThemedText>
       <ThemedText style={[styles.prayerTime, { color: theme.text.secondary }]}>
         {formattedTime}

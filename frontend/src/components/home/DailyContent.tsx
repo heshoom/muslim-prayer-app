@@ -5,16 +5,21 @@ import { ThemedView } from '../shared/ThemedView';
 import { quranApi } from '../../services/quranApi';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
+import { useTranslation } from '@/src/i18n';
 
 export const DailyContent = () => {
   const [verse, setVerse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const { isDarkMode, settings } = useSettings();
+  const theme = isDarkMode ? darkTheme : lightTheme;
+  const { t } = useTranslation();
+
   useEffect(() => {
     const fetchVerse = async () => {
       try {
-        const data = await quranApi.getDailyVerse();
+        const data = await quranApi.getDailyVerse(settings.appearance.language);
         setVerse(data);
       } catch (error) {
         console.error('Failed to load verse:', error);
@@ -25,10 +30,7 @@ export const DailyContent = () => {
     };
 
     fetchVerse();
-  }, []);
-
-  const { isDarkMode } = useSettings();
-  const theme = isDarkMode ? darkTheme : lightTheme;
+  }, [settings.appearance.language]);
 
   if (loading) {
     return (
@@ -49,7 +51,7 @@ export const DailyContent = () => {
   return (
     <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
       <View style={styles.verseContainer}>
-        <ThemedText style={[styles.sectionTitle, { color: theme.primary }]}>Verse of the Day</ThemedText>
+        <ThemedText style={[styles.sectionTitle, { color: theme.primary }]}>{t('verseOfTheDay')}</ThemedText>
         <ThemedText style={[styles.arabicText, { color: theme.text.primary }]}>{verse?.text}</ThemedText>
         <ThemedText style={[styles.verseText, { color: theme.text.primary }]}>{verse?.translation}</ThemedText>
         <ThemedText style={[styles.verseReference, { color: theme.text.secondary }]}>
@@ -58,11 +60,11 @@ export const DailyContent = () => {
       </View>
       
       <View style={[styles.hadithContainer, { borderTopColor: theme.border }]}>
-        <ThemedText style={[styles.sectionTitle, { color: theme.primary }]}>Hadith of the Day</ThemedText>
+        <ThemedText style={[styles.sectionTitle, { color: theme.primary }]}>{t('hadithOfTheDay')}</ThemedText>
         <ThemedText style={[styles.hadithText, { color: theme.text.primary }]}>
-          &ldquo;The key to Paradise is prayer, and the key to prayer is cleanliness.&rdquo;
+          &ldquo;{t('defaultHadithText')}&rdquo;
         </ThemedText>
-        <ThemedText style={[styles.verseReference, { color: theme.text.secondary }]}>Ahmad</ThemedText>
+        <ThemedText style={[styles.verseReference, { color: theme.text.secondary }]}>{t('defaultHadithSource')}</ThemedText>
       </View>
     </ThemedView>
   );

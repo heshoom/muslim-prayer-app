@@ -39,7 +39,7 @@ export default function PrayerTimesScreen() {
 
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
-      setError('Permission to access location was denied.');
+      setError(t('permissionToAccessLocationDenied'));
       setLoading(false);
       return;
     }
@@ -64,11 +64,11 @@ export default function PrayerTimesScreen() {
           await schedulePrayerNotifications(times);
         }
       } else {
-        setError('Could not determine prayer times for your location.');
+        setError(t('couldNotDetermineLocation'));
       }
     } catch (error) {
       console.error('Location error:', error);
-      setError('Failed to get location or prayer times.');
+      setError(t('failedToGetLocation'));
     }
     setLoading(false);
   }, [schedulePrayerNotifications, settings]);
@@ -96,12 +96,12 @@ export default function PrayerTimesScreen() {
             await schedulePrayerNotifications(times);
           }
         } else {
-          setError('City not found. Please try another city.');
+          setError(t('cityNotFound'));
           setPrayerTimes(null);
         }
       } catch (error) {
         console.error('City fetch error:', error);
-        setError('Could not fetch prayer times. Please check your connection.');
+        setError(t('couldNotFetchPrayerTimes'));
         setPrayerTimes(null);
       }
       setLoading(false);
@@ -165,7 +165,7 @@ export default function PrayerTimesScreen() {
             style={[styles.searchButton, { backgroundColor: theme.primary }]} 
             onPress={handleSearch}
           >
-            <ThemedText style={styles.buttonText}>Search</ThemedText>
+            <ThemedText style={styles.buttonText}>{t('search')}</ThemedText>
           </TouchableOpacity>
         </ThemedView>
 
@@ -190,7 +190,7 @@ export default function PrayerTimesScreen() {
             </ThemedView>
           ) : prayerTimes ? (
             <ThemedView style={[styles.prayerTimesContainer, { backgroundColor: theme.surface }]}>
-              <ThemedText type="title">Prayer Times for {city}</ThemedText>
+              <ThemedText type="title">{t('prayerTimes')} for {city}</ThemedText>
               <ThemedText type="subtitle">
                 {formatDate(date, settings.appearance.showHijriDates)}
               </ThemedText>

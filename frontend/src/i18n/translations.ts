@@ -1,5 +1,18 @@
 export const translations = {
   en: {
+    // Daily Content
+    verseOfTheDay: 'Verse of the Day',
+    hadithOfTheDay: 'Hadith of the Day',
+    defaultHadithText: 'The key to Paradise is prayer, and the key to prayer is cleanliness.',
+    defaultHadithSource: 'Ahmad',
+    
+    // Hijri Months
+    hijriMonths: [
+      'Muharram', 'Safar', "Rabi' al-Awwal", "Rabi' al-Thani",
+      'Jumada al-Awwal', 'Jumada al-Thani', 'Rajab', "Sha'ban",
+      'Ramadan', 'Shawwal', 'Dhu al-Qi\'dah', 'Dhu al-Hijjah'
+    ],
+    
     // Navigation
     home: 'Home',
     prayerTimes: 'Prayer Times',
@@ -132,6 +145,7 @@ export const translations = {
     cancel: 'Cancel',
     done: 'Done',
     select: 'Select',
+    search: 'Search',
     
     // Time
     minutesBefore: 'minutes before',
@@ -140,6 +154,14 @@ export const translations = {
     settingsSaved: 'Settings Saved',
     preferencesUpdated: 'Your preferences have been updated.',
     ok: 'OK',
+    loadingPrayerTimes: 'Loading prayer times...',
+    unableToGetPrayerTimes: 'Unable to get prayer times. Please check your internet connection and try again.',
+    unableToDetermineNextPrayer: 'Unable to determine next prayer time.',
+    permissionToAccessLocationDenied: 'Permission to access location was denied.',
+    couldNotDetermineLocation: 'Could not determine prayer times for your location.',
+    failedToGetLocation: 'Failed to get location or prayer times.',
+    cityNotFound: 'City not found. Please try another city.',
+    couldNotFetchPrayerTimes: 'Could not fetch prayer times. Please check your connection.',
     
     // Picker Titles
     selectTheme: 'Select Theme',
@@ -150,6 +172,19 @@ export const translations = {
   },
   
   ar: {
+    // Daily Content
+    verseOfTheDay: 'آية اليوم',
+    hadithOfTheDay: 'حديث اليوم',
+    defaultHadithText: 'مفتاح الجنة الصلاة ومفتاح الصلاة الطهارة.',
+    defaultHadithSource: 'أحمد',
+    
+    // Hijri Months
+    hijriMonths: [
+      'محرم', 'صفر', 'ربيع الأول', 'ربيع الثاني',
+      'جمادى الأولى', 'جمادى الثانية', 'رجب', 'شعبان',
+      'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'
+    ],
+    
     // Navigation
     home: 'الرئيسية',
     prayerTimes: 'أوقات الصلاة',
@@ -262,6 +297,7 @@ export const translations = {
     cancel: 'إلغاء',
     done: 'تم',
     select: 'اختر',
+    search: 'بحث',
     
     // Time
     minutesBefore: 'دقائق قبل',
@@ -270,6 +306,14 @@ export const translations = {
     settingsSaved: 'تم حفظ الإعدادات',
     preferencesUpdated: 'تم تحديث تفضيلاتك.',
     ok: 'موافق',
+    loadingPrayerTimes: 'تحميل أوقات الصلاة...',
+    unableToGetPrayerTimes: 'غير قادر على الحصول على أوقات الصلاة. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.',
+    unableToDetermineNextPrayer: 'غير قادر على تحديد وقت الصلاة التالية.',
+    permissionToAccessLocationDenied: 'تم رفض إذن الوصول إلى الموقع.',
+    couldNotDetermineLocation: 'لا يمكن تحديد أوقات الصلاة لموقعك.',
+    failedToGetLocation: 'فشل في الحصول على الموقع أو أوقات الصلاة.',
+    cityNotFound: 'المدينة غير موجودة. يرجى تجربة مدينة أخرى.',
+    couldNotFetchPrayerTimes: 'لا يمكن جلب أوقات الصلاة. يرجى التحقق من الاتصال.',
     
     // Picker Titles
     selectTheme: 'اختر السمة',
@@ -280,6 +324,19 @@ export const translations = {
   },
   
   ur: {
+    // Daily Content
+    verseOfTheDay: 'آج کی آیت',
+    hadithOfTheDay: 'آج کی حدیث',
+    defaultHadithText: 'جنت کی چابی نماز ہے اور نماز کی چابی طہارت ہے۔',
+    defaultHadithSource: 'احمد',
+    
+    // Hijri Months
+    hijriMonths: [
+      'محرم', 'صفر', 'ربیع الاول', 'ربیع الثانی',
+      'جمادی الاولیٰ', 'جمادی الثانیہ', 'رجب', 'شعبان',
+      'رمضان', 'شوال', 'ذوالقعدہ', 'ذوالحجہ'
+    ],
+    
     // Navigation
     home: 'ہوم',
     prayerTimes: 'نماز کے اوقات',
@@ -369,6 +426,7 @@ export const translations = {
     cancel: 'منسوخ',
     done: 'مکمل',
     select: 'منتخب کریں',
+    search: 'تلاش',
     
     // Time
     minutesBefore: 'منٹ پہلے',
@@ -377,6 +435,14 @@ export const translations = {
     settingsSaved: 'سیٹنگز محفوظ ہو گئیں',
     preferencesUpdated: 'آپ کی ترجیحات اپ ڈیٹ ہو گئیں۔',
     ok: 'ٹھیک ہے',
+    loadingPrayerTimes: 'نماز کے اوقات لوڈ ہو رہے ہیں...',
+    unableToGetPrayerTimes: 'نماز کے اوقات حاصل کرنے سے قاصر۔ براہ کرم اپنا انٹرنیٹ کنکشن چیک کریں اور دوبارہ کوشش کریں۔',
+    unableToDetermineNextPrayer: 'اگلی نماز کا وقت طے کرنے سے قاصر۔',
+    permissionToAccessLocationDenied: 'مقام تک رسائی کی اجازت مسترد کر دی گئی۔',
+    couldNotDetermineLocation: 'آپ کے مقام کے لیے نماز کے اوقات طے نہیں کر سکے۔',
+    failedToGetLocation: 'مقام یا نماز کے اوقات حاصل کرنے میں ناکام۔',
+    cityNotFound: 'شہر نہیں ملا۔ برائے کرم کوئی اور شہر آزمائیں۔',
+    couldNotFetchPrayerTimes: 'نماز کے اوقات لانے سے قاصر۔ برائے کرم اپنا کنکشن چیک کریں۔',
     
     // Picker Titles
     selectTheme: 'تھیم منتخب کریں',
@@ -387,6 +453,19 @@ export const translations = {
   },
   
   tr: {
+    // Daily Content
+    verseOfTheDay: 'Günün Ayeti',
+    hadithOfTheDay: 'Günün Hadisi',
+    defaultHadithText: 'Cennetin anahtarı namazdır, namazın anahtarı da temizliktir.',
+    defaultHadithSource: 'Ahmed',
+    
+    // Hijri Months
+    hijriMonths: [
+      'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir',
+      'Cemaziyelevvel', 'Cemaziyelahir', 'Receb', 'Şaban',
+      'Ramazan', 'Şevval', 'Zilkade', 'Zilhicce'
+    ],
+    
     // Navigation
     home: 'Ana Sayfa',
     prayerTimes: 'Namaz Vakitleri',
@@ -476,6 +555,7 @@ export const translations = {
     cancel: 'İptal',
     done: 'Tamam',
     select: 'Seç',
+    search: 'Ara',
     
     // Time
     minutesBefore: 'dakika önce',
@@ -484,6 +564,14 @@ export const translations = {
     settingsSaved: 'Ayarlar Kaydedildi',
     preferencesUpdated: 'Tercihleriniz güncellendi.',
     ok: 'Tamam',
+    loadingPrayerTimes: 'Namaz vakitleri yükleniyor...',
+    unableToGetPrayerTimes: 'Namaz vakitlerini alamıyor. Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin.',
+    unableToDetermineNextPrayer: 'Sonraki namaz vakti belirlenemedi.',
+    permissionToAccessLocationDenied: 'Konuma erişim izni reddedildi.',
+    couldNotDetermineLocation: 'Konumunuz için namaz vakitleri belirlenemedi.',
+    failedToGetLocation: 'Konum veya namaz vakitleri alınamadı.',
+    cityNotFound: 'Şehir bulunamadı. Lütfen başka bir şehir deneyin.',
+    couldNotFetchPrayerTimes: 'Namaz vakitleri getirilemedi. Lütfen bağlantınızı kontrol edin.',
     
     // Picker Titles
     selectTheme: 'Tema Seç',
