@@ -7,125 +7,46 @@ import {
   Platform,
   ScrollView
 } from 'react-native';
-import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PrayerCard } from '@/src/components/shared/PrayerCard';
-import { PrayerTimes } from '@/src/types/prayerTimes';
-import { prayerTimesApi } from '@/src/services/prayerTimesApi';
 import { ThemedView } from '@/src/components/shared/ThemedView';
 import { ThemedText } from '@/src/components/shared/ThemedText';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { useNotifications } from '@/src/contexts/NotificationContext';
+import { usePrayerTimes } from '@/src/contexts/PrayerTimesContext';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
 import { useTranslation } from '@/src/i18n';
 import { formatDate } from '@/src/utils/timeUtils';
 
 export default function PrayerTimesScreen() {
-  const { settings } = useSettings();
+  const { settings, updateSettings } = useSettings();
   const { schedulePrayerNotifications } = useNotifications();
-  const [prayerTimes, setPrayerTimes] = useState<PrayerTimes | null>(null);
-  const [city, setCity] = useState(settings.location.city || 'New York');
+  const { prayerTimes, loading, error, date, currentLocation, refreshPrayerTimes } = usePrayerTimes();
   const [inputCity, setInputCity] = useState(settings.location.city || 'New York');
-  const [date, setDate] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [useLocation, setUseLocation] = useState(settings.location.useGPS);
 
-  // Handler for the "Use My Location" button
-  const handleGeoLocation = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    setPrayerTimes(null);
-
-    let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      setError(t('permissionToAccessLocationDenied'));
-      setLoading(false);
-      return;
-    }
-
-    try {
-      let location = await Location.getCurrentPositionAsync({});
-      const { latitude, longitude } = location.coords;
-
-      const data = await prayerTimesApi.getPrayerTimesByCoordinates(latitude, longitude, settings);
-
-      if (data.code === 200) {
-        const times = data.data.timings;
-        setPrayerTimes(times);
-        setDate(data.data.date.readable);
-        const timezone = data.data.meta.timezone;
-        const locationName = timezone.split('/')[1].replace(/_/g, ' ');
-        setCity(locationName);
-        setInputCity(locationName);
-        
-        // Schedule notifications for prayer times
-        if (settings.notifications.enabled) {
-          await schedulePrayerNotifications(times);
-        }
-      } else {
-        setError(t('couldNotDetermineLocation'));
-      }
-    } catch (error) {
-      console.error('Location error:', error);
-      setError(t('failedToGetLocation'));
-    }
-    setLoading(false);
-  }, [schedulePrayerNotifications, settings]);
-
-  // Effect for fetching prayer times by city name
+  // Update input city when settings change
   useEffect(() => {
-    if (!city) {
-      setLoading(false);
-      return;
-    }
+    setInputCity(settings.location.city || 'New York');
+  }, [settings.location.city]);
 
-    const fetchPrayerTimesByCity = async () => {
-      setLoading(true);
-      setError(null);
-      setPrayerTimes(null);
-      try {
-        const data = await prayerTimesApi.getPrayerTimesByCity(city, settings);
-        if (data.code === 200) {
-          const times = data.data.timings;
-          setPrayerTimes(times);
-          setDate(data.data.date.readable);
-          
-          // Schedule notifications for prayer times
-          if (settings.notifications.enabled) {
-            await schedulePrayerNotifications(times);
-          }
-        } else {
-          setError(t('cityNotFound'));
-          setPrayerTimes(null);
-        }
-      } catch (error) {
-        console.error('City fetch error:', error);
-        setError(t('couldNotFetchPrayerTimes'));
-        setPrayerTimes(null);
-      }
-      setLoading(false);
-    };
-
-    fetchPrayerTimesByCity();
-  }, [city, settings.prayer.calculationMethod, settings.prayer.madhab, schedulePrayerNotifications, settings]);
-
-  // Effect to auto-use GPS when settings change
+  // Schedule notifications when prayer times are available
   useEffect(() => {
-    if (settings.location.useGPS && !useLocation) {
-      setUseLocation(true);
-      handleGeoLocation();
-    } else if (!settings.location.useGPS && settings.location.city !== city) {
-      setCity(settings.location.city);
-      setInputCity(settings.location.city);
+    if (prayerTimes && settings.notifications.enabled) {
+      schedulePrayerNotifications(prayerTimes);
     }
-  }, [settings.location.useGPS, settings.location.city, city, useLocation, handleGeoLocation]);
+  }, [prayerTimes, settings.notifications.enabled, schedulePrayerNotifications]);
 
   // Handler for the search button
   const handleSearch = () => {
-    if (inputCity.trim()) {
-      setCity(inputCity);
+    if (inputCity.trim() && inputCity.trim() !== settings.location.city) {
+      updateSettings('location', 'city', inputCity.trim());
+      updateSettings('location', 'useGPS', false);
     }
+  };
+
+  // Handler for GPS location
+  const handleGeoLocation = () => {
+    updateSettings('location', 'useGPS', true);
   };
 
   const { isDarkMode } = useSettings();
@@ -181,6 +102,18 @@ export default function PrayerTimesScreen() {
           </ThemedText>
         </TouchableOpacity>
 
+        <TouchableOpacity 
+          style={[styles.refreshButton, { 
+            backgroundColor: theme.primary 
+          }]} 
+          onPress={refreshPrayerTimes}
+          disabled={loading}
+        >
+          <ThemedText style={[styles.buttonText, { opacity: loading ? 0.6 : 1 }]}>
+            {loading ? t('refreshing') || 'Refreshing...' : t('refresh') || 'Refresh'}
+          </ThemedText>
+        </TouchableOpacity>
+
         <ThemedView style={styles.mainContent}>
           {loading ? (
             <ActivityIndicator size="large" color={theme.primary} />
@@ -190,7 +123,7 @@ export default function PrayerTimesScreen() {
             </ThemedView>
           ) : prayerTimes ? (
             <ThemedView style={[styles.prayerTimesContainer, { backgroundColor: theme.surface }]}>
-              <ThemedText type="title">{t('prayerTimes')} for {city}</ThemedText>
+              <ThemedText type="title">{t('prayerTimes')} for {currentLocation}</ThemedText>
               <ThemedText type="subtitle">
                 {formatDate(date, settings.appearance.showHijriDates)}
               </ThemedText>
@@ -280,6 +213,13 @@ const styles = StyleSheet.create({
   locationButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  refreshButton: {
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    marginBottom: 20,
   },
   mainContent: {
     flex: 1,

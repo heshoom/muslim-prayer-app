@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SettingsProvider, useSettings } from '@/src/contexts/SettingsContext';
 import { NotificationProvider } from '@/src/contexts/NotificationContext';
+import { PrayerTimesProvider } from '@/src/contexts/PrayerTimesContext';
 
 function RootLayoutNav() {
   const { isDarkMode } = useSettings();
@@ -35,7 +36,9 @@ export default function RootLayout() {
   return (
     <SettingsProvider>
       <NotificationProvider>
-        <RootLayoutNav />
+        <PrayerTimesProvider>
+          <RootLayoutNav />
+        </PrayerTimesProvider>
       </NotificationProvider>
     </SettingsProvider>
   );

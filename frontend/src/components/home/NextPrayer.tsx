@@ -2,83 +2,49 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '../shared/ThemedText';
 import { ThemedView } from '../shared/ThemedView';
-import { prayerTimesApi } from '../../services/prayerTimesApi';
 import { getNextPrayer, NextPrayerInfo } from '../../utils/prayerTimeUtils';
-import * as Location from 'expo-location';
 import { useSettings } from '@/src/contexts/SettingsContext';
+import { usePrayerTimes } from '@/src/contexts/PrayerTimesContext';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
 import { useTranslation } from '@/src/i18n';
 
 export const NextPrayer = () => {
   const [nextPrayer, setNextPrayer] = useState<NextPrayerInfo | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [currentLocation, setCurrentLocation] = useState<string>('');
   const { isDarkMode, settings } = useSettings();
+  const { prayerTimes, loading, error, currentLocation } = usePrayerTimes();
   const theme = isDarkMode ? darkTheme : lightTheme;
   const { t } = useTranslation();
 
+  // Calculate next prayer when prayer times change
   useEffect(() => {
-    const fetchPrayerTimes = async () => {
+    if (prayerTimes && currentLocation) {
       try {
-        setError(null);
-        setLoading(true);
-
-        let response;
-        let locationName = '';
-        
-        // Use the same location method as the PrayerTimes screen
-        if (settings.location.useGPS) {
-          // Use GPS coordinates
-          let { status } = await Location.requestForegroundPermissionsAsync();
-          if (status !== 'granted') {
-            setError(t('locationPermissionDenied'));
-            setLoading(false);
-            return;
-          }
-
-          const location = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          });
-          
-          const { latitude, longitude } = location.coords;
-          response = await prayerTimesApi.getPrayerTimesByCoordinates(latitude, longitude, settings);
-          
-          // Extract location name from API response
-          if (response.code === 200 && response.data.meta && response.data.meta.timezone) {
-            const timezone = response.data.meta.timezone;
-            locationName = timezone.split('/')[1]?.replace(/_/g, ' ') || 'Your Location';
-          } else {
-            locationName = 'Your Location';
-          }
-        } else {
-          // Use city name
-          const city = settings.location.city || 'New York';
-          response = await prayerTimesApi.getPrayerTimesByCity(city, settings);
-          locationName = city;
-        }
-        
-        setCurrentLocation(locationName);
-        
-        if (response.code === 200) {
-          const nextPrayerInfo = getNextPrayer(response.data.timings, settings.appearance.timeFormat, locationName);
-          setNextPrayer(nextPrayerInfo);
-        } else {
-          setError('Unable to fetch prayer times. Please try again later.');
-        }
+        const nextPrayerInfo = getNextPrayer(prayerTimes, settings.appearance.timeFormat, currentLocation);
+        setNextPrayer(nextPrayerInfo);
       } catch (error) {
-        console.error('Error fetching prayer times:', error);
-        setError('Unable to get prayer times. Please check your internet connection and try again.');
-      } finally {
-        setLoading(false);
+        console.error('Error calculating next prayer:', error);
+        setNextPrayer(null);
       }
-    };
+    } else {
+      setNextPrayer(null);
+    }
+  }, [prayerTimes, currentLocation, settings.appearance.timeFormat]);
 
-    fetchPrayerTimes();
-    // Update every minute and when settings change
-    const interval = setInterval(fetchPrayerTimes, 60000);
+  // Update countdown every minute
+  useEffect(() => {
+    if (!prayerTimes || !currentLocation) return;
+
+    const interval = setInterval(() => {
+      try {
+        const nextPrayerInfo = getNextPrayer(prayerTimes, settings.appearance.timeFormat, currentLocation);
+        setNextPrayer(nextPrayerInfo);
+      } catch (error) {
+        console.error('Error updating next prayer countdown:', error);
+      }
+    }, 60000); // Update every minute
+
     return () => clearInterval(interval);
-  }, [settings.prayer.calculationMethod, settings.prayer.madhab, settings.appearance.timeFormat, settings.location.useGPS, settings.location.city]);
+  }, [prayerTimes, currentLocation, settings.appearance.timeFormat]);
 
   if (loading) {
     return (
