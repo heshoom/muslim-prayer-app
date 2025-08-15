@@ -10,6 +10,7 @@ import {
   Platform,
   Alert,
   I18nManager,
+  Linking,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FontAwesome5 } from "@expo/vector-icons";
@@ -450,6 +451,80 @@ const Settings = () => {
             )}
           </View>
 
+          {/* Support Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <FontAwesome5 name="question-circle" size={20} color="#2980b9" />
+              <Text style={styles.sectionTitle}>{t("support")}</Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.settingItem, styles.linkItem]}
+              onPress={() => Linking.openURL("mailto:support@heshoom.com")}
+            >
+              <View style={styles.settingHeader}>
+                <View style={styles.settingTextContainer}>
+                  <Text style={styles.settingTitle}>{t("contactSupport")}</Text>
+                  <Text style={styles.settingDescription}>
+                    Get help with the app or report issues
+                  </Text>
+                </View>
+                <FontAwesome5 
+                  name="external-link-alt" 
+                  size={16} 
+                  color={theme.text.secondary} 
+                />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.settingItem, styles.linkItem]}
+              onPress={() => Linking.openURL("https://heshoom.com/islamic-pro/privacy")}
+            >
+              <View style={styles.settingHeader}>
+                <View style={styles.settingTextContainer}>
+                  <Text style={styles.settingTitle}>{t("privacyPolicy")}</Text>
+                  <Text style={styles.settingDescription}>
+                    Read our privacy policy
+                  </Text>
+                </View>
+                <FontAwesome5 
+                  name="external-link-alt" 
+                  size={16} 
+                  color={theme.text.secondary} 
+                />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.settingItem, styles.linkItem]}
+              onPress={() => Linking.openURL("https://heshoom.com/islamic-pro/terms")}
+            >
+              <View style={styles.settingHeader}>
+                <View style={styles.settingTextContainer}>
+                  <Text style={styles.settingTitle}>{t("termsOfService")}</Text>
+                  <Text style={styles.settingDescription}>
+                    Read our terms of service
+                  </Text>
+                </View>
+                <FontAwesome5 
+                  name="external-link-alt" 
+                  size={16} 
+                  color={theme.text.secondary} 
+                />
+              </View>
+            </TouchableOpacity>
+
+            <View style={[styles.settingItem, styles.infoItem]}>
+              <View style={styles.settingTextContainer}>
+                <Text style={styles.settingTitle}>{t("appVersion")}</Text>
+                <Text style={styles.settingDescription}>
+                  Islamic Pro v1.0.0
+                </Text>
+              </View>
+            </View>
+          </View>
+
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
             <Text style={styles.saveButtonText}>{t("saveChanges")}</Text>
           </TouchableOpacity>
@@ -546,6 +621,13 @@ const getStyles = (theme, isDarkMode, isRTL = false) =>
     },
     pickerItem: {
       paddingVertical: Platform.OS === "ios" ? 8 : 8,
+    },
+    linkItem: {
+      paddingVertical: Platform.OS === "ios" ? 12 : 14,
+    },
+    infoItem: {
+      paddingVertical: Platform.OS === "ios" ? 12 : 14,
+      backgroundColor: isDarkMode ? theme.background : theme.surface,
     },
     saveButton: {
       marginHorizontal: 16,

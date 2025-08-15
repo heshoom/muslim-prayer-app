@@ -169,6 +169,13 @@ export const translations = {
     selectTimeFormat: 'Select Time Format',
     selectCalculationMethod: 'Select Calculation Method',
     selectMadhab: 'Select Madhab',
+    
+    // Support
+    support: 'Support',
+    contactSupport: 'Contact Support',
+    privacyPolicy: 'Privacy Policy',
+    termsOfService: 'Terms of Service',
+    appVersion: 'App Version',
   },
   
   ar: {
@@ -321,6 +328,13 @@ export const translations = {
     selectTimeFormat: 'اختر تنسيق الوقت',
     selectCalculationMethod: 'اختر طريقة الحساب',
     selectMadhab: 'اختر المذهب',
+    
+    // Support
+    support: 'الدعم',
+    contactSupport: 'اتصل بالدعم',
+    privacyPolicy: 'سياسة الخصوصية',
+    termsOfService: 'شروط الخدمة',
+    appVersion: 'إصدار التطبيق',
   },
   
   ur: {
@@ -450,6 +464,13 @@ export const translations = {
     selectTimeFormat: 'وقت کا فارمیٹ منتخب کریں',
     selectCalculationMethod: 'حساب کا طریقہ منتخب کریں',
     selectMadhab: 'مذہب منتخب کریں',
+    
+    // Support
+    support: 'سپورٹ',
+    contactSupport: 'سپورٹ سے رابطہ کریں',
+    privacyPolicy: 'پرائیویسی پالیسی',
+    termsOfService: 'خدمات کی شرائط',
+    appVersion: 'ایپ ورژن',
   },
   
   tr: {
@@ -579,5 +600,12 @@ export const translations = {
     selectTimeFormat: 'Saat Formatı Seç',
     selectCalculationMethod: 'Hesaplama Yöntemi Seç',
     selectMadhab: 'Mezhep Seç',
+    
+    // Support
+    support: 'Destek',
+    contactSupport: 'Destekle İletişim',
+    privacyPolicy: 'Gizlilik Politikası',
+    termsOfService: 'Hizmet Şartları',
+    appVersion: 'Uygulama Sürümü',
   },
 };

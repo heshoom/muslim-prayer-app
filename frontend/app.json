@@ -10,7 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.heshoom.islamicpro"
+      "bundleIdentifier": "com.heshoom.islamicpro",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -57,8 +60,22 @@
         "qibla",
         "quran",
         "islam",
+        "pro",
+        "islamic",
+        "prayer",
+        "muslim",
+        "qibla",
+        "quran",
+        "islam",
         "pro"
-      ]
+      ],
+      "supportUrl": "mailto:support@heshoom.com",
+      "privacyPolicyUrl": "https://heshoom.com/islamic-pro/privacy",
+      "termsOfServiceUrl": "https://heshoom.com/islamic-pro/terms",
+      "router": {},
+      "eas": {
+        "projectId": "d645d17a-5c8b-44a3-b079-0ce0fbe1e6d9"
+      }
     }
   }
 }
