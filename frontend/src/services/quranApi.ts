@@ -55,12 +55,10 @@ class QuranApiService {
   // Map language codes to Quran API edition identifiers
   private getTranslationEdition(language: string): string {
     switch (language) {
-      case 'ar':
-        return 'ar.muyassar'; // Arabic simplified
       case 'ur':
         return 'ur.jalandhry'; // Urdu translation
       case 'tr':
-        return 'tr.diyanet'; // Turkish translation
+        return 'tr.vakfi'; // Turkish translation (Diyanet Vakfı - more accurate)
       case 'en':
       default:
         return 'en.sahih'; // English Sahih International
@@ -96,22 +94,34 @@ class QuranApiService {
       // Get a deterministic verse from this surah
       const ayah = Math.floor(this.seededRandom(seed + 1) * numberOfAyahs) + 1;
       
-      // Get the translation edition for the specified language
-      const translationEdition = this.getTranslationEdition(language);
+      let verse: QuranVerse;
       
-      // Get both Arabic and translated versions
-      const [arabicResponse, translationResponse] = await Promise.all([
-        fetch(`${this.baseUrl}/ayah/${surah}:${ayah}`),
-        fetch(`${this.baseUrl}/ayah/${surah}:${ayah}/${translationEdition}`)
-      ]);
+      if (language === 'ar') {
+        // For Arabic, only fetch the Arabic text without translation
+        const arabicResponse = await fetch(`${this.baseUrl}/ayah/${surah}:${ayah}`);
+        const arabicData: QuranResponse = await arabicResponse.json();
+        
+        verse = {
+          ...arabicData.data,
+          translation: undefined // No translation needed for Arabic
+        };
+      } else {
+        // For other languages, get both Arabic and translated versions
+        const translationEdition = this.getTranslationEdition(language);
+        
+        const [arabicResponse, translationResponse] = await Promise.all([
+          fetch(`${this.baseUrl}/ayah/${surah}:${ayah}`),
+          fetch(`${this.baseUrl}/ayah/${surah}:${ayah}/${translationEdition}`)
+        ]);
 
-      const arabicData: QuranResponse = await arabicResponse.json();
-      const translationData: QuranResponse = await translationResponse.json();
+        const arabicData: QuranResponse = await arabicResponse.json();
+        const translationData: QuranResponse = await translationResponse.json();
 
-      const verse: QuranVerse = {
-        ...arabicData.data,
-        translation: translationData.data.text
-      };
+        verse = {
+          ...arabicData.data,
+          translation: translationData.data.text
+        };
+      }
 
       // Cache the verse with today's date and language
       const cacheData: CachedVerse = {

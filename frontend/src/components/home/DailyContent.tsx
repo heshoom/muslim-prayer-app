@@ -52,10 +52,17 @@ export const DailyContent = () => {
     <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
       <View style={styles.verseContainer}>
         <ThemedText style={[styles.sectionTitle, { color: theme.primary }]}>{t('verseOfTheDay')}</ThemedText>
+        
+        {/* Always show the Arabic text */}
         <ThemedText style={[styles.arabicText, { color: theme.text.primary }]}>{verse?.text}</ThemedText>
-        <ThemedText style={[styles.verseText, { color: theme.text.primary }]}>{verse?.translation}</ThemedText>
+        
+        {/* Only show translation if language is NOT Arabic and translation exists */}
+        {settings.appearance.language !== 'ar' && verse?.translation && (
+          <ThemedText style={[styles.verseText, { color: theme.text.primary }]}>{verse.translation}</ThemedText>
+        )}
+        
         <ThemedText style={[styles.verseReference, { color: theme.text.secondary }]}>
-          Surah {verse?.surah.englishName} {verse?.surah.number}:{verse?.number}
+          Surah {verse?.surah.englishName} {verse?.surah.number}:{verse?.numberInSurah}
         </ThemedText>
       </View>
       

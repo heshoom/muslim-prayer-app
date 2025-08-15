@@ -177,7 +177,7 @@ const Settings = () => {
                             { color: theme.text.inverse },
                           ]}
                         >
-                          🎵 Test Athan Sound
+                          Test Athan Sound
                         </Text>
                       </TouchableOpacity>
                     </View>
