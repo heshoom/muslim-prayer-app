@@ -42,14 +42,22 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "privacy": "unlisted",
     "description": "A comprehensive Islamic prayer times app with notifications, Qibla direction, and mosque finder.",
-    "keywords": ["prayer", "islam", "muslim", "qibla", "mosque", "islamic"],
+    "keywords": [
+      "prayer",
+      "islam",
+      "muslim",
+      "qibla",
+      "mosque",
+      "islamic"
+    ],
     "primaryColor": "#2980b9"
   }
 }
