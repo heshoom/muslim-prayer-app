@@ -14,7 +14,7 @@ export const DailyContent = () => {
   useEffect(() => {
     const fetchVerse = async () => {
       try {
-        const data = await quranApi.getRandomVerse();
+        const data = await quranApi.getDailyVerse();
         setVerse(data);
       } catch (error) {
         console.error('Failed to load verse:', error);
