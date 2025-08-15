@@ -1,23 +1,23 @@
 {
   "expo": {
-    "name": "Muslim Prayer Times",
-    "slug": "muslim-prayer-times",
+    "name": "Islamic Pro",
+    "slug": "islamic-pro",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "muslim-prayer-times",
+    "scheme": "islamic-pro",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.muslimprayer.times"
+      "bundleIdentifier": "com.heshoom.islamicpro"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.muslimprayer.times",
+      "package": "com.heshoom.islamicpro",
       "edgeToEdgeEnabled": true
     },
     "web": {
@@ -49,14 +49,15 @@
       "typedRoutes": true
     },
     "extra": {
-      "description": "A comprehensive Islamic prayer times app with notifications, Qibla direction, and mosque finder.",
+      "description": "Islamic Pro - A comprehensive Islamic companion app with prayer times, Qibla direction, and daily spiritual content.",
       "keywords": [
+        "islamic",
         "prayer",
-        "islam",
         "muslim",
         "qibla",
-        "mosque",
-        "islamic"
+        "quran",
+        "islam",
+        "pro"
       ]
     }
   }
