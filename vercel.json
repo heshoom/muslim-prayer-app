@@ -22,6 +22,5 @@
       "src": "/(.*)",
       "dest": "/frontend/dist/$1"
     }
-  ],
-  "buildCommand": "cd frontend && npx expo export --platform web"
+  ]
 }
