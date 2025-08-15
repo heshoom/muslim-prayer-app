@@ -8,6 +8,11 @@ const LOCAL_IP = '192.168.1.211'; // Your computer's local IP address
 
 const getApiUrl = () => {
   if (__DEV__) {
+    // Always use production API in development for now
+    // since local backend might not be running
+    return 'https://muslim-prayer-app-9oud.vercel.app/api';
+    
+    /* Uncomment this if you want to use local backend in development:
     if (Platform.OS === 'web') {
       return 'http://localhost:3000/api';
     }
@@ -17,6 +22,7 @@ const getApiUrl = () => {
     }
     // For iOS simulator and real devices in development
     return `http://${LOCAL_IP}:3000/api`;
+    */
   }
   // Production URL
   return 'https://muslim-prayer-app-9oud.vercel.app/api';
