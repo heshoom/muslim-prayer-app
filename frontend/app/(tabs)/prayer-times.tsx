@@ -145,7 +145,7 @@ export default function PrayerTimesScreen() {
         ]}
       >
         <ThemedView style={styles.header}>
-          <ThemedText style={[styles.title, { color: theme.primary }]}>{t('muslimPrayerTimes')}</ThemedText>
+            <ThemedText style={[styles.title, { color: theme.primary, paddingTop: 20 }]}>{t('muslimPrayerTimes')}</ThemedText>
           <ThemedText type="subtitle">{t('enterCityOrLocation')}</ThemedText>
         </ThemedView>
 

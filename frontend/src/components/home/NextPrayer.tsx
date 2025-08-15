@@ -12,29 +12,54 @@ export const NextPrayer = () => {
   const [nextPrayer, setNextPrayer] = useState<NextPrayerInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { isDarkMode } = useSettings();
+  const [currentLocation, setCurrentLocation] = useState<string>('');
+  const { isDarkMode, settings } = useSettings();
   const theme = isDarkMode ? darkTheme : lightTheme;
 
   useEffect(() => {
     const fetchPrayerTimes = async () => {
       try {
         setError(null);
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setError('Please enable location services to get accurate prayer times for your area.');
-          setLoading(false);
-          return;
-        }
+        setLoading(true);
 
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
+        let response;
+        let locationName = '';
         
-        const { latitude, longitude } = location.coords;
-        const response = await prayerTimesApi.getPrayerTimesByCoordinates(latitude, longitude);
+        // Use the same location method as the PrayerTimes screen
+        if (settings.location.useGPS) {
+          // Use GPS coordinates
+          let { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            setError('Please enable location services to get accurate prayer times for your area.');
+            setLoading(false);
+            return;
+          }
+
+          const location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+          
+          const { latitude, longitude } = location.coords;
+          response = await prayerTimesApi.getPrayerTimesByCoordinates(latitude, longitude, settings);
+          
+          // Extract location name from API response
+          if (response.code === 200 && response.data.meta && response.data.meta.timezone) {
+            const timezone = response.data.meta.timezone;
+            locationName = timezone.split('/')[1]?.replace(/_/g, ' ') || 'Your Location';
+          } else {
+            locationName = 'Your Location';
+          }
+        } else {
+          // Use city name
+          const city = settings.location.city || 'New York';
+          response = await prayerTimesApi.getPrayerTimesByCity(city, settings);
+          locationName = city;
+        }
+        
+        setCurrentLocation(locationName);
         
         if (response.code === 200) {
-          const nextPrayerInfo = getNextPrayer(response.data.timings);
+          const nextPrayerInfo = getNextPrayer(response.data.timings, settings.appearance.timeFormat, locationName);
           setNextPrayer(nextPrayerInfo);
         } else {
           setError('Unable to fetch prayer times. Please try again later.');
@@ -48,10 +73,10 @@ export const NextPrayer = () => {
     };
 
     fetchPrayerTimes();
-    // Update every minute
+    // Update every minute and when settings change
     const interval = setInterval(fetchPrayerTimes, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [settings.prayer.calculationMethod, settings.prayer.madhab, settings.appearance.timeFormat, settings.location.useGPS, settings.location.city]);
 
   if (loading) {
     return (
@@ -81,7 +106,9 @@ export const NextPrayer = () => {
     <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
       <View style={styles.content}>
         <ThemedText style={[styles.label, { color: theme.text.secondary }]}>Next Prayer</ThemedText>
-        <ThemedText style={[styles.prayerName, { color: theme.primary }]}>{nextPrayer.name}</ThemedText>
+        <ThemedText style={[styles.prayerName, { color: theme.primary }]}>
+          {nextPrayer.name} at {nextPrayer.location}
+        </ThemedText>
         <ThemedText style={[styles.time, { color: theme.text.primary }]}>{nextPrayer.time}</ThemedText>
         <ThemedText style={[styles.countdown, { color: theme.text.secondary }]}>
           in {nextPrayer.remainingTime.hours} hours {nextPrayer.remainingTime.minutes} minutes

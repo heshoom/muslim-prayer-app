@@ -6,6 +6,7 @@ export type SettingsType = {
   notifications: {
     enabled: boolean;
     adhan: boolean;
+    athanSound: string;
     vibrate: boolean;
     prePrayer: boolean;
     prePrayerTime: number;
@@ -38,6 +39,7 @@ const defaultSettings: SettingsType = {
   notifications: {
     enabled: true,
     adhan: true,
+    athanSound: 'makkah',
     vibrate: true,
     prePrayer: false,
     prePrayerTime: 15,
