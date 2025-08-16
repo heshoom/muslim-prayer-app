@@ -159,6 +159,12 @@ export const translations = {
     search: 'Search',
     refresh: 'Refresh',
     refreshing: 'Refreshing...',
+    pleaseEnterCityName: 'Please enter a city name',
+    invalidCityName: 'City not found. Please try a different city.',
+    validationError: 'Error validating city name',
+    popularCities: 'Popular Cities',
+    searching: 'Searching...',
+    invalidLocation: 'Invalid Location',
     
     // Time
     minutesBefore: 'minutes before',
@@ -331,6 +337,12 @@ export const translations = {
     search: 'بحث',
     refresh: 'تحديث',
     refreshing: 'جاري التحديث...',
+    pleaseEnterCityName: 'يرجى إدخال اسم المدينة',
+    invalidCityName: 'المدينة غير موجودة. يرجى تجربة مدينة أخرى.',
+    validationError: 'خطأ في التحقق من اسم المدينة',
+    popularCities: 'المدن الشائعة',
+    searching: 'جاري البحث...',
+    invalidLocation: 'موقع غير صالح',
     
     // Time
     minutesBefore: 'دقائق قبل',
@@ -489,6 +501,12 @@ export const translations = {
     search: 'تلاش',
     refresh: 'ریفریش',
     refreshing: 'ریفریش ہو رہا ہے...',
+    pleaseEnterCityName: 'برائے کرم شہر کا نام داخل کریں',
+    invalidCityName: 'شہر نہیں ملا۔ برائے کرم کوئی اور شہر آزمائیں۔',
+    validationError: 'شہر کے نام کی تصدیق میں خرابی',
+    popularCities: 'مشہور شہر',
+    searching: 'تلاش کر رہے ہیں...',
+    invalidLocation: 'غلط مقام',
     
     // Time
     minutesBefore: 'منٹ پہلے',
@@ -647,6 +665,12 @@ export const translations = {
     search: 'Ara',
     refresh: 'Yenile',
     refreshing: 'Yenileniyor...',
+    pleaseEnterCityName: 'Lütfen şehir adını girin',
+    invalidCityName: 'Şehir bulunamadı. Lütfen başka bir şehir deneyin.',
+    validationError: 'Şehir adı doğrulama hatası',
+    popularCities: 'Popüler Şehirler',
+    searching: 'Aranıyor...',
+    invalidLocation: 'Geçersiz Konum',
     
     // Time
     minutesBefore: 'dakika önce',

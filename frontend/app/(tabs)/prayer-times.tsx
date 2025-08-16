@@ -1,17 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   ActivityIndicator,
   Platform,
-  ScrollView
+  ScrollView,
+  Alert
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PrayerCard } from '@/src/components/shared/PrayerCard';
 import { ThemedView } from '@/src/components/shared/ThemedView';
 import { ThemedText } from '@/src/components/shared/ThemedText';
+import { LocationSearch } from '@/src/components/shared/LocationSearch';
 import FacebookStyleTransition from '@/src/components/shared/FacebookStyleTransition';
+import { LocationSuggestion } from '@/src/services/locationValidationService';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { useNotifications } from '@/src/contexts/NotificationContext';
 import { usePrayerTimes } from '@/src/contexts/PrayerTimesContext';
@@ -23,12 +25,10 @@ export default function PrayerTimesScreen() {
   const { settings, updateSettings } = useSettings();
   const { schedulePrayerNotifications } = useNotifications();
   const { prayerTimes, loading, error, date, currentLocation, refreshPrayerTimes } = usePrayerTimes();
-  const [inputCity, setInputCity] = useState(settings.location.city || 'New York');
-
-  // Update input city when settings change
-  useEffect(() => {
-    setInputCity(settings.location.city || 'New York');
-  }, [settings.location.city]);
+  const { isDarkMode } = useSettings();
+  const theme = isDarkMode ? darkTheme : lightTheme;
+  const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   // Schedule notifications when prayer times are available
   useEffect(() => {
@@ -37,23 +37,25 @@ export default function PrayerTimesScreen() {
     }
   }, [prayerTimes, settings.notifications.enabled, schedulePrayerNotifications]);
 
-  // Handler for the search button
-  const handleSearch = () => {
-    if (inputCity.trim() && inputCity.trim() !== settings.location.city) {
-      updateSettings('location', 'city', inputCity.trim());
-      updateSettings('location', 'useGPS', false);
-    }
-  };
+  // Handler for location selection from LocationSearch component
+  const handleLocationSelect = useCallback((location: LocationSuggestion) => {
+    updateSettings('location', 'city', location.name);
+    updateSettings('location', 'useGPS', false);
+  }, [updateSettings]);
+
+  // Handler for validation errors from LocationSearch component
+  const handleValidationError = useCallback((errorMessage: string) => {
+    Alert.alert(
+      t('invalidLocation') || 'Invalid Location',
+      errorMessage,
+      [{ text: t('ok') || 'OK' }]
+    );
+  }, [t]);
 
   // Handler for GPS location
   const handleGeoLocation = () => {
     updateSettings('location', 'useGPS', true);
   };
-
-  const { isDarkMode } = useSettings();
-  const theme = isDarkMode ? darkTheme : lightTheme;
-  const insets = useSafeAreaInsets();
-  const { t } = useTranslation();
 
   return (
     <FacebookStyleTransition direction="left">
@@ -72,25 +74,12 @@ export default function PrayerTimesScreen() {
           <ThemedText type="subtitle">{t('enterCityOrLocation')}</ThemedText>
         </ThemedView>
 
-        <ThemedView style={styles.searchForm}>
-          <TextInput
-            style={[styles.input, { 
-              backgroundColor: theme.surface,
-              color: theme.text.primary,
-              borderColor: theme.border
-            }]}
-            placeholder={t('searchCity')}
-            placeholderTextColor={theme.text.secondary}
-            value={inputCity}
-            onChangeText={setInputCity}
-          />
-          <TouchableOpacity 
-            style={[styles.searchButton, { backgroundColor: theme.primary }]} 
-            onPress={handleSearch}
-          >
-            <ThemedText style={styles.buttonText}>{t('search')}</ThemedText>
-          </TouchableOpacity>
-        </ThemedView>
+        <LocationSearch
+          onLocationSelect={handleLocationSelect}
+          onValidationError={handleValidationError}
+          placeholder={t('searchCity')}
+          initialValue={settings.location.city || ''}
+        />
 
         <TouchableOpacity 
           style={[styles.locationButton, { 
@@ -180,31 +169,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
   },
-  searchForm: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  input: {
-    flex: 1,
-    height: 50,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    fontSize: 16,
-  },
-  searchButton: {
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginLeft: 10,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
   locationButton: {
     borderWidth: 1,
     height: 50,
@@ -223,6 +187,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
     marginBottom: 20,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   mainContent: {
     flex: 1,
