@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PrayerCard } from '@/src/components/shared/PrayerCard';
 import { ThemedView } from '@/src/components/shared/ThemedView';
 import { ThemedText } from '@/src/components/shared/ThemedText';
+import FacebookStyleTransition from '@/src/components/shared/FacebookStyleTransition';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { useNotifications } from '@/src/contexts/NotificationContext';
 import { usePrayerTimes } from '@/src/contexts/PrayerTimesContext';
@@ -55,16 +56,17 @@ export default function PrayerTimesScreen() {
   const { t } = useTranslation();
 
   return (
-    <ThemedView style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      <ScrollView 
-        contentContainerStyle={[
-          styles.container,
-          { 
-            paddingTop: insets.top + 10,
-            paddingBottom: Platform.OS === 'ios' ? 100 : 80
-          }
-        ]}
-      >
+    <FacebookStyleTransition direction="left">
+      <ThemedView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+        <ScrollView 
+          contentContainerStyle={[
+            styles.container,
+            { 
+              paddingTop: insets.top + 10,
+              paddingBottom: Platform.OS === 'ios' ? (75 + insets.bottom) : (60 + 20)
+            }
+          ]}
+        >
         <ThemedView style={styles.header}>
             <ThemedText style={[styles.title, { color: theme.primary, paddingTop: 20 }]}>{t('muslimPrayerTimes')}</ThemedText>
           <ThemedText type="subtitle">{t('enterCityOrLocation')}</ThemedText>
@@ -157,6 +159,7 @@ export default function PrayerTimesScreen() {
         </ThemedView>
       </ScrollView>
     </ThemedView>
+    </FacebookStyleTransition>
   );
 }
 

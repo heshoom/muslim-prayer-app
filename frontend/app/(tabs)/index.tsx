@@ -6,6 +6,7 @@ import { DailyContent } from "@/src/components/home/DailyContent";
 import { QuickActions } from "@/src/components/home/QuickActions";
 import { ThemedText } from "@/src/components/shared/ThemedText";
 import { ThemedView } from "@/src/components/shared/ThemedView";
+import FacebookStyleTransition from "@/src/components/shared/FacebookStyleTransition";
 import moment from "moment-hijri";
 import { useSettings } from "@/src/contexts/SettingsContext";
 import { darkTheme, lightTheme } from "@/src/constants/theme";
@@ -38,41 +39,43 @@ export default function HomeScreen() {
   const formattedHijriDate = `${hijriDay} ${hijriMonths[hijriMonth]} ${hijriYear}`;
 
   // Calculate bottom padding to avoid tab bar overlap
-  const bottomPadding = Platform.OS === "ios" ? 100 : 80; // Increased for iOS
+  const bottomPadding = Platform.OS === "ios" ? (75 + insets.bottom) : (60 + 20);
 
   return (
-    <ThemedView
-      style={[styles.safeArea, { backgroundColor: theme.background }]}
-    >
-      <ScrollView
-        style={[styles.container, { backgroundColor: theme.background }]}
-        contentContainerStyle={[
-          styles.contentContainer,
-          {
-            paddingTop: insets.top + 10,
-            paddingBottom: bottomPadding,
-          },
-        ]}
-        showsVerticalScrollIndicator={false}
+    <FacebookStyleTransition direction="right">
+      <ThemedView
+        style={[styles.safeArea, { backgroundColor: theme.background }]}
       >
-        {/* Header Section */}
-        <View style={styles.header}>
-          <ThemedText style={[styles.dateText, { color: theme.primary }]}>
-            {formattedDate}
-          </ThemedText>
-          <ThemedText type="subtitle">{formattedHijriDate}</ThemedText>
-        </View>
+        <ScrollView
+          style={[styles.container, { backgroundColor: theme.background }]}
+          contentContainerStyle={[
+            styles.contentContainer,
+            {
+              paddingTop: insets.top + 10,
+              paddingBottom: bottomPadding,
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header Section */}
+          <View style={styles.header}>
+            <ThemedText style={[styles.dateText, { color: theme.primary }]}>
+              {formattedDate}
+            </ThemedText>
+            <ThemedText type="subtitle">{formattedHijriDate}</ThemedText>
+          </View>
 
-        {/* Next Prayer Section */}
-        <NextPrayer />
+          {/* Next Prayer Section */}
+          <NextPrayer />
 
-        {/* Daily Content Section */}
-        <DailyContent />
+          {/* Daily Content Section */}
+          <DailyContent />
 
-        {/* Quick Actions Grid */}
-        <QuickActions />
-      </ScrollView>
-    </ThemedView>
+          {/* Quick Actions Grid */}
+          <QuickActions />
+        </ScrollView>
+      </ThemedView>
+    </FacebookStyleTransition>
   );
 }
 

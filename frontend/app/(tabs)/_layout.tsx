@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import { HapticTab } from '@/src/components/layout/HapticTab';
 import { IconSymbol } from '@/src/components/shared/IconSymbol';
 import TabBarBackground from '@/src/components/shared/TabBarBackground';
+import AnimatedTabBar from '@/src/components/shared/AnimatedTabBar';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { useTranslation } from '@/src/i18n';
@@ -16,21 +17,15 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      tabBar={(props) => <AnimatedTabBar {...props} />}
       screenOptions={{
         tabBarActiveTintColor: theme.tint,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-            backgroundColor: theme.tabBarBackground,
-          },
-          default: {
-            backgroundColor: theme.tabBarBackground,
-          },
-        }),
+        tabBarStyle: {
+          display: 'none', // Hide the default tab bar since we're using a custom one
+        },
       }}>
       <Tabs.Screen
         name="index"

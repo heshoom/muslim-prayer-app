@@ -18,6 +18,7 @@ import { useSettings } from "@/src/contexts/SettingsContext";
 import { useNotifications } from "@/src/contexts/NotificationContext";
 import { lightTheme, darkTheme } from "@/src/constants/theme";
 import { CustomPicker } from "@/src/components/shared/CustomPicker";
+import FacebookStyleTransition from "@/src/components/shared/FacebookStyleTransition";
 import { useTranslation } from "@/src/i18n";
 
 const Settings = () => {
@@ -43,7 +44,8 @@ const Settings = () => {
   const styles = getStyles(theme, isDarkMode, isRTL());
 
   return (
-    <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top }]}>
+    <FacebookStyleTransition direction="left">
+      <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.title}>{t("settings")}</Text>
         <Text style={styles.subtitle}>{t("customizePreferences")}</Text>
@@ -531,6 +533,7 @@ const Settings = () => {
         </View>
       </ScrollView>
     </SafeAreaView>
+    </FacebookStyleTransition>
   );
 };
 
