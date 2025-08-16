@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
 import { ThemedText } from '../shared/ThemedText';
 import { ThemedView } from '../shared/ThemedView';
 import { getNextPrayer, NextPrayerInfo } from '../../utils/prayerTimeUtils';
@@ -14,6 +15,11 @@ export const NextPrayer = () => {
   const { prayerTimes, loading, error, currentLocation } = usePrayerTimes();
   const theme = isDarkMode ? darkTheme : lightTheme;
   const { t } = useTranslation();
+
+  // Navigate to prayer times tab
+  const handlePress = () => {
+    router.push('/(tabs)/prayer-times');
+  };
 
   // Calculate next prayer when prayer times change
   useEffect(() => {
@@ -48,46 +54,54 @@ export const NextPrayer = () => {
 
   if (loading) {
     return (
-      <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
-        <ThemedText style={{ color: theme.text.primary }}>{t('loadingPrayerTimes')}</ThemedText>
-      </ThemedView>
+      <TouchableOpacity onPress={handlePress}>
+        <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
+          <ThemedText style={{ color: theme.text.primary }}>{t('loadingPrayerTimes')}</ThemedText>
+        </ThemedView>
+      </TouchableOpacity>
     );
   }
 
   if (error) {
     return (
-      <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
-        <ThemedText style={{ color: theme.error, textAlign: 'center' }}>{error}</ThemedText>
-      </ThemedView>
+      <TouchableOpacity onPress={handlePress}>
+        <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
+          <ThemedText style={{ color: theme.error, textAlign: 'center' }}>{error}</ThemedText>
+        </ThemedView>
+      </TouchableOpacity>
     );
   }
 
   if (!nextPrayer) {
     return (
-      <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
-        <ThemedText style={{ color: theme.text.primary }}>{t('unableToDetermineNextPrayer')}</ThemedText>
-      </ThemedView>
+      <TouchableOpacity onPress={handlePress}>
+        <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
+          <ThemedText style={{ color: theme.text.primary }}>{t('unableToDetermineNextPrayer')}</ThemedText>
+        </ThemedView>
+      </TouchableOpacity>
     );
   }
 
   return (
-    <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
-      <View style={styles.content}>
-        <ThemedText style={[styles.label, { color: theme.text.secondary }]}>{t('nextPrayer')}</ThemedText>
-        <ThemedText style={[styles.prayerName, { color: theme.primary }]}>
-          {t(nextPrayer.name.toLowerCase())} at {nextPrayer.location}
-        </ThemedText>
-        <ThemedText style={[styles.time, { color: theme.text.primary }]}>{nextPrayer.time}</ThemedText>
-        <ThemedText style={[styles.countdown, { color: theme.text.secondary }]}>
-          in {nextPrayer.remainingTime.hours} hours {nextPrayer.remainingTime.minutes} minutes
-        </ThemedText>
-      </View>
-      <View style={styles.progressContainer}>
-        <View style={[styles.progressBar, { backgroundColor: theme.border }]}>
-          <View style={[styles.progress, { width: `${nextPrayer.progress}%`, backgroundColor: theme.primary }]} />
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
+      <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
+        <View style={styles.content}>
+          <ThemedText style={[styles.label, { color: theme.text.secondary }]}>{t('nextPrayer')}</ThemedText>
+          <ThemedText style={[styles.prayerName, { color: theme.primary }]}>
+            {t(nextPrayer.name.toLowerCase())} at {nextPrayer.location}
+          </ThemedText>
+          <ThemedText style={[styles.time, { color: theme.text.primary }]}>{nextPrayer.time}</ThemedText>
+          <ThemedText style={[styles.countdown, { color: theme.text.secondary }]}>
+            in {nextPrayer.remainingTime.hours} hours {nextPrayer.remainingTime.minutes} minutes
+          </ThemedText>
         </View>
-      </View>
-    </ThemedView>
+        <View style={styles.progressContainer}>
+          <View style={[styles.progressBar, { backgroundColor: theme.border }]}>
+            <View style={[styles.progress, { width: `${nextPrayer.progress}%`, backgroundColor: theme.primary }]} />
+          </View>
+        </View>
+      </ThemedView>
+    </TouchableOpacity>
   );
 };
 

@@ -112,7 +112,7 @@ export default function PrayerTimesScreen() {
           disabled={loading}
         >
           <ThemedText style={[styles.buttonText, { opacity: loading ? 0.6 : 1 }]}>
-            {loading ? t('refreshing') || 'Refreshing...' : t('refresh') || 'Refresh'}
+            {loading ? t('refreshing') : t('refresh')}
           </ThemedText>
         </TouchableOpacity>
 

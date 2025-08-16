@@ -62,19 +62,17 @@ export const QiblaCompassSimple = () => {
 
   // Initialize location and heading
   useEffect(() => {
-    if (!isMobileDevice) {
-      setErrorMsg('The Qibla compass requires a mobile device');
-      setIsLoading(false);
-      return;
-    }
-    
-    let headingSub: Location.LocationSubscription | null = null;
+  if (!isMobileDevice) {
+    setErrorMsg(t('qiblaRequiresMobile'));
+    setIsLoading(false);
+    return;
+  }    let headingSub: Location.LocationSubscription | null = null;
 
     const init = async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
-          setErrorMsg('Location permission was denied');
+          setErrorMsg(t('locationPermissionDenied'));
           setIsLoading(false);
           return;
         }
@@ -99,7 +97,7 @@ export const QiblaCompassSimple = () => {
         setIsLoading(false);
 
       } catch (error: any) {
-        setErrorMsg('Error getting location: ' + (error.message || 'Unknown error'));
+        setErrorMsg(t('compassError') + ': ' + (error.message || 'Unknown error'));
         setIsLoading(false);
       }
     };
@@ -140,7 +138,7 @@ export const QiblaCompassSimple = () => {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <Text style={[styles.loading, { color: theme.text.primary }]}>
-          Getting your location...
+          {t('gettingLocation')}
         </Text>
       </View>
     );
@@ -167,25 +165,25 @@ export const QiblaCompassSimple = () => {
 
       <View style={[styles.infoContainer, { backgroundColor: theme.surface }]}>
         <Text style={[styles.infoTitle, { color: theme.text.primary }]}>
-          {t('qiblaDirection') || 'Qibla Direction'}
+          {t('qiblaDirection')}
         </Text>
         <Text style={[styles.infoValue, { color: theme.primary }]}>
-          {Math.round(qiblaBearing)}° {t('fromNorth') || 'from North'}
+          {Math.round(qiblaBearing)}° {t('fromNorth')}
         </Text>
         {heading != null && (
           <Text style={[styles.subInfo, { color: theme.text.secondary }]}> 
-            {t('yourHeading') || 'Your heading'}: {Math.round(heading)}°
+            {t('yourHeading')}: {Math.round(heading)}°
           </Text>
         )}
         {headingAccuracy != null && headingAccuracy > 20 && (
           <Text style={[styles.tip, { color: theme.secondary }]}> 
-            {t('calibrateCompass') || 'Move your phone in a figure-8 to calibrate the compass'}
+            {t('calibrateCompass')}
           </Text>
         )}
       </View>
 
       <Text style={[styles.instructions, { color: theme.text.secondary }]}> 
-        {t('alignKaabaTip') || "Turn until the Ka'bah icon points straight up to face Qibla"}
+        {t('alignKaabaTip')}
       </Text>
     </View>
   );

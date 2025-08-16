@@ -3,7 +3,9 @@ import React from 'react';
 import { Platform } from 'react-native';
 
 import { HapticTab } from '@/src/components/layout/HapticTab';
-import { IconSymbol } from '@/src/components/shared/IconSymbol';
+import { MosqueIcon } from '@/src/components/shared/MosqueIcon';
+import { ClockIcon } from '@/src/components/shared/ClockIcon';
+import { SettingsIcon } from '@/src/components/shared/SettingsIcon';
 import TabBarBackground from '@/src/components/shared/TabBarBackground';
 import AnimatedTabBar from '@/src/components/shared/AnimatedTabBar';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
@@ -31,21 +33,21 @@ export default function TabLayout() {
         name="index"
         options={{
           title: t('home'),
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ color }) => <MosqueIcon size={28} color={color} />,
         }}
       />
       <Tabs.Screen
         name="prayer-times"
         options={{
           title: t('prayerTimes'),
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="clock.fill" color={color} />,
+          tabBarIcon: ({ color }) => <ClockIcon size={28} color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: t('settings'),
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="gear" color={color} />,
+          tabBarIcon: ({ color }) => <SettingsIcon size={28} color={color} />,
         }}
       />
     </Tabs>

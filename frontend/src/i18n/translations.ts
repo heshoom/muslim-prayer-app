@@ -55,6 +55,11 @@ export const translations = {
     aligned: 'Aligned',
     rotate: 'Rotate',
     calibrating: 'Calibrating',
+    fromNorth: 'from North',
+    yourHeading: 'Your heading',
+    calibrateCompass: 'Move your phone in a figure-8 to calibrate the compass',
+    alignKaabaTip: "Turn until the Ka'bah icon points straight up to face Qibla",
+    gettingLocation: 'Getting your location...',
     locationPermissionRequired: 'Location permission is required to find nearby mosques',
     errorFindingMosques: 'Error finding nearby mosques',
     milesAway: 'miles away',
@@ -152,6 +157,8 @@ export const translations = {
     done: 'Done',
     select: 'Select',
     search: 'Search',
+    refresh: 'Refresh',
+    refreshing: 'Refreshing...',
     
     // Time
     minutesBefore: 'minutes before',
@@ -240,6 +247,11 @@ export const translations = {
     aligned: 'متوازي',
     rotate: 'دوّر',
     calibrating: 'معايرة',
+    fromNorth: 'من الشمال',
+    yourHeading: 'اتجاهك',
+    calibrateCompass: 'حرك هاتفك في شكل رقم 8 لمعايرة البوصلة',
+    alignKaabaTip: 'استدر حتى تشير أيقونة الكعبة مباشرة إلى الأعلى لمواجهة القبلة',
+    gettingLocation: 'الحصول على موقعك...',
     locationPermissionRequired: 'إذن الموقع مطلوب للعثور على المساجد القريبة',
     errorFindingMosques: 'خطأ في العثور على المساجد القريبة',
     milesAway: 'ميل',
@@ -317,6 +329,8 @@ export const translations = {
     done: 'تم',
     select: 'اختر',
     search: 'بحث',
+    refresh: 'تحديث',
+    refreshing: 'جاري التحديث...',
     
     // Time
     minutesBefore: 'دقائق قبل',
@@ -405,6 +419,11 @@ export const translations = {
     aligned: 'برابر',
     rotate: 'گھمائیں',
     calibrating: 'کیلیبریٹ کر رہے ہیں',
+    fromNorth: 'شمال سے',
+    yourHeading: 'آپ کی سمت',
+    calibrateCompass: 'کمپاس کیلیبریٹ کرنے کے لیے اپنا فون آٹھ کی شکل میں حرکت دیں',
+    alignKaabaTip: 'اس وقت تک گھمائیں جب تک کہ کعبہ کا آئیکن سیدھا اوپر قبلہ کی طرف نہ ہو',
+    gettingLocation: 'آپ کا مقام حاصل کر رہے ہیں...',
     
     // Settings
     customizePreferences: 'ایپ کی ترجیحات کو اپنی مرضی کے مطابق بنائیں',
@@ -468,6 +487,8 @@ export const translations = {
     done: 'مکمل',
     select: 'منتخب کریں',
     search: 'تلاش',
+    refresh: 'ریفریش',
+    refreshing: 'ریفریش ہو رہا ہے...',
     
     // Time
     minutesBefore: 'منٹ پہلے',
@@ -556,6 +577,11 @@ export const translations = {
     aligned: 'Hizalandı',
     rotate: 'Döndür',
     calibrating: 'Kalibre ediliyor',
+    fromNorth: 'kuzeyden',
+    yourHeading: 'Yönünüz',
+    calibrateCompass: 'Pusulayı kalibre etmek için telefonunuzu 8 şeklinde hareket ettirin',
+    alignKaabaTip: 'Kâbe simgesi dümdüz yukarıyı gösterene kadar döndürün ve Kıbleye yönelin',
+    gettingLocation: 'Konumunuz alınıyor...',
     
     // Settings
     customizePreferences: 'Uygulama tercihlerinizi özelleştirin',
@@ -619,6 +645,8 @@ export const translations = {
     done: 'Tamam',
     select: 'Seç',
     search: 'Ara',
+    refresh: 'Yenile',
+    refreshing: 'Yenileniyor...',
     
     // Time
     minutesBefore: 'dakika önce',
