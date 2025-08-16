@@ -1,0 +1,90 @@
+COPYRIGHT NOTICE FOR ISLAMIC PRO
+
+Copyright © 2025 Hesham Sharafaldin. All rights reserved.
+
+OWNERSHIP
+
+Islamic Pro mobile application and all associated materials, including but not limited to:
+- Source code
+- User interface design
+- Graphics and visual elements
+- Audio files (Athan recordings)
+- Documentation
+- App name and branding
+
+Are owned by Hesham Sharafaldin and protected under applicable copyright laws.
+
+LICENSE AND USAGE RESTRICTIONS
+
+This software is proprietary and confidential. Unauthorized copying, distribution, modification, public display, or public performance of this software is strictly prohibited.
+
+No part of this software may be:
+- Reproduced in any form without written permission
+- Reverse engineered or decompiled
+- Distributed or sold
+- Modified or created derivative works from
+- Used for commercial purposes without explicit authorization
+
+THIRD-PARTY COMPONENTS
+
+This application incorporates the following third-party components under their respective licenses:
+
+React Native / Expo Framework
+- Licensed under MIT License
+- Copyright (c) Meta Platforms, Inc. and affiliates
+
+Node.js and NPM Packages
+- Various packages used under their respective open-source licenses
+- See package.json files for complete dependency list
+
+Prayer Times Calculation
+- Based on astronomical calculations in the public domain
+- Implementation copyright by Hesham Sharafaldin
+
+Athan Audio Recordings
+- Licensed or used under fair use for religious purposes
+- Original recordings remain property of their respective copyright holders
+
+INTELLECTUAL PROPERTY RIGHTS
+
+The Islamic Pro app contains intellectual property including:
+- Original software architecture and implementation
+- User experience design
+- Prayer times calculation algorithms
+- Qibla direction computation methods
+- App branding and visual identity
+
+ATTRIBUTION REQUIREMENTS
+
+If permitted use is granted, proper attribution must include:
+- Copyright notice: "Copyright © 2025 Hesham Sharafaldin"
+- App name: "Islamic Pro"
+- Developer credit: "Developed by Hesham Sharafaldin"
+- Website: "www.islamicpro.org"
+
+DMCA COMPLIANCE
+
+If you believe any content in this application infringes your copyright, please contact:
+Email: support@islamicpro.org
+Subject: "DMCA Copyright Notice"
+
+DISCLAIMER
+
+This software is provided "as is" without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and non-infringement.
+
+JURISDICTION
+
+This copyright notice is governed by the laws of the United States and applicable international copyright treaties.
+
+CONTACT INFORMATION
+
+For licensing inquiries, permissions, or copyright matters:
+
+Copyright Holder: Hesham Sharafaldin
+Email: support@islamicpro.org
+Website: www.islamicpro.org
+
+---
+
+This copyright notice applies to Islamic Pro version 1.0 and all subsequent versions.
+Last Updated: August 15, 2025

@@ -8,37 +8,59 @@ interface CompassBaseProps {
 export const CompassBase: React.FC<CompassBaseProps> = ({ theme }) => {
   const strokeColor = theme?.primary || '#2980b9';
   const textColor = theme?.text?.primary || '#2980b9';
+  const secondaryColor = theme?.text?.secondary || '#7f8c8d';
   
   return (
     <Svg width="300" height="300" viewBox="0 0 300 300">
-      {/* Outer circle */}
-      <Circle cx="150" cy="150" r="145" stroke={strokeColor} strokeWidth="3" fill="none" />
-      <Circle cx="150" cy="150" r="130" stroke={strokeColor} strokeWidth="1" fill="none" opacity="0.3" />
+      {/* Outer circles with better styling */}
+      <Circle cx="150" cy="150" r="148" stroke={strokeColor} strokeWidth="4" fill="none" opacity="0.8" />
+      <Circle cx="150" cy="150" r="135" stroke={strokeColor} strokeWidth="2" fill="none" opacity="0.4" />
+      <Circle cx="150" cy="150" r="120" stroke={secondaryColor} strokeWidth="1" fill="none" opacity="0.2" />
       
-      {/* Compass markers */}
+      {/* Cardinal directions with enhanced styling */}
       <G>
-        <Line x1="150" y1="10" x2="150" y2="35" stroke={strokeColor} strokeWidth="3" />
-        <Text x="150" y="55" textAnchor="middle" fill={textColor} fontSize="22" fontWeight="bold">N</Text>
+        <Line x1="150" y1="8" x2="150" y2="30" stroke={strokeColor} strokeWidth="4" />
+        <Text x="150" y="50" textAnchor="middle" fill={textColor} fontSize="24" fontWeight="bold">N</Text>
       </G>
       <G>
-        <Line x1="150" y1="265" x2="150" y2="290" stroke={strokeColor} strokeWidth="3" />
-        <Text x="150" y="250" textAnchor="middle" fill={textColor} fontSize="22" fontWeight="bold">S</Text>
+        <Line x1="150" y1="270" x2="150" y2="292" stroke={strokeColor} strokeWidth="4" />
+        <Text x="150" y="260" textAnchor="middle" fill={textColor} fontSize="24" fontWeight="bold">S</Text>
       </G>
       <G>
-        <Line x1="265" y1="150" x2="290" y2="150" stroke={strokeColor} strokeWidth="3" />
-        <Text x="255" y="155" textAnchor="end" fill={textColor} fontSize="22" fontWeight="bold">E</Text>
+        <Line x1="270" y1="150" x2="292" y2="150" stroke={strokeColor} strokeWidth="4" />
+        <Text x="260" y="158" textAnchor="end" fill={textColor} fontSize="24" fontWeight="bold">E</Text>
       </G>
       <G>
-        <Line x1="10" y1="150" x2="35" y2="150" stroke={strokeColor} strokeWidth="3" />
-        <Text x="45" y="155" textAnchor="start" fill={textColor} fontSize="22" fontWeight="bold">W</Text>
+        <Line x1="8" y1="150" x2="30" y2="150" stroke={strokeColor} strokeWidth="4" />
+        <Text x="40" y="158" textAnchor="start" fill={textColor} fontSize="24" fontWeight="bold">W</Text>
       </G>
       
-      {/* Degree markers */}
+      {/* Degree markers with improved visibility */}
       {Array.from({ length: 72 }).map((_, i) => {
         const angle = (i * 5 * Math.PI) / 180;
-        const isMain = i % 9 === 0;
-        const length = isMain ? 20 : 12;
-        const outerRadius = 130;
+        const isMain = i % 18 === 0; // Every 90 degrees
+        const isMajor = i % 6 === 0; // Every 30 degrees
+        const isMinor = i % 2 === 0; // Every 10 degrees
+        
+        let length = 8;
+        let strokeWidth = 1;
+        let opacity = 0.3;
+        
+        if (isMain) {
+          length = 25;
+          strokeWidth = 3;
+          opacity = 1;
+        } else if (isMajor) {
+          length = 18;
+          strokeWidth = 2;
+          opacity = 0.7;
+        } else if (isMinor) {
+          length = 12;
+          strokeWidth = 1.5;
+          opacity = 0.5;
+        }
+        
+        const outerRadius = 135;
         const innerRadius = outerRadius - length;
         
         return (
@@ -49,9 +71,31 @@ export const CompassBase: React.FC<CompassBaseProps> = ({ theme }) => {
             x2={150 + Math.sin(angle) * outerRadius}
             y2={150 - Math.cos(angle) * outerRadius}
             stroke={strokeColor}
-            strokeWidth={isMain ? 2 : 1}
-            opacity={isMain ? 1 : 0.5}
+            strokeWidth={strokeWidth}
+            opacity={opacity}
           />
+        );
+      })}
+      
+      {/* Degree numbers for major directions */}
+      {[0, 45, 90, 135, 180, 225, 270, 315].map((degree, index) => {
+        const angle = (degree * Math.PI) / 180;
+        const radius = 110;
+        const x = 150 + Math.sin(angle) * radius;
+        const y = 150 - Math.cos(angle) * radius + 6; // Offset for text centering
+        
+        return (
+          <Text
+            key={degree}
+            x={x}
+            y={y}
+            textAnchor="middle"
+            fill={secondaryColor}
+            fontSize="14"
+            fontWeight="500"
+          >
+            {degree}°
+          </Text>
         );
       })}
     </Svg>

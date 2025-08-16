@@ -1,10 +1,10 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { QiblaCompass } from '@/src/components/shared/QiblaCompass';
-import { ThemedView } from '@/src/components/shared/ThemedView';
-import { useSettings } from '@/src/contexts/SettingsContext';
-import { darkTheme, lightTheme } from '@/src/constants/theme';
+import { ThemedView } from '../src/components/shared/ThemedView';
+import { QiblaCompassSimple } from '../src/components/shared/QiblaCompassSimple';
+import { useSettings } from '../src/contexts/SettingsContext';
+import { darkTheme, lightTheme } from '../src/constants/theme';
 
 export default function QiblaScreen() {
   const { isDarkMode } = useSettings();
@@ -13,7 +13,7 @@ export default function QiblaScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
       <ThemedView style={styles.content}>
-        <QiblaCompass />
+        <QiblaCompassSimple />
       </ThemedView>
     </SafeAreaView>
   );
@@ -26,4 +26,5 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  // Removed placeholder styles
 });

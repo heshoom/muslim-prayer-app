@@ -11,6 +11,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.heshoom.islamicpro",
+      "buildNumber": "5",
+      "icon": "./assets/images/icon.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -69,9 +71,9 @@
         "islam",
         "pro"
       ],
-      "supportUrl": "mailto:support@heshoom.com",
-      "privacyPolicyUrl": "https://heshoom.com/islamic-pro/privacy",
-      "termsOfServiceUrl": "https://heshoom.com/islamic-pro/terms",
+      "supportUrl": "mailto:support@islamicpro.org",
+      "privacyPolicyUrl": "https://www.islamicpro.org/privacy",
+      "termsOfServiceUrl": "https://www.islamicpro.org/terms",
       "router": {},
       "eas": {
         "projectId": "d645d17a-5c8b-44a3-b079-0ce0fbe1e6d9"
