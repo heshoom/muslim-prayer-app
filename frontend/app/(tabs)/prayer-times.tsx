@@ -34,7 +34,9 @@ export default function PrayerTimesScreen() {
     goToPreviousDay,
     goToNextDay,
     goToToday,
-    isToday
+    isToday,
+    canGoBack,
+    canGoForward
   } = usePrayerTimes();
   const { isDarkMode } = useSettings();
   const theme = isDarkMode ? darkTheme : lightTheme;
@@ -76,14 +78,28 @@ export default function PrayerTimesScreen() {
           {/* Date Navigation */}
           <View style={styles.dateNavigation}>
             <TouchableOpacity 
-              style={[styles.navButton, { backgroundColor: theme.surface }]}
-              onPress={goToPreviousDay}
+              style={[
+                styles.navButton, 
+                { 
+                  backgroundColor: canGoBack ? theme.surface : theme.background,
+                  opacity: canGoBack ? 1 : 0.3
+                }
+              ]}
+              onPress={canGoBack ? goToPreviousDay : undefined}
+              disabled={!canGoBack}
             >
-              <Ionicons name="chevron-back" size={20} color={theme.primary} />
+              <Ionicons 
+                name="chevron-back" 
+                size={20} 
+                color={canGoBack ? theme.primary : theme.text.secondary} 
+              />
             </TouchableOpacity>
             
             <View style={styles.dateContainer}>
               <ThemedText type="subtitle" style={styles.dateText}>{formatSelectedDate(selectedDate)}</ThemedText>
+              <ThemedText style={[styles.dateRangeHint, { color: theme.text.secondary }]}>
+                {t('7DaysRange') || '7 days range (past & future)'}
+              </ThemedText>
               {!isToday && (
                 <TouchableOpacity 
                   style={[styles.todayButton, { backgroundColor: theme.primary }]}
@@ -97,10 +113,21 @@ export default function PrayerTimesScreen() {
             </View>
             
             <TouchableOpacity 
-              style={[styles.navButton, { backgroundColor: theme.surface }]}
-              onPress={goToNextDay}
+              style={[
+                styles.navButton, 
+                { 
+                  backgroundColor: canGoForward ? theme.surface : theme.background,
+                  opacity: canGoForward ? 1 : 0.3
+                }
+              ]}
+              onPress={canGoForward ? goToNextDay : undefined}
+              disabled={!canGoForward}
             >
-              <Ionicons name="chevron-forward" size={20} color={theme.primary} />
+              <Ionicons 
+                name="chevron-forward" 
+                size={20} 
+                color={canGoForward ? theme.primary : theme.text.secondary} 
+              />
             </TouchableOpacity>
           </View>
         </ThemedView>
@@ -195,6 +222,12 @@ const styles = StyleSheet.create({
   dateText: {
     textAlign: 'center',
     fontWeight: '600',
+  },
+  dateRangeHint: {
+    textAlign: 'center',
+    fontSize: 10,
+    marginTop: 2,
+    opacity: 0.6,
   },
   todayButton: {
     marginTop: 8,
