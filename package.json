@@ -1,0 +1,14 @@
+{
+  "name": "muslim-prayer-app",
+  "version": "1.0.0",
+  "description": "Muslim Prayer App - Backend API only for Vercel deployment",
+  "main": "backend/index.js",
+  "scripts": {
+    "start": "cd backend && npm start",
+    "build": "cd backend && npm install",
+    "install": "cd backend && npm install"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "private": true
+}
