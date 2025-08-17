@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useSettings } from "@/src/contexts/SettingsContext";
 import { useNotifications } from "@/src/contexts/NotificationContext";
+import { usePrayerTimes } from "@/src/contexts/PrayerTimesContext";
 import { lightTheme, darkTheme } from "@/src/constants/theme";
 import { CustomPicker } from "@/src/components/shared/CustomPicker";
 import FacebookStyleTransition from "@/src/components/shared/FacebookStyleTransition";
@@ -24,6 +25,7 @@ import { useTranslation } from "@/src/i18n";
 const Settings = () => {
   const { settings, updateSettings, isDarkMode } = useSettings();
   const { testAthanSound } = useNotifications();
+  const { clearCache } = usePrayerTimes();
   const theme = isDarkMode ? darkTheme : lightTheme;
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useTranslation();
@@ -39,6 +41,28 @@ const Settings = () => {
     // Force RTL layout update for Arabic and Urdu
     const shouldBeRTL = ["ar", "ur"].includes(newLanguage);
     I18nManager.forceRTL(shouldBeRTL);
+  };
+
+  const handleClearCache = () => {
+    Alert.alert(
+      "Clear Cache",
+      "This will clear all cached prayer times. Are you sure?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clear",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await clearCache();
+              Alert.alert("Success", "Cache cleared successfully!");
+            } catch (error) {
+              Alert.alert("Error", "Failed to clear cache");
+            }
+          },
+        },
+      ]
+    );
   };
 
   const styles = getStyles(theme, isDarkMode, isRTL());
@@ -511,6 +535,25 @@ const Settings = () => {
                 </View>
                 <FontAwesome5 
                   name="external-link-alt" 
+                  size={16} 
+                  color={theme.text.secondary} 
+                />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.settingItem, styles.linkItem]}
+              onPress={handleClearCache}
+            >
+              <View style={styles.settingHeader}>
+                <View style={styles.settingTextContainer}>
+                  <Text style={styles.settingTitle}>Clear Cache</Text>
+                  <Text style={styles.settingDescription}>
+                    Clear cached prayer times and refresh data
+                  </Text>
+                </View>
+                <FontAwesome5 
+                  name="trash" 
                   size={16} 
                   color={theme.text.secondary} 
                 />

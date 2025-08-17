@@ -8,29 +8,45 @@ const LOCAL_IP = '192.168.1.211'; // Your computer's local IP address
 
 const getApiUrl = () => {
   if (__DEV__) {
-    // Always use production API in development for now
-    // since local backend might not be running
-    return 'https://muslim-prayer-app-9oud.vercel.app/api';
+    // Use production API in development for reliability
+    return 'https://muslim-prayer-app-phi.vercel.app/api';
     
-    /* Uncomment this if you want to use local backend in development:
-    if (Platform.OS === 'web') {
-      return 'http://localhost:3000/api';
-    }
-    // For Android emulator, localhost points to 10.0.2.2
-    if (Platform.OS === 'android' && !Constants.isDevice) {
-      return 'http://10.0.2.2:3000/api';
-    }
-    // For iOS simulator and real devices in development
-    return `http://${LOCAL_IP}:3000/api`;
+    /* Local backend option (uncomment if local server is running):
+    return 'http://localhost:3000/api';
     */
   }
   // Production URL
-  return 'https://muslim-prayer-app-9oud.vercel.app/api';
+  return 'https://muslim-prayer-app-phi.vercel.app/api';
 };
 
 const API_URL = getApiUrl();
 
 export const prayerTimesApi = {
+  async convertCoordinatesToCity(latitude: number, longitude: number) {
+    try {
+      console.log('Converting coordinates to city:', { latitude, longitude });
+      console.log('API URL:', `${API_URL}/coordinates-to-city`);
+      
+      const response = await axios.get(`${API_URL}/coordinates-to-city`, {
+        params: { latitude, longitude },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        withCredentials: false,
+        timeout: 10000
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      if (isAxiosError(error)) {
+        console.error('Response:', error.response?.data);
+        console.error('Status:', error.response?.status);
+      }
+      throw new Error('Failed to convert coordinates to city');
+    }
+  },
+
   async getPrayerTimesByCity(city: string, settings?: any, country: string = 'US', date?: string) {
     try {
       console.log('Fetching prayer times for city:', city);
@@ -69,6 +85,56 @@ export const prayerTimesApi = {
         console.error('Status:', error.response?.status);
       }
       throw new Error('Failed to fetch prayer times');
+    }
+  },
+
+  async getMonthlyPrayerTimesByCoordinates(latitude: number, longitude: number, settings?: any, year?: number, month?: number) {
+    try {
+      console.log('Fetching monthly prayer times for coordinates:', { latitude, longitude, year, month });
+      console.log('API URL:', `${API_URL}/prayer-times/monthly-by-coordinates`);
+      
+      const params: any = { latitude, longitude };
+      
+      // Add year and month parameters
+      if (year) params.year = year;
+      if (month) params.month = month;
+      
+      // Add settings parameters if provided
+      if (settings) {
+        if (settings.prayer.calculationMethod) {
+          params.method = getCalculationMethodNumber(settings.prayer.calculationMethod);
+        }
+        if (settings.prayer.madhab) {
+          params.school = settings.prayer.madhab === 'hanafi' ? '1' : '0';
+        }
+      }
+      
+      const response = await axios.get(`${API_URL}/prayer-times/monthly-by-coordinates`, {
+        params,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        withCredentials: false,
+        timeout: 15000 // 15 second timeout for monthly data
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      if (isAxiosError(error)) {
+        console.error('Response:', error.response?.data);
+        console.error('Status:', error.response?.status);
+        if (error.code === 'ECONNABORTED') {
+          throw new Error('Request timed out. Please try again.');
+        }
+        if (!error.response) {
+          throw new Error('Network error. Please check your internet connection.');
+        }
+        if (error.response.status === 404) {
+          throw new Error('Monthly prayer times service not found. Please try again later.');
+        }
+      }
+      throw new Error('Failed to fetch monthly prayer times. Please try again later.');
     }
   },
 
