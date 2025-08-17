@@ -168,12 +168,13 @@ export const PrayerTimesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const { latitude, longitude } = location.coords;
         
         // Auto-update calculation method based on location (only for today)
-        if (isToday) {
-          await autoUpdateCalculationMethod(
-            { ...settings, location: { latitude, longitude } },
-            updateSettings
-          );
-        }
+        // Temporarily disabled to fix deployment
+        // if (isToday) {
+        //   await autoUpdateCalculationMethod(
+        //     { ...settings, location: { latitude, longitude } },
+        //     updateSettings
+        //   );
+        // }
         
         response = await prayerTimesApi.getPrayerTimesByCoordinates(latitude, longitude, settings, dateStr);
         
