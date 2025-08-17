@@ -36,7 +36,8 @@ app.get('/', (req, res) => {
       coordinates_to_city: '/api/coordinates-to-city?latitude=40.7128&longitude=-74.0060',
       prayer_times: {
         by_city: '/api/prayer-times/by-city?city=CityName&method=2&date=DD-MM-YYYY',
-        by_coordinates: '/api/prayer-times/by-coordinates?latitude=40.7128&longitude=-74.0060&method=2&date=DD-MM-YYYY'
+        by_coordinates: '/api/prayer-times/by-coordinates?latitude=40.7128&longitude=-74.0060&method=2&date=DD-MM-YYYY',
+        monthly_by_coordinates: '/api/prayer-times/monthly-by-coordinates?latitude=40.7128&longitude=-74.0060&method=2&year=2025&month=8'
       }
     },
     calculation_methods: {
@@ -282,6 +283,187 @@ app.get('/api/prayer-times/by-city', async (req, res) => {
   }
 });
 
+// Monthly prayer times by coordinates endpoint (GPS -> City -> MuslimSalat)
+app.get('/api/prayer-times/monthly-by-coordinates', async (req, res) => {
+  try {
+    const { latitude, longitude, method, year, month } = req.query;
+    
+    if (!latitude || !longitude) {
+      return res.status(400).json({ error: 'Latitude and longitude parameters are required' });
+    }
+
+    console.log('Received monthly request for coordinates:', {
+      latitude,
+      longitude,
+      method,
+      year,
+      month
+    });
+
+    // Step 1: Convert coordinates to city using Aladhan API
+    const cityApiUrl = `https://api.aladhan.com/v1/timings?latitude=${latitude}&longitude=${longitude}`;
+    
+    console.log('Step 1: Converting coordinates to city using:', cityApiUrl);
+
+    const cityResponse = await axios.get(cityApiUrl, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Muslim-Prayer-App/1.0'
+      }
+    });
+
+    if (!cityResponse.data || cityResponse.data.code !== 200) {
+      throw new Error('Failed to get city from coordinates');
+    }
+
+    // Extract city name from timezone or other available data
+    const meta = cityResponse.data.data.meta;
+    let cityName = 'Unknown';
+    
+    if (meta.timezone) {
+      // Extract city from timezone (e.g., "America/New_York" -> "New York")
+      const timezoneParts = meta.timezone.split('/');
+      if (timezoneParts.length > 1) {
+        cityName = timezoneParts[timezoneParts.length - 1].replace(/_/g, ' ');
+      }
+    }
+
+    console.log('Step 1 Result: Extracted city name:', cityName);
+
+    // Step 2: Get monthly prayer times from MuslimSalat using the city
+    const currentYear = year || new Date().getFullYear();
+    const currentMonth = month || (new Date().getMonth() + 1);
+    
+    console.log('Step 2: Fetching monthly prayer times by iterating through each day');
+    
+    // Get the number of days in the month
+    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+    const monthlyItems = [];
+    
+    // Method mapping for MuslimSalat
+    let methodParam = '';
+    if (method) {
+      const methodMapping = {
+        '1': '1', // Egyptian General Authority of Survey
+        '2': '4', // Islamic Circle of North America (ISNA)
+        '3': '5', // Muslim World League (MWL)
+        '4': '6', // Umm al-Qura, Makkah
+        '5': '1', // Egyptian General Authority of Survey
+        '7': '4', // Default to ICNA
+        '8': '5', // Default to MWL
+        '9': '4', // Default to ICNA
+        '10': '4', // Default to ICNA
+        '11': '4', // Default to ICNA
+        '12': '4', // Default to ICNA
+        '13': '4', // Default to ICNA
+        '14': '4'  // Default to ICNA
+      };
+      const mappedMethod = methodMapping[method] || '4';
+      methodParam = `&method=${mappedMethod}`;
+    }
+    
+    // Fetch prayer times for each day of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      try {
+        const dayStr = day.toString().padStart(2, '0');
+        const monthStr = currentMonth.toString().padStart(2, '0');
+        const dateStr = `${dayStr}-${monthStr}-${currentYear}`;
+        
+        const dayApiUrl = `https://muslimsalat.com/${encodeURIComponent(cityName)}/${dateStr}.json?key=test${methodParam}`;
+        
+        console.log(`Fetching day ${day}/${currentMonth}: ${dayApiUrl}`);
+        
+        const dayResponse = await axios.get(dayApiUrl, {
+          timeout: 8000,
+          headers: {
+            'User-Agent': 'Muslim-Prayer-App/1.0'
+          }
+        });
+        
+        if (dayResponse.data && dayResponse.data.status_valid === 1 && dayResponse.data.items && dayResponse.data.items.length > 0) {
+          const dayData = dayResponse.data.items[0];
+          monthlyItems.push({
+            ...dayData,
+            date_for: `${currentYear}-${monthStr}-${dayStr}` // Standardize date format
+          });
+        } else {
+          console.warn(`No valid data for day ${day}/${currentMonth}/${currentYear}`);
+        }
+        
+        // Small delay to avoid overwhelming the API
+        if (day < daysInMonth) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      } catch (dayError) {
+        console.error(`Error fetching day ${day}:`, dayError.message);
+        // Continue with other days even if one fails
+      }
+    }
+    
+    if (monthlyItems.length === 0) {
+      throw new Error('No prayer times data could be fetched for the requested month');
+    }
+    
+    // Create response in MuslimSalat format with all days
+    const monthlyResponse = {
+      title: "",
+      query: cityName,
+      for: "monthly",
+      method: parseInt(method) || 4,
+      prayer_method_name: "Islamic Circle of North America",
+      daylight: "1",
+      timezone: "-5",
+      map_image: `https://maps.google.com/maps/api/staticmap?center=${latitude},${longitude}&sensor=false&zoom=13&size=300x300`,
+      sealevel: "2",
+      today_weather: { pressure: "", temperature: "" },
+      link: `http://muslimsalat.com/${encodeURIComponent(cityName)}`,
+      qibla_direction: "58.51",
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      address: "",
+      city: cityName,
+      state: "",
+      postal_code: "",
+      country: "USA",
+      country_code: "US",
+      items: monthlyItems,
+      status_valid: 1,
+      status_code: 1,
+      status_description: "Success.",
+      city_info: {
+        name: cityName,
+        timezone: meta.timezone,
+        coordinates: {
+          latitude: parseFloat(latitude),
+          longitude: parseFloat(longitude)
+        }
+      }
+    };
+    
+    console.log(`Step 2 Result: Successfully fetched ${monthlyItems.length} days of prayer times for ${cityName}`);
+    
+    res.json(monthlyResponse);
+  } catch (error) {
+    console.error('Error fetching monthly prayer times by coordinates:', error.message);
+    
+    if (error.code === 'ECONNABORTED') {
+      return res.status(408).json({ error: 'Request timeout' });
+    }
+    
+    if (error.response) {
+      return res.status(error.response.status).json({ 
+        error: 'Failed to fetch monthly prayer times',
+        message: error.response.data?.message || error.message
+      });
+    }
+
+    res.status(500).json({ 
+      error: 'Failed to fetch monthly prayer times',
+      message: error.message 
+    });
+  }
+});
+
 // Prayer times by coordinates endpoint
 app.get('/api/prayer-times/by-coordinates', async (req, res) => {
   try {
@@ -299,23 +481,69 @@ app.get('/api/prayer-times/by-coordinates', async (req, res) => {
       date
     });
 
-    // MuslimSalat doesn't support coordinates well, so use Aladhan for coordinates
-    let apiUrl = `https://api.aladhan.com/v1/timings?latitude=${latitude}&longitude=${longitude}`;
+    // Step 1: Convert coordinates to city using Aladhan API
+    const cityApiUrl = `https://api.aladhan.com/v1/timings?latitude=${latitude}&longitude=${longitude}`;
+    
+    console.log('Step 1: Converting coordinates to city using:', cityApiUrl);
+
+    const cityResponse = await axios.get(cityApiUrl, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Muslim-Prayer-App/1.0'
+      }
+    });
+
+    if (!cityResponse.data || cityResponse.data.code !== 200) {
+      throw new Error('Failed to get city from coordinates');
+    }
+
+    // Extract city name from timezone or other available data
+    const meta = cityResponse.data.data.meta;
+    let cityName = 'Unknown';
+    
+    if (meta.timezone) {
+      // Extract city from timezone (e.g., "America/New_York" -> "New York")
+      const timezoneParts = meta.timezone.split('/');
+      if (timezoneParts.length > 1) {
+        cityName = timezoneParts[timezoneParts.length - 1].replace(/_/g, ' ');
+      }
+    }
+
+    console.log('Step 1 Result: Extracted city name:', cityName);
+
+    // Step 2: Get prayer times from MuslimSalat using the city
+    let apiUrl = `https://muslimsalat.com/${encodeURIComponent(cityName)}`;
     
     // Add date parameter if provided (format: DD-MM-YYYY)
     if (date) {
-      apiUrl += `&date=${encodeURIComponent(date)}`;
+      apiUrl += `/${encodeURIComponent(date)}`;
     }
     
+    apiUrl += '.json?key=test';
+    
+    // MuslimSalat API method mapping (if provided)
     if (method) {
-      apiUrl += `&method=${method}`;
-    }
-    
-    if (school) {
-      apiUrl += `&school=${school}`;
+      // Map Aladhan methods to MuslimSalat methods
+      const methodMapping = {
+        '1': '1', // Egyptian General Authority of Survey
+        '2': '4', // Islamic Circle of North America (ISNA)
+        '3': '5', // Muslim World League (MWL)
+        '4': '6', // Umm al-Qura, Makkah
+        '5': '1', // Egyptian General Authority of Survey
+        '7': '4', // Default to ICNA
+        '8': '5', // Default to MWL
+        '9': '4', // Default to ICNA
+        '10': '4', // Default to ICNA
+        '11': '4', // Default to ICNA
+        '12': '4', // Default to ICNA
+        '13': '4', // Default to ICNA
+        '14': '4'  // Default to ICNA
+      };
+      const mappedMethod = methodMapping[method] || '4';
+      apiUrl += `&method=${mappedMethod}`;
     }
 
-    console.log('Making API request to Aladhan (coordinates):', apiUrl);
+    console.log('Step 2: Fetching prayer times from MuslimSalat:', apiUrl);
 
     const response = await axios.get(apiUrl, {
       timeout: 10000,
@@ -324,8 +552,77 @@ app.get('/api/prayer-times/by-coordinates', async (req, res) => {
       }
     });
 
-    if (response.data && response.data.code === 200) {
-      res.json(response.data);
+    if (response.data && response.data.status_valid === 1) {
+      // Transform MuslimSalat response to match Aladhan format and add city info
+      const transformedData = {
+        code: 200,
+        status: 'OK',
+        data: {
+          timings: {
+            Fajr: response.data.items[0].fajr,
+            Sunrise: response.data.items[0].shurooq,
+            Dhuhr: response.data.items[0].dhuhr,
+            Asr: response.data.items[0].asr,
+            Sunset: '', // Not provided by MuslimSalat
+            Maghrib: response.data.items[0].maghrib,
+            Isha: response.data.items[0].isha,
+            Imsak: '', // Not provided by MuslimSalat
+            Midnight: '', // Not provided by MuslimSalat
+            Firstthird: '', // Not provided by MuslimSalat
+            Lastthird: '' // Not provided by MuslimSalat
+          },
+          date: {
+            readable: response.data.items[0].date_for,
+            timestamp: Math.floor(new Date(response.data.items[0].date_for).getTime() / 1000),
+            gregorian: {
+              date: response.data.items[0].date_for,
+              format: 'YYYY-M-D',
+              day: new Date(response.data.items[0].date_for).getDate().toString().padStart(2, '0'),
+              weekday: {
+                en: new Date(response.data.items[0].date_for).toLocaleDateString('en', { weekday: 'long' })
+              },
+              month: {
+                number: (new Date(response.data.items[0].date_for).getMonth() + 1),
+                en: new Date(response.data.items[0].date_for).toLocaleDateString('en', { month: 'long' })
+              },
+              year: new Date(response.data.items[0].date_for).getFullYear().toString(),
+              designation: {
+                abbreviated: 'AD',
+                expanded: 'Anno Domini'
+              }
+            },
+            hijri: {
+              date: '', // Would need conversion
+              format: '',
+              day: '',
+              weekday: { en: '', ar: '' },
+              month: { number: 0, en: '', ar: '' },
+              year: '',
+              designation: { abbreviated: 'AH', expanded: 'Anno Hegirae' },
+              holidays: []
+            }
+          },
+          meta: {
+            latitude: parseFloat(latitude),
+            longitude: parseFloat(longitude),
+            timezone: meta.timezone,
+            city: cityName,
+            method: {
+              id: parseInt(method) || 4,
+              name: response.data.prayer_method_name,
+              params: {}
+            },
+            latitudeAdjustmentMethod: 3,
+            midnightMode: 0,
+            school: 0,
+            offset: {}
+          }
+        }
+      };
+      
+      console.log('Step 2 Result: Successfully fetched prayer times for', cityName);
+      
+      res.json(transformedData);
     } else {
       throw new Error('Invalid response from prayer times API');
     }
