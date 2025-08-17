@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { prayerTimesApi } from '../services/prayerTimesApi';
+import { autoUpdateCalculationMethod } from '../services/autoCalculationMethod';
 import { PrayerTimes } from '../types/prayerTimes';
 import { useSettings } from './SettingsContext';
 
@@ -12,8 +13,13 @@ interface PrayerTimesContextType {
   date: string;
   currentLocation: string;
   lastUpdated: Date | null;
+  selectedDate: Date;
   refreshPrayerTimes: () => Promise<void>;
   clearCache: () => Promise<void>;
+  goToPreviousDay: () => Promise<void>;
+  goToNextDay: () => Promise<void>;
+  goToToday: () => Promise<void>;
+  isToday: boolean;
 }
 
 const PrayerTimesContext = createContext<PrayerTimesContextType | undefined>(undefined);
@@ -23,6 +29,7 @@ interface CachedPrayerData {
   date: string;
   location: string;
   timestamp: number;
+  selectedDate: string; // Add selected date to cache key
   settings: {
     calculationMethod: string;
     madhab: string;
@@ -41,14 +48,30 @@ export const PrayerTimesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [date, setDate] = useState('');
   const [currentLocation, setCurrentLocation] = useState('');
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   
-  const { settings } = useSettings();
+  const { settings, updateSettings } = useSettings();
+
+  // Helper function to format date for API (DD-MM-YYYY)
+  const formatDateForAPI = useCallback((date: Date): string => {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  }, []);
+
+  // Check if selected date is today
+  const isToday = useMemo(() => {
+    const today = new Date();
+    return selectedDate.toDateString() === today.toDateString();
+  }, [selectedDate]);
 
   // Generate a cache key based on current settings and location
-  const generateCacheKey = useCallback((location: string, isGPS: boolean) => {
-    const key = `${CACHE_KEY}_${location}_${isGPS}_${settings.prayer.calculationMethod}_${settings.prayer.madhab}`;
+  const generateCacheKey = useCallback((location: string, isGPS: boolean, selectedDate: Date) => {
+    const dateStr = formatDateForAPI(selectedDate);
+    const key = `${CACHE_KEY}_${location}_${isGPS}_${dateStr}_${settings.prayer.calculationMethod}_${settings.prayer.madhab}`;
     return key.replace(/\s+/g, '_').toLowerCase();
-  }, [settings.prayer.calculationMethod, settings.prayer.madhab]);
+  }, [settings.prayer.calculationMethod, settings.prayer.madhab, formatDateForAPI]);
 
   // Check if cached data is still valid
   const isCacheValid = useCallback((cachedData: CachedPrayerData): boolean => {
@@ -66,16 +89,16 @@ export const PrayerTimesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [settings]);
 
   // Load cached data
-  const loadCachedData = useCallback(async (location: string, isGPS: boolean): Promise<CachedPrayerData | null> => {
+  const loadCachedData = useCallback(async (location: string, isGPS: boolean, selectedDate: Date): Promise<CachedPrayerData | null> => {
     try {
-      const cacheKey = generateCacheKey(location, isGPS);
+      const cacheKey = generateCacheKey(location, isGPS, selectedDate);
       const cached = await AsyncStorage.getItem(cacheKey);
       
       if (cached) {
         const parsedData: CachedPrayerData = JSON.parse(cached);
         
         if (isCacheValid(parsedData)) {
-          console.log('Using cached prayer times for:', location);
+          console.log('Using cached prayer times for:', location, formatDateForAPI(selectedDate));
           return parsedData;
         } else {
           console.log('Cache expired or settings changed, removing old cache');
@@ -87,22 +110,24 @@ export const PrayerTimesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
     
     return null;
-  }, [generateCacheKey, isCacheValid]);
+  }, [generateCacheKey, isCacheValid, formatDateForAPI]);
 
   // Save data to cache
   const saveCachedData = useCallback(async (
     prayerTimes: PrayerTimes,
     date: string,
     location: string,
-    isGPS: boolean
+    isGPS: boolean,
+    selectedDate: Date
   ) => {
     try {
-      const cacheKey = generateCacheKey(location, isGPS);
+      const cacheKey = generateCacheKey(location, isGPS, selectedDate);
       const dataToCache: CachedPrayerData = {
         prayerTimes,
         date,
         location,
         timestamp: Date.now(),
+        selectedDate: formatDateForAPI(selectedDate),
         settings: {
           calculationMethod: settings.prayer.calculationMethod,
           madhab: settings.prayer.madhab,
@@ -112,11 +137,11 @@ export const PrayerTimesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       };
 
       await AsyncStorage.setItem(cacheKey, JSON.stringify(dataToCache));
-      console.log('Prayer times cached for:', location);
+      console.log('Prayer times cached for:', location, formatDateForAPI(selectedDate));
     } catch (error) {
       console.error('Error saving prayer times to cache:', error);
     }
-  }, [generateCacheKey, settings]);
+  }, [generateCacheKey, settings, formatDateForAPI]);
 
   // Fetch fresh prayer times from API
   const fetchFreshPrayerTimes = useCallback(async (): Promise<void> => {
@@ -126,6 +151,7 @@ export const PrayerTimesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       let response;
       let locationName = '';
       let isGPS = false;
+      const dateStr = formatDateForAPI(selectedDate);
 
       if (settings.location.useGPS) {
         // Use GPS coordinates
@@ -140,7 +166,16 @@ export const PrayerTimesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         });
         
         const { latitude, longitude } = location.coords;
-        response = await prayerTimesApi.getPrayerTimesByCoordinates(latitude, longitude, settings);
+        
+        // Auto-update calculation method based on location (only for today)
+        if (isToday) {
+          await autoUpdateCalculationMethod(
+            { ...settings, location: { latitude, longitude } },
+            updateSettings
+          );
+        }
+        
+        response = await prayerTimesApi.getPrayerTimesByCoordinates(latitude, longitude, settings, dateStr);
         
         // Extract location name from API response
         if (response.code === 200 && response.data.meta && response.data.meta.timezone) {
@@ -152,7 +187,7 @@ export const PrayerTimesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       } else {
         // Use city name
         locationName = settings.location.city || 'New York';
-        response = await prayerTimesApi.getPrayerTimesByCity(locationName, settings);
+        response = await prayerTimesApi.getPrayerTimesByCity(locationName, settings, 'US', dateStr);
       }
 
       if (response.code === 200) {
@@ -165,9 +200,9 @@ export const PrayerTimesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setLastUpdated(new Date());
         
         // Cache the data
-        await saveCachedData(times, dateStr, locationName, isGPS);
+        await saveCachedData(times, dateStr, locationName, isGPS, selectedDate);
         
-        console.log('Fresh prayer times fetched for:', locationName);
+        console.log('Fresh prayer times fetched for:', locationName, formatDateForAPI(selectedDate));
       } else {
         throw new Error('Invalid response from prayer times API');
       }
@@ -175,10 +210,11 @@ export const PrayerTimesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       console.error('Error fetching prayer times:', error);
       setError(error instanceof Error ? error.message : 'Failed to fetch prayer times');
     }
-  }, [settings, saveCachedData]);
+  }, [settings, saveCachedData, selectedDate, formatDateForAPI, isToday, updateSettings]);
 
   // Main function to get prayer times (checks cache first)
   const refreshPrayerTimes = useCallback(async (): Promise<void> => {
+    console.log('Refreshing prayer times for date:', selectedDate.toDateString());
     setLoading(true);
     
     try {
@@ -186,18 +222,20 @@ export const PrayerTimesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const isGPS = settings.location.useGPS;
       
       // Try to load from cache first
-      const cachedData = await loadCachedData(locationName, isGPS);
+      const cachedData = await loadCachedData(locationName, isGPS, selectedDate);
       
       if (cachedData) {
         // Use cached data
+        console.log('Using cached data for', formatDateForAPI(selectedDate));
         setPrayerTimes(cachedData.prayerTimes);
         setDate(cachedData.date);
         setCurrentLocation(cachedData.location);
         setLastUpdated(new Date(cachedData.timestamp));
         setError(null);
-        console.log('Loaded prayer times from cache');
+        console.log('Loaded prayer times from cache for', formatDateForAPI(selectedDate));
       } else {
         // Fetch fresh data
+        console.log('Fetching fresh data for', formatDateForAPI(selectedDate));
         await fetchFreshPrayerTimes();
       }
     } catch (error) {
@@ -206,7 +244,27 @@ export const PrayerTimesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } finally {
       setLoading(false);
     }
-  }, [settings.location.useGPS, settings.location.city, loadCachedData, fetchFreshPrayerTimes]);
+  }, [settings.location.useGPS, settings.location.city, loadCachedData, fetchFreshPrayerTimes, formatDateForAPI]);
+
+  // Navigation methods
+  const goToPreviousDay = useCallback(async (): Promise<void> => {
+    const previousDay = new Date(selectedDate);
+    previousDay.setDate(previousDay.getDate() - 1);
+    console.log('Going to previous day:', previousDay.toDateString());
+    setSelectedDate(previousDay);
+  }, [selectedDate]);
+
+  const goToNextDay = useCallback(async (): Promise<void> => {
+    const nextDay = new Date(selectedDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    console.log('Going to next day:', nextDay.toDateString());
+    setSelectedDate(nextDay);
+  }, [selectedDate]);
+
+  const goToToday = useCallback(async (): Promise<void> => {
+    console.log('Going to today');
+    setSelectedDate(new Date());
+  }, []);
 
   // Clear all cached data
   const clearCache = useCallback(async (): Promise<void> => {
@@ -229,6 +287,12 @@ export const PrayerTimesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     settings.location.useGPS,
     settings.location.city
   ]);
+
+  // Handle date changes separately to avoid circular dependencies
+  useEffect(() => {
+    console.log('Selected date changed to:', selectedDate.toDateString());
+    refreshPrayerTimes();
+  }, [selectedDate]);
 
   // Set up periodic refresh (only if cache is getting old)
   useEffect(() => {
@@ -253,8 +317,13 @@ export const PrayerTimesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     date,
     currentLocation,
     lastUpdated,
+    selectedDate,
     refreshPrayerTimes,
     clearCache,
+    goToPreviousDay,
+    goToNextDay,
+    goToToday,
+    isToday,
   };
 
   return (

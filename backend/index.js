@@ -70,7 +70,7 @@ app.get('/api/health', (req, res) => {
 // Prayer times by city endpoint
 app.get('/api/prayer-times/by-city', async (req, res) => {
   try {
-    const { city, method, school, country } = req.query;
+    const { city, method, school, country, date } = req.query;
     
     if (!city) {
       return res.status(400).json({ error: 'City parameter is required' });
@@ -80,7 +80,8 @@ app.get('/api/prayer-times/by-city', async (req, res) => {
       city,
       country,
       method,
-      school
+      school,
+      date
     });
 
     // Build the API URL - Aladhan API requires both city and country
@@ -89,6 +90,11 @@ app.get('/api/prayer-times/by-city', async (req, res) => {
     // Add country parameter (default to US if not provided)
     const countryParam = country || 'US';
     apiUrl += `&country=${encodeURIComponent(countryParam)}`;
+    
+    // Add date parameter if provided (format: DD-MM-YYYY)
+    if (date) {
+      apiUrl += `&date=${encodeURIComponent(date)}`;
+    }
     
     if (method) {
       apiUrl += `&method=${method}`;
@@ -136,7 +142,7 @@ app.get('/api/prayer-times/by-city', async (req, res) => {
 // Prayer times by coordinates endpoint
 app.get('/api/prayer-times/by-coordinates', async (req, res) => {
   try {
-    const { latitude, longitude, method, school } = req.query;
+    const { latitude, longitude, method, school, date } = req.query;
     
     if (!latitude || !longitude) {
       return res.status(400).json({ error: 'Latitude and longitude parameters are required' });
@@ -146,11 +152,17 @@ app.get('/api/prayer-times/by-coordinates', async (req, res) => {
       latitude,
       longitude,
       method,
-      school
+      school,
+      date
     });
 
     // Build the API URL
     let apiUrl = `https://api.aladhan.com/v1/timings?latitude=${latitude}&longitude=${longitude}`;
+    
+    // Add date parameter if provided (format: DD-MM-YYYY)
+    if (date) {
+      apiUrl += `&date=${encodeURIComponent(date)}`;
+    }
     
     if (method) {
       apiUrl += `&method=${method}`;

@@ -5,30 +5,51 @@ import {
   ActivityIndicator,
   Platform,
   ScrollView,
-  Alert
+  Alert,
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { PrayerCard } from '@/src/components/shared/PrayerCard';
 import { ThemedView } from '@/src/components/shared/ThemedView';
 import { ThemedText } from '@/src/components/shared/ThemedText';
-import { LocationSearch } from '@/src/components/shared/LocationSearch';
 import FacebookStyleTransition from '@/src/components/shared/FacebookStyleTransition';
-import { LocationSuggestion } from '@/src/services/locationValidationService';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { useNotifications } from '@/src/contexts/NotificationContext';
 import { usePrayerTimes } from '@/src/contexts/PrayerTimesContext';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
 import { useTranslation } from '@/src/i18n';
-import { formatDate } from '@/src/utils/timeUtils';
 
 export default function PrayerTimesScreen() {
   const { settings, updateSettings } = useSettings();
   const { schedulePrayerNotifications } = useNotifications();
-  const { prayerTimes, loading, error, date, currentLocation, refreshPrayerTimes } = usePrayerTimes();
+  const { 
+    prayerTimes, 
+    loading, 
+    error, 
+    date, 
+    currentLocation, 
+    refreshPrayerTimes, 
+    selectedDate,
+    goToPreviousDay,
+    goToNextDay,
+    goToToday,
+    isToday
+  } = usePrayerTimes();
   const { isDarkMode } = useSettings();
   const theme = isDarkMode ? darkTheme : lightTheme;
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+
+  // Format the selected date for display
+  const formatSelectedDate = useCallback((date: Date): string => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  }, []);
 
   // Schedule notifications when prayer times are available
   useEffect(() => {
@@ -36,26 +57,6 @@ export default function PrayerTimesScreen() {
       schedulePrayerNotifications(prayerTimes);
     }
   }, [prayerTimes, settings.notifications.enabled, schedulePrayerNotifications]);
-
-  // Handler for location selection from LocationSearch component
-  const handleLocationSelect = useCallback((location: LocationSuggestion) => {
-    updateSettings('location', 'city', location.name);
-    updateSettings('location', 'useGPS', false);
-  }, [updateSettings]);
-
-  // Handler for validation errors from LocationSearch component
-  const handleValidationError = useCallback((errorMessage: string) => {
-    Alert.alert(
-      t('invalidLocation') || 'Invalid Location',
-      errorMessage,
-      [{ text: t('ok') || 'OK' }]
-    );
-  }, [t]);
-
-  // Handler for GPS location
-  const handleGeoLocation = () => {
-    updateSettings('location', 'useGPS', true);
-  };
 
   return (
     <FacebookStyleTransition direction="left">
@@ -70,40 +71,39 @@ export default function PrayerTimesScreen() {
           ]}
         >
         <ThemedView style={styles.header}>
-            <ThemedText style={[styles.title, { color: theme.primary, paddingTop: 20 }]}>{t('muslimPrayerTimes')}</ThemedText>
-          <ThemedText type="subtitle">{t('enterCityOrLocation')}</ThemedText>
+          <ThemedText style={[styles.title, { color: theme.primary, paddingTop: 20 }]}>{t('muslimPrayerTimes')}</ThemedText>
+          
+          {/* Date Navigation */}
+          <View style={styles.dateNavigation}>
+            <TouchableOpacity 
+              style={[styles.navButton, { backgroundColor: theme.surface }]}
+              onPress={goToPreviousDay}
+            >
+              <Ionicons name="chevron-back" size={20} color={theme.primary} />
+            </TouchableOpacity>
+            
+            <View style={styles.dateContainer}>
+              <ThemedText type="subtitle" style={styles.dateText}>{formatSelectedDate(selectedDate)}</ThemedText>
+              {!isToday && (
+                <TouchableOpacity 
+                  style={[styles.todayButton, { backgroundColor: theme.primary }]}
+                  onPress={goToToday}
+                >
+                  <ThemedText style={[styles.todayButtonText, { color: theme.surface }]}>
+                    {t('today')}
+                  </ThemedText>
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            <TouchableOpacity 
+              style={[styles.navButton, { backgroundColor: theme.surface }]}
+              onPress={goToNextDay}
+            >
+              <Ionicons name="chevron-forward" size={20} color={theme.primary} />
+            </TouchableOpacity>
+          </View>
         </ThemedView>
-
-        <LocationSearch
-          onLocationSelect={handleLocationSelect}
-          onValidationError={handleValidationError}
-          placeholder={t('searchCity')}
-          initialValue={settings.location.city || ''}
-        />
-
-        <TouchableOpacity 
-          style={[styles.locationButton, { 
-            backgroundColor: theme.surface,
-            borderColor: theme.primary 
-          }]} 
-          onPress={handleGeoLocation}
-        >
-          <ThemedText style={[styles.locationButtonText, { color: theme.primary }]}>
-            {t('useMyLocation')}
-          </ThemedText>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[styles.refreshButton, { 
-            backgroundColor: theme.primary 
-          }]} 
-          onPress={refreshPrayerTimes}
-          disabled={loading}
-        >
-          <ThemedText style={[styles.buttonText, { opacity: loading ? 0.6 : 1 }]}>
-            {loading ? t('refreshing') : t('refresh')}
-          </ThemedText>
-        </TouchableOpacity>
 
         <ThemedView style={styles.mainContent}>
           {loading ? (
@@ -116,7 +116,7 @@ export default function PrayerTimesScreen() {
             <ThemedView style={[styles.prayerTimesContainer, { backgroundColor: theme.surface }]}>
               <ThemedText type="title">{t('prayerTimes')} for {currentLocation}</ThemedText>
               <ThemedText type="subtitle">
-                {formatDate(date, settings.appearance.showHijriDates)}
+                {date}
               </ThemedText>
               
               {/* Notification Status */}
@@ -158,40 +158,53 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    padding: 20,
-    paddingTop: Platform.OS === 'android' ? 40 : 20,
+    padding: 16, // Reduced from 20
+    paddingTop: Platform.OS === 'android' ? 36 : 16, // Reduced from 40:20
   },
   header: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16, // Reduced from 20
   },
   title: {
-    fontSize: 28,
+    fontSize: 24, // Reduced from 28
     fontWeight: 'bold',
   },
-  locationButton: {
-    borderWidth: 1,
-    height: 50,
+  dateNavigation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    gap: 16,
+  },
+  navButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
-    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  locationButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  refreshButton: {
-    height: 50,
-    justifyContent: 'center',
+  dateContainer: {
     alignItems: 'center',
-    borderRadius: 8,
-    marginBottom: 20,
+    minWidth: 180,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  dateText: {
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  todayButton: {
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  todayButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   mainContent: {
     flex: 1,
@@ -199,18 +212,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorContainer: {
-    padding: 15,
+    padding: 12, // Reduced from 15
     borderRadius: 8,
     borderWidth: 1,
   },
   errorText: {
-    fontSize: 16,
+    fontSize: 15, // Reduced from 16
     textAlign: 'center',
   },
   prayerTimesContainer: {
     width: '100%',
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 10, // Reduced from 12
+    padding: 16, // Reduced from 20
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -225,25 +238,25 @@ const styles = StyleSheet.create({
   },
   notificationStatus: {
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 10,
+    marginTop: 8, // Reduced from 10
+    marginBottom: 8, // Reduced from 10
   },
   notificationText: {
-    fontSize: 14,
+    fontSize: 13, // Reduced from 14
     fontWeight: '500',
   },
   settingsStatus: {
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8, // Reduced from 10
   },
   settingsText: {
-    fontSize: 12,
+    fontSize: 11, // Reduced from 12
     opacity: 0.7,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginTop: 20,
+    marginTop: 16, // Reduced from 20
   },
 });

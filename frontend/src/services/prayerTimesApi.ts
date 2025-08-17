@@ -31,12 +31,17 @@ const getApiUrl = () => {
 const API_URL = getApiUrl();
 
 export const prayerTimesApi = {
-  async getPrayerTimesByCity(city: string, settings?: any, country: string = 'US') {
+  async getPrayerTimesByCity(city: string, settings?: any, country: string = 'US', date?: string) {
     try {
       console.log('Fetching prayer times for city:', city);
       console.log('API URL:', `${API_URL}/prayer-times/by-city`);
       
       const params: any = { city, country };
+      
+      // Add date parameter if provided (format: DD-MM-YYYY)
+      if (date) {
+        params.date = date;
+      }
       
       // Add settings parameters if provided
       if (settings) {
@@ -67,12 +72,17 @@ export const prayerTimesApi = {
     }
   },
 
-  async getPrayerTimesByCoordinates(latitude: number, longitude: number, settings?: any) {
+  async getPrayerTimesByCoordinates(latitude: number, longitude: number, settings?: any, date?: string) {
     try {
       console.log('Fetching prayer times for coordinates:', { latitude, longitude });
       console.log('API URL:', `${API_URL}/prayer-times/by-coordinates`);
       
       const params: any = { latitude, longitude };
+      
+      // Add date parameter if provided (format: DD-MM-YYYY)
+      if (date) {
+        params.date = date;
+      }
       
       // Add settings parameters if provided
       if (settings) {
