@@ -27,11 +27,13 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     provider: {
       city_search: 'MuslimSalat.com API (supports date navigation)',
-      coordinates: 'Aladhan.com API (fallback for coordinates)'
+      coordinates: 'Aladhan.com API (fallback for coordinates)',
+      gps_flow: 'GPS → Aladhan (coordinates to city) → MuslimSalat (city prayer times)'
     },
     endpoints: {
       health: '/api/health',
       test: '/api/test',
+      coordinates_to_city: '/api/coordinates-to-city?latitude=40.7128&longitude=-74.0060',
       prayer_times: {
         by_city: '/api/prayer-times/by-city?city=CityName&method=2&date=DD-MM-YYYY',
         by_coordinates: '/api/prayer-times/by-coordinates?latitude=40.7128&longitude=-74.0060&method=2&date=DD-MM-YYYY'
@@ -48,10 +50,11 @@ app.get('/', (req, res) => {
     },
     date_format: 'DD-MM-YYYY (e.g., 15-08-2025)',
     features: {
-      date_navigation: 'City searches support previous/next day prayer times',
-      flexible_dates: 'Works with past and future dates for cities',
+      date_navigation: 'All searches support previous/next day prayer times via MuslimSalat',
+      gps_smart_conversion: 'GPS coordinates automatically converted to city for better date support',
+      flexible_dates: 'Works with past and future dates consistently',
       global_coverage: 'Worldwide city and coordinate support',
-      hybrid_approach: 'Best of both APIs for optimal functionality'
+      optimized_flow: 'GPS → City conversion → MuslimSalat for best performance and date accuracy'
     },
     documentation: 'https://github.com/heshoom/muslim-prayer-app',
     contact: 'Built with ❤️ for the Muslim community'
@@ -66,6 +69,67 @@ app.get('/api/test', (req, res) => {
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'healthy' });
+});
+
+// Convert coordinates to city name endpoint
+app.get('/api/coordinates-to-city', async (req, res) => {
+  try {
+    const { latitude, longitude } = req.query;
+    
+    if (!latitude || !longitude) {
+      return res.status(400).json({ error: 'Latitude and longitude parameters are required' });
+    }
+
+    console.log('Converting coordinates to city:', { latitude, longitude });
+
+    // Use Aladhan API to get location info from coordinates
+    const apiUrl = `https://api.aladhan.com/v1/timings?latitude=${latitude}&longitude=${longitude}`;
+
+    const response = await axios.get(apiUrl, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Muslim-Prayer-App/1.0'
+      }
+    });
+
+    if (response.data && response.data.code === 200) {
+      const meta = response.data.data.meta;
+      let cityName = 'Unknown';
+      
+      // Extract city name from timezone or other available data
+      if (meta.timezone) {
+        // Extract city from timezone (e.g., "America/New_York" -> "New York")
+        const timezoneParts = meta.timezone.split('/');
+        if (timezoneParts.length > 1) {
+          cityName = timezoneParts[timezoneParts.length - 1].replace(/_/g, ' ');
+        }
+      }
+      
+      res.json({
+        success: true,
+        city: cityName,
+        country: meta.timezone ? meta.timezone.split('/')[0] : 'Unknown',
+        timezone: meta.timezone,
+        coordinates: {
+          latitude: parseFloat(latitude),
+          longitude: parseFloat(longitude)
+        }
+      });
+    } else {
+      throw new Error('Invalid response from location API');
+    }
+  } catch (error) {
+    console.error('Error converting coordinates to city:', error.message);
+    
+    if (error.code === 'ECONNABORTED') {
+      return res.status(408).json({ error: 'Request timeout' });
+    }
+    
+    res.status(500).json({ 
+      error: 'Failed to convert coordinates to city',
+      message: error.message 
+    });
+  }
 });
 
 // Prayer times by city endpoint
