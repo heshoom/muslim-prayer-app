@@ -88,6 +88,52 @@ export const prayerTimesApi = {
     }
   },
 
+  async getWeeklyPrayerTimesByCoordinates(latitude: number, longitude: number, settings?: any) {
+    try {
+      console.log('Fetching 2-week prayer times for coordinates:', { latitude, longitude });
+      console.log('API URL:', `${API_URL}/prayer-times/weekly-by-coordinates`);
+      
+      const params: any = { latitude, longitude };
+      
+      // Add settings parameters if provided
+      if (settings) {
+        if (settings.prayer.calculationMethod) {
+          params.method = getCalculationMethodNumber(settings.prayer.calculationMethod);
+        }
+        if (settings.prayer.madhab) {
+          params.school = settings.prayer.madhab === 'hanafi' ? '1' : '0';
+        }
+      }
+      
+      const response = await axios.get(`${API_URL}/prayer-times/weekly-by-coordinates`, {
+        params,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        withCredentials: false,
+        timeout: 20000 // 20 second timeout for 2-week data
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      if (isAxiosError(error)) {
+        console.error('Response:', error.response?.data);
+        console.error('Status:', error.response?.status);
+        if (error.code === 'ECONNABORTED') {
+          throw new Error('Request timed out. Please try again.');
+        }
+        if (!error.response) {
+          throw new Error('Network error. Please check your internet connection.');
+        }
+        if (error.response.status === 404) {
+          throw new Error('Weekly prayer times service not found. Please try again later.');
+        }
+      }
+      throw new Error('Failed to fetch weekly prayer times. Please try again later.');
+    }
+  },
+
   async getMonthlyPrayerTimesByCoordinates(latitude: number, longitude: number, settings?: any, year?: number, month?: number) {
     try {
       console.log('Fetching monthly prayer times for coordinates:', { latitude, longitude, year, month });

@@ -37,6 +37,7 @@ app.get('/', (req, res) => {
       prayer_times: {
         by_city: '/api/prayer-times/by-city?city=CityName&method=2&date=DD-MM-YYYY',
         by_coordinates: '/api/prayer-times/by-coordinates?latitude=40.7128&longitude=-74.0060&method=2&date=DD-MM-YYYY',
+        weekly_by_coordinates: '/api/prayer-times/weekly-by-coordinates?latitude=40.7128&longitude=-74.0060&method=2',
         monthly_by_coordinates: '/api/prayer-times/monthly-by-coordinates?latitude=40.7128&longitude=-74.0060&method=2&year=2025&month=8'
       }
     },
@@ -55,7 +56,8 @@ app.get('/', (req, res) => {
       gps_smart_conversion: 'GPS coordinates automatically converted to city for better date support',
       flexible_dates: 'Works with past and future dates consistently',
       global_coverage: 'Worldwide city and coordinate support',
-      optimized_flow: 'GPS → City conversion → MuslimSalat for best performance and date accuracy'
+      optimized_flow: 'GPS → City conversion → MuslimSalat for best performance and date accuracy',
+      efficient_caching: '2-week window (1 week before + 1 week after today) for optimal performance'
     },
     documentation: 'https://github.com/heshoom/muslim-prayer-app',
     contact: 'Built with ❤️ for the Muslim community'
@@ -283,21 +285,19 @@ app.get('/api/prayer-times/by-city', async (req, res) => {
   }
 });
 
-// Monthly prayer times by coordinates endpoint (GPS -> City -> MuslimSalat)
-app.get('/api/prayer-times/monthly-by-coordinates', async (req, res) => {
+// 2-week prayer times by coordinates endpoint (GPS -> City -> MuslimSalat)
+app.get('/api/prayer-times/weekly-by-coordinates', async (req, res) => {
   try {
-    const { latitude, longitude, method, year, month } = req.query;
+    const { latitude, longitude, method } = req.query;
     
     if (!latitude || !longitude) {
       return res.status(400).json({ error: 'Latitude and longitude parameters are required' });
     }
 
-    console.log('Received monthly request for coordinates:', {
+    console.log('Received weekly request for coordinates:', {
       latitude,
       longitude,
-      method,
-      year,
-      month
+      method
     });
 
     // Step 1: Convert coordinates to city using Aladhan API
@@ -330,15 +330,18 @@ app.get('/api/prayer-times/monthly-by-coordinates', async (req, res) => {
 
     console.log('Step 1 Result: Extracted city name:', cityName);
 
-    // Step 2: Get monthly prayer times from MuslimSalat using the city
-    const currentYear = year || new Date().getFullYear();
-    const currentMonth = month || (new Date().getMonth() + 1);
+    // Step 2: Get 2-week prayer times from MuslimSalat using the city
+    // Calculate date range: 1 week before today to 1 week after today
+    const today = new Date();
+    const weekBefore = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const weekAfter = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
     
-    console.log('Step 2: Fetching monthly prayer times by iterating through each day');
+    console.log('Step 2: Fetching 2-week prayer times for date range:', {
+      from: weekBefore.toISOString().split('T')[0],
+      to: weekAfter.toISOString().split('T')[0]
+    });
     
-    // Get the number of days in the month
-    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-    const monthlyItems = [];
+    const weeklyItems = [];
     
     // Method mapping for MuslimSalat
     let methodParam = '';
@@ -362,16 +365,20 @@ app.get('/api/prayer-times/monthly-by-coordinates', async (req, res) => {
       methodParam = `&method=${mappedMethod}`;
     }
     
-    // Fetch prayer times for each day of the month
-    for (let day = 1; day <= daysInMonth; day++) {
+    // Fetch prayer times for each day in the 2-week window
+    const startDate = new Date(weekBefore);
+    const endDate = new Date(weekAfter);
+    
+    for (let currentDate = new Date(startDate); currentDate <= endDate; currentDate.setDate(currentDate.getDate() + 1)) {
       try {
-        const dayStr = day.toString().padStart(2, '0');
-        const monthStr = currentMonth.toString().padStart(2, '0');
-        const dateStr = `${dayStr}-${monthStr}-${currentYear}`;
+        const dayStr = currentDate.getDate().toString().padStart(2, '0');
+        const monthStr = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+        const yearStr = currentDate.getFullYear().toString();
+        const dateStr = `${dayStr}-${monthStr}-${yearStr}`;
         
         const dayApiUrl = `https://muslimsalat.com/${encodeURIComponent(cityName)}/${dateStr}.json?key=test${methodParam}`;
         
-        console.log(`Fetching day ${day}/${currentMonth}: ${dayApiUrl}`);
+        console.log(`Fetching day ${dayStr}/${monthStr}/${yearStr}: ${dayApiUrl}`);
         
         const dayResponse = await axios.get(dayApiUrl, {
           timeout: 8000,
@@ -382,33 +389,31 @@ app.get('/api/prayer-times/monthly-by-coordinates', async (req, res) => {
         
         if (dayResponse.data && dayResponse.data.status_valid === 1 && dayResponse.data.items && dayResponse.data.items.length > 0) {
           const dayData = dayResponse.data.items[0];
-          monthlyItems.push({
+          weeklyItems.push({
             ...dayData,
-            date_for: `${currentYear}-${monthStr}-${dayStr}` // Standardize date format
+            date_for: `${yearStr}-${monthStr}-${dayStr}` // Standardize date format
           });
         } else {
-          console.warn(`No valid data for day ${day}/${currentMonth}/${currentYear}`);
+          console.warn(`No valid data for day ${dayStr}/${monthStr}/${yearStr}`);
         }
         
         // Small delay to avoid overwhelming the API
-        if (day < daysInMonth) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
+        await new Promise(resolve => setTimeout(resolve, 100));
       } catch (dayError) {
-        console.error(`Error fetching day ${day}:`, dayError.message);
+        console.error(`Error fetching day ${currentDate.toISOString().split('T')[0]}:`, dayError.message);
         // Continue with other days even if one fails
       }
     }
     
-    if (monthlyItems.length === 0) {
-      throw new Error('No prayer times data could be fetched for the requested month');
+    if (weeklyItems.length === 0) {
+      throw new Error('No prayer times data could be fetched for the requested 2-week period');
     }
     
-    // Create response in MuslimSalat format with all days
-    const monthlyResponse = {
+    // Create response in MuslimSalat format with 2 weeks of days
+    const weeklyResponse = {
       title: "",
       query: cityName,
-      for: "monthly",
+      for: "2-weeks",
       method: parseInt(method) || 4,
       prayer_method_name: "Islamic Circle of North America",
       daylight: "1",
@@ -426,10 +431,15 @@ app.get('/api/prayer-times/monthly-by-coordinates', async (req, res) => {
       postal_code: "",
       country: "USA",
       country_code: "US",
-      items: monthlyItems,
+      items: weeklyItems,
       status_valid: 1,
       status_code: 1,
       status_description: "Success.",
+      date_range: {
+        from: weekBefore.toISOString().split('T')[0],
+        to: weekAfter.toISOString().split('T')[0],
+        total_days: weeklyItems.length
+      },
       city_info: {
         name: cityName,
         timezone: meta.timezone,
@@ -440,11 +450,11 @@ app.get('/api/prayer-times/monthly-by-coordinates', async (req, res) => {
       }
     };
     
-    console.log(`Step 2 Result: Successfully fetched ${monthlyItems.length} days of prayer times for ${cityName}`);
+    console.log(`Step 2 Result: Successfully fetched ${weeklyItems.length} days of prayer times for ${cityName} (2-week window)`);
     
-    res.json(monthlyResponse);
+    res.json(weeklyResponse);
   } catch (error) {
-    console.error('Error fetching monthly prayer times by coordinates:', error.message);
+    console.error('Error fetching 2-week prayer times by coordinates:', error.message);
     
     if (error.code === 'ECONNABORTED') {
       return res.status(408).json({ error: 'Request timeout' });
@@ -452,13 +462,13 @@ app.get('/api/prayer-times/monthly-by-coordinates', async (req, res) => {
     
     if (error.response) {
       return res.status(error.response.status).json({ 
-        error: 'Failed to fetch monthly prayer times',
+        error: 'Failed to fetch 2-week prayer times',
         message: error.response.data?.message || error.message
       });
     }
 
     res.status(500).json({ 
-      error: 'Failed to fetch monthly prayer times',
+      error: 'Failed to fetch 2-week prayer times',
       message: error.message 
     });
   }
