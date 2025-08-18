@@ -1,180 +1,199 @@
-import { useState, useEffect, useCallback } from 'react';
-import {
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-  Platform,
-  ScrollView,
-  Alert,
-  View
-} from 'react-native';
+import React from 'react';
+import { View, ScrollView, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { PrayerCard } from '@/src/components/shared/PrayerCard';
 import { ThemedView } from '@/src/components/shared/ThemedView';
 import { ThemedText } from '@/src/components/shared/ThemedText';
 import FacebookStyleTransition from '@/src/components/shared/FacebookStyleTransition';
 import { useSettings } from '@/src/contexts/SettingsContext';
-import { useNotifications } from '@/src/contexts/NotificationContext';
 import { usePrayerTimes } from '@/src/contexts/PrayerTimesContext';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
 import { useTranslation } from '@/src/i18n';
+import { formatTime as formatTimeUtil } from '@/src/utils/timeUtils';
+import moment from 'moment-hijri';
 
 export default function PrayerTimesScreen() {
-  const { settings, updateSettings } = useSettings();
-  const { schedulePrayerNotifications } = useNotifications();
-  const { 
-    prayerTimes, 
-    loading, 
-    error, 
-    date, 
-    currentLocation, 
-    refreshPrayerTimes, 
-    selectedDate,
-    goToPreviousDay,
-    goToNextDay,
-    goToToday,
-    isToday,
-    canGoBack,
-    canGoForward
-  } = usePrayerTimes();
   const { isDarkMode } = useSettings();
   const theme = isDarkMode ? darkTheme : lightTheme;
   const insets = useSafeAreaInsets();
-  const { t } = useTranslation();
+  const { prayerTimes, location, loading, error, refreshPrayerTimes } = usePrayerTimes();
+  const { settings } = useSettings();
+  const { t, isRTL, getHijriMonths } = useTranslation();
 
-  // Format the selected date for display
-  const formatSelectedDate = useCallback((date: Date): string => {
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
-  }, []);
+  const formatTime = (time: string) => formatTimeUtil(time, settings.appearance.timeFormat);
 
-  // Schedule notifications when prayer times are available
-  useEffect(() => {
-    if (prayerTimes && settings.notifications.enabled) {
-      schedulePrayerNotifications(prayerTimes);
+  const getCurrentDate = () => {
+    const locale = settings.appearance.language || 'en';
+    try {
+      return new Date().toLocaleDateString(locale, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch {
+      return new Date().toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
     }
-  }, [prayerTimes, settings.notifications.enabled, schedulePrayerNotifications]);
+  };
+
+  // Compute localized Hijri date (uses translation month names)
+  const getHijriDate = () => {
+    try {
+      const hijri = moment();
+      const day = hijri.iDate();
+      const monthIdx = hijri.iMonth();
+      const year = hijri.iYear();
+      const months = getHijriMonths();
+      const monthName = months[monthIdx] || months[0] || '';
+      return `${day} ${monthName} ${year}`;
+    } catch {
+      return '';
+    }
+  };
+
+  if (loading) {
+    return (
+      <FacebookStyleTransition direction="left">
+        <ThemedView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+          <View style={[styles.container, { paddingTop: insets.top + 20 }]}>
+            <ActivityIndicator size="large" color={theme.primary} />
+            <ThemedText style={[styles.loadingText, { color: theme.text.primary }]}>
+              {t('loadingPrayerTimes')}
+            </ThemedText>
+          </View>
+        </ThemedView>
+      </FacebookStyleTransition>
+    );
+  }
+
+  if (error) {
+    return (
+      <FacebookStyleTransition direction="left">
+        <ThemedView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+          <ScrollView
+            contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}
+            refreshControl={
+              <RefreshControl refreshing={loading} onRefresh={refreshPrayerTimes} />
+            }
+          >
+            <View style={styles.errorContainer}>
+              <ThemedText style={[styles.errorTitle, { color: theme.text.primary, textAlign: isRTL() ? 'right' : 'left' }]}>
+                {t('unableToGetPrayerTimes')}
+              </ThemedText>
+              <ThemedText style={[styles.errorMessage, { color: theme.text.secondary }]}>
+                {error}
+              </ThemedText>
+              <ThemedText style={[styles.refreshHint, { color: theme.text.secondary }]}>
+                {t('refresh')}
+              </ThemedText>
+            </View>
+          </ScrollView>
+        </ThemedView>
+      </FacebookStyleTransition>
+    );
+  }
+
+  if (!prayerTimes) {
+    return (
+      <FacebookStyleTransition direction="left">
+        <ThemedView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+          <ScrollView
+            contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}
+            refreshControl={
+              <RefreshControl refreshing={loading} onRefresh={refreshPrayerTimes} />
+            }
+          >
+            <View style={styles.errorContainer}>
+              <ThemedText style={[styles.errorTitle, { color: theme.text.primary, textAlign: isRTL() ? 'right' : 'left' }]}>
+                {t('unableToGetPrayerTimes')}
+              </ThemedText>
+              <ThemedText style={[styles.refreshHint, { color: theme.text.secondary }]}>
+                {t('refresh')}
+              </ThemedText>
+            </View>
+          </ScrollView>
+        </ThemedView>
+      </FacebookStyleTransition>
+    );
+  }
+
+  const prayerNames = [
+    { key: 'Fajr', name: 'Fajr', time: prayerTimes.Fajr },
+    { key: 'Sunrise', name: 'Sunrise', time: prayerTimes.Sunrise },
+    { key: 'Dhuhr', name: 'Dhuhr', time: prayerTimes.Dhuhr },
+    { key: 'Asr', name: 'Asr', time: prayerTimes.Asr },
+    { key: 'Maghrib', name: 'Maghrib', time: prayerTimes.Maghrib },
+    { key: 'Isha', name: 'Isha', time: prayerTimes.Isha },
+  ];
 
   return (
     <FacebookStyleTransition direction="left">
       <ThemedView style={[styles.safeArea, { backgroundColor: theme.background }]}>
-        <ScrollView 
-          contentContainerStyle={[
-            styles.container,
-            { 
-              paddingTop: insets.top + 10,
-              paddingBottom: Platform.OS === 'ios' ? (75 + insets.bottom) : (60 + 20)
-            }
-          ]}
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}
+          refreshControl={
+            <RefreshControl refreshing={loading} onRefresh={refreshPrayerTimes} />
+          }
         >
-        <ThemedView style={styles.header}>
-          <ThemedText style={[styles.title, { color: theme.primary, paddingTop: 20 }]}>{t('muslimPrayerTimes')}</ThemedText>
-          
-          {/* Date Navigation */}
-          <View style={styles.dateNavigation}>
-            <TouchableOpacity 
-              style={[
-                styles.navButton, 
-                { 
-                  backgroundColor: canGoBack ? theme.surface : theme.background,
-                  opacity: canGoBack ? 1 : 0.3
-                }
-              ]}
-              onPress={canGoBack ? goToPreviousDay : undefined}
-              disabled={!canGoBack}
-            >
-              <Ionicons 
-                name="chevron-back" 
-                size={20} 
-                color={canGoBack ? theme.primary : theme.text.secondary} 
-              />
-            </TouchableOpacity>
-            
-            <View style={styles.dateContainer}>
-              <ThemedText type="subtitle" style={styles.dateText}>{formatSelectedDate(selectedDate)}</ThemedText>
-              <ThemedText style={[styles.dateRangeHint, { color: theme.text.secondary }]}>
-                {t('7DaysRange') || '7 days range (past & future)'}
-              </ThemedText>
-              {!isToday && (
-                <TouchableOpacity 
-                  style={[styles.todayButton, { backgroundColor: theme.primary }]}
-                  onPress={goToToday}
-                >
-                  <ThemedText style={[styles.todayButtonText, { color: theme.surface }]}>
-                    {t('today')}
-                  </ThemedText>
-                </TouchableOpacity>
-              )}
-            </View>
-            
-            <TouchableOpacity 
-              style={[
-                styles.navButton, 
-                { 
-                  backgroundColor: canGoForward ? theme.surface : theme.background,
-                  opacity: canGoForward ? 1 : 0.3
-                }
-              ]}
-              onPress={canGoForward ? goToNextDay : undefined}
-              disabled={!canGoForward}
-            >
-              <Ionicons 
-                name="chevron-forward" 
-                size={20} 
-                color={canGoForward ? theme.primary : theme.text.secondary} 
-              />
-            </TouchableOpacity>
+          {/* Header */}
+          <View style={styles.header}>
+            <ThemedText type="title" style={[styles.title, { color: theme.primary }]}>
+        {t('prayerTimes')}
+            </ThemedText>
+            <ThemedText style={[styles.date, { color: theme.text.primary, textAlign: isRTL() ? 'right' : 'center' }]}>
+              {getCurrentDate()}
+            </ThemedText>
+            <ThemedText style={[styles.hijriDate, { color: theme.text.secondary, textAlign: isRTL() ? 'right' : 'center' }]}>
+              {getHijriDate()}
+            </ThemedText>
+            <ThemedText style={[styles.location, { color: theme.text.secondary }]}>
+              {location}
+            </ThemedText>
           </View>
-        </ThemedView>
 
-        <ThemedView style={styles.mainContent}>
-          {loading ? (
-            <ActivityIndicator size="large" color={theme.primary} />
-          ) : error ? (
-            <ThemedView style={[styles.errorContainer, { borderColor: theme.error }]}>
-              <ThemedText style={[styles.errorText, { color: theme.error }]}>{error}</ThemedText>
-            </ThemedView>
-          ) : prayerTimes ? (
-            <ThemedView style={[styles.prayerTimesContainer, { backgroundColor: theme.surface }]}>
-              <ThemedText type="title">{t('prayerTimes')} for {currentLocation}</ThemedText>
-              <ThemedText type="subtitle">
-                {date}
-              </ThemedText>
-              
-              {/* Notification Status */}
-              {settings.notifications.enabled && (
-                <ThemedView style={styles.notificationStatus}>
-                  <ThemedText style={[styles.notificationText, { color: theme.primary }]}>
-                    🔔 {t('notificationsEnabled')}
-                  </ThemedText>
-                </ThemedView>
-              )}
-              
-              {/* Settings Status */}
-              <ThemedView style={styles.settingsStatus}>
-                <ThemedText style={[styles.settingsText, { color: theme.text.secondary }]}>
-                  Method: {settings.prayer.calculationMethod} | Madhab: {settings.prayer.madhab} | Format: {settings.appearance.timeFormat}
+          {/* Prayer Times List */}
+          <View style={[styles.prayerTimesContainer, { backgroundColor: theme.surface }]}>
+            {prayerNames.map((prayer, index) => (
+              <View 
+                key={prayer.key} 
+                style={[
+                  styles.prayerRow,
+                  index < prayerNames.length - 1 && { 
+                    borderBottomColor: theme.border,
+                    borderBottomWidth: 1 
+                  }
+                ]}
+              >
+                <ThemedText style={[styles.prayerName, { color: theme.text.primary }]}>
+                  {(
+                    () => {
+                      const lower = prayer.name.toLowerCase();
+                      if (lower === 'fajr') return t('fajr');
+                      if (lower === 'sunrise') return t('sunrise');
+                      if (lower === 'dhuhr') return t('dhuhr');
+                      if (lower === 'asr') return t('asr');
+                      if (lower === 'maghrib') return t('maghrib');
+                      if (lower === 'isha') return t('isha');
+                      return prayer.name;
+                    }
+                  )()}
                 </ThemedText>
-              </ThemedView>
-              
-              <ThemedView style={styles.grid}>
-                <PrayerCard name="Fajr" time={prayerTimes.Fajr} />
-                <PrayerCard name="Dhuhr" time={prayerTimes.Dhuhr} />
-                <PrayerCard name="Asr" time={prayerTimes.Asr} />
-                <PrayerCard name="Maghrib" time={prayerTimes.Maghrib} />
-                <PrayerCard name="Isha" time={prayerTimes.Isha} />
-                <PrayerCard name="Sunrise" time={prayerTimes.Sunrise} />
-              </ThemedView>
-            </ThemedView>
-          ) : null}
-        </ThemedView>
-      </ScrollView>
-    </ThemedView>
+                <ThemedText style={[styles.prayerTime, { color: theme.primary }]}>
+                  {formatTime(prayer.time)}
+                </ThemedText>
+              </View>
+            ))}
+          </View>
+
+          <ThemedText style={[styles.refreshHint, { color: theme.text.secondary }]}>
+            {t('refresh')}
+          </ThemedText>
+        </ScrollView>
+      </ThemedView>
     </FacebookStyleTransition>
   );
 }
@@ -184,112 +203,89 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  scrollContent: {
     flexGrow: 1,
-    padding: 16, // Reduced from 20
-    paddingTop: Platform.OS === 'android' ? 36 : 16, // Reduced from 40:20
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 16, // Reduced from 20
+    marginBottom: 30,
+    paddingBottom: 20,
   },
   title: {
-    fontSize: 24, // Reduced from 28
+    fontSize: 28,
     fontWeight: 'bold',
+    marginBottom: 5,
   },
-  dateNavigation: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-    gap: 16,
+  date: {
+    fontSize: 16,
+    opacity: 0.8,
+    marginBottom: 5,
   },
-  navButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+  location: {
+    fontSize: 14,
+    opacity: 0.6,
+  },
+  hijriDate: {
+    fontSize: 14,
+    opacity: 0.8,
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  prayerTimesContainer: {
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
   },
-  dateContainer: {
+  prayerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    minWidth: 180,
+    paddingVertical: 15,
   },
-  dateText: {
-    textAlign: 'center',
+  prayerName: {
+    fontSize: 18,
     fontWeight: '600',
   },
-  dateRangeHint: {
-    textAlign: 'center',
-    fontSize: 10,
-    marginTop: 2,
-    opacity: 0.6,
-  },
-  todayButton: {
-    marginTop: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  todayButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  mainContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorContainer: {
-    padding: 12, // Reduced from 15
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  errorText: {
-    fontSize: 15, // Reduced from 16
-    textAlign: 'center',
-  },
-  prayerTimesContainer: {
-    width: '100%',
-    borderRadius: 10, // Reduced from 12
-    padding: 16, // Reduced from 20
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  notificationStatus: {
-    alignItems: 'center',
-    marginTop: 8, // Reduced from 10
-    marginBottom: 8, // Reduced from 10
-  },
-  notificationText: {
-    fontSize: 13, // Reduced from 14
+  prayerTime: {
+    fontSize: 18,
     fontWeight: '500',
   },
-  settingsStatus: {
-    alignItems: 'center',
-    marginBottom: 8, // Reduced from 10
-  },
-  settingsText: {
-    fontSize: 11, // Reduced from 12
-    opacity: 0.7,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginTop: 16, // Reduced from 20
+  refreshHint: {
+    textAlign: 'center',
+    opacity: 0.5,
+    fontSize: 12,
+    marginTop: 10,
   },
 });

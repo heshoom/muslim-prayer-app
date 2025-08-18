@@ -1,150 +1,236 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, TouchableOpacity } from 'react-native';
-import { router } from 'expo-router';
+import React from 'react';
+import { View, StyleSheet } from 'react-native';
 import { ThemedText } from '../shared/ThemedText';
 import { ThemedView } from '../shared/ThemedView';
-import { getNextPrayer, NextPrayerInfo } from '../../utils/prayerTimeUtils';
-import { useSettings } from '@/src/contexts/SettingsContext';
-import { usePrayerTimes } from '@/src/contexts/PrayerTimesContext';
-import { darkTheme, lightTheme } from '@/src/constants/theme';
+import { usePrayerTimes } from '../../contexts/PrayerTimesContext';
+import { useSettings } from '../../contexts/SettingsContext';
+import { darkTheme, lightTheme } from '../../constants/theme';
 import { useTranslation } from '@/src/i18n';
+import { formatTime as formatTimeUtil } from '@/src/utils/timeUtils';
 
-export const NextPrayer = () => {
-  const [nextPrayer, setNextPrayer] = useState<NextPrayerInfo | null>(null);
+export default function NextPrayer() {
+  const { prayerTimes, location, loading, error } = usePrayerTimes();
   const { isDarkMode, settings } = useSettings();
-  const { prayerTimes, loading, error, currentLocation } = usePrayerTimes();
   const theme = isDarkMode ? darkTheme : lightTheme;
-  const { t } = useTranslation();
+  const { t, isRTL } = useTranslation();
 
-  // Navigate to prayer times tab
-  const handlePress = () => {
-    router.push('/(tabs)/prayer-times');
+  const formatTime = (time: string) => formatTimeUtil(time, settings.appearance.timeFormat);
+
+  const getNextPrayer = () => {
+    if (!prayerTimes) return null;
+
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+
+  const prayers = [
+      { name: 'Fajr', time: prayerTimes.Fajr },
+      { name: 'Dhuhr', time: prayerTimes.Dhuhr },
+      { name: 'Asr', time: prayerTimes.Asr },
+      { name: 'Maghrib', time: prayerTimes.Maghrib },
+      { name: 'Isha', time: prayerTimes.Isha },
+    ];
+
+    for (const prayer of prayers) {
+      try {
+        if (!prayer.time || typeof prayer.time !== 'string') {
+          continue;
+        }
+        
+  const clean = (prayer.time || '').toString().replace(/[^\d:]/g, '').trim();
+  const timeParts = clean.split(':');
+        if (timeParts.length < 2) {
+          continue;
+        }
+        
+        const hours = parseInt(timeParts[0], 10);
+        const minutes = parseInt(timeParts[1], 10);
+        
+        if (isNaN(hours) || isNaN(minutes)) {
+          continue;
+        }
+        
+        const prayerTime = hours * 60 + minutes;
+        
+        if (prayerTime > currentTime) {
+          return prayer;
+        }
+      } catch (error) {
+        console.warn('Error parsing prayer time:', prayer, error);
+        continue;
+      }
+    }
+
+    // If no prayer found for today, return Fajr (next day)
+    return prayers[0];
   };
 
-  // Calculate next prayer when prayer times change
-  useEffect(() => {
-    if (prayerTimes && currentLocation) {
-      try {
-        const nextPrayerInfo = getNextPrayer(prayerTimes, settings.appearance.timeFormat, currentLocation);
-        setNextPrayer(nextPrayerInfo);
-      } catch (error) {
-        console.error('Error calculating next prayer:', error);
-        setNextPrayer(null);
+  const getTimeUntilNextPrayer = (prayerTime: string) => {
+    try {
+      if (!prayerTime || typeof prayerTime !== 'string') {
+        return '';
       }
-    } else {
-      setNextPrayer(null);
+      
+      const timeParts = prayerTime.trim().split(':');
+      if (timeParts.length < 2) {
+        return '';
+      }
+      
+      const hours = parseInt(timeParts[0], 10);
+      const minutes = parseInt(timeParts[1], 10);
+      
+      if (isNaN(hours) || isNaN(minutes)) {
+        return '';
+      }
+      
+      const now = new Date();
+      const prayer = new Date();
+      prayer.setHours(hours, minutes, 0, 0);
+
+      // If prayer time has passed, it's tomorrow
+      if (prayer <= now) {
+        prayer.setDate(prayer.getDate() + 1);
+      }
+
+      const diff = prayer.getTime() - now.getTime();
+      const totalMinutes = Math.floor(diff / (1000 * 60));
+      const hoursUntil = Math.floor(totalMinutes / 60);
+      const minutesUntil = totalMinutes % 60;
+
+      if (hoursUntil > 0) {
+        return `${hoursUntil}h ${minutesUntil}m`;
+      } else {
+        return `${minutesUntil}m`;
+      }
+    } catch (error) {
+      console.warn('Error calculating time until prayer:', prayerTime, error);
+      return '';
     }
-  }, [prayerTimes, currentLocation, settings.appearance.timeFormat]);
-
-  // Update countdown every minute
-  useEffect(() => {
-    if (!prayerTimes || !currentLocation) return;
-
-    const interval = setInterval(() => {
-      try {
-        const nextPrayerInfo = getNextPrayer(prayerTimes, settings.appearance.timeFormat, currentLocation);
-        setNextPrayer(nextPrayerInfo);
-      } catch (error) {
-        console.error('Error updating next prayer countdown:', error);
-      }
-    }, 60000); // Update every minute
-
-    return () => clearInterval(interval);
-  }, [prayerTimes, currentLocation, settings.appearance.timeFormat]);
+  };
 
   if (loading) {
     return (
-      <TouchableOpacity onPress={handlePress}>
-        <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
-          <ThemedText style={{ color: theme.text.primary }}>{t('loadingPrayerTimes')}</ThemedText>
-        </ThemedView>
-      </TouchableOpacity>
+      <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}> 
+        <ThemedText style={[styles.title, { color: theme.text.primary, textAlign: isRTL() ? 'right' : 'left' }]}> 
+          {t('nextPrayer')} 
+        </ThemedText> 
+        <ThemedText style={[styles.loading, { color: theme.text.secondary }]}> 
+          {t('loadingPrayerTimes')} 
+        </ThemedText> 
+      </ThemedView>
     );
   }
 
-  if (error) {
+  if (error || !prayerTimes) {
     return (
-      <TouchableOpacity onPress={handlePress}>
-        <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
-          <ThemedText style={{ color: theme.error, textAlign: 'center' }}>{error}</ThemedText>
-        </ThemedView>
-      </TouchableOpacity>
+      <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}> 
+        <ThemedText style={[styles.title, { color: theme.text.primary, textAlign: isRTL() ? 'right' : 'left' }]}> 
+          {t('nextPrayer')} 
+        </ThemedText> 
+        <ThemedText style={[styles.error, { color: theme.text.secondary }]}> 
+          {t('unableToGetPrayerTimes')} 
+        </ThemedText> 
+      </ThemedView>
     );
   }
 
+  const nextPrayer = getNextPrayer();
   if (!nextPrayer) {
     return (
-      <TouchableOpacity onPress={handlePress}>
-        <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
-          <ThemedText style={{ color: theme.text.primary }}>{t('unableToDetermineNextPrayer')}</ThemedText>
-        </ThemedView>
-      </TouchableOpacity>
+      <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}> 
+        <ThemedText style={[styles.title, { color: theme.text.primary, textAlign: isRTL() ? 'right' : 'left' }]}> 
+          {t('nextPrayer')} 
+        </ThemedText> 
+        <ThemedText style={[styles.error, { color: theme.text.secondary }]}> 
+          {t('unableToGetPrayerTimes')} 
+        </ThemedText> 
+      </ThemedView>
     );
   }
 
+  const timeUntil = getTimeUntilNextPrayer(nextPrayer.time);
+
   return (
-    <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
-      <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}>
-        <View style={styles.content}>
-          <ThemedText style={[styles.label, { color: theme.text.secondary }]}>{t('nextPrayer')}</ThemedText>
-          <ThemedText style={[styles.prayerName, { color: theme.primary }]}>
-            {t(nextPrayer.name.toLowerCase())} at {nextPrayer.location}
-          </ThemedText>
-          <ThemedText style={[styles.time, { color: theme.text.primary }]}>{nextPrayer.time}</ThemedText>
-          <ThemedText style={[styles.countdown, { color: theme.text.secondary }]}>
-            in {nextPrayer.remainingTime.hours} hours {nextPrayer.remainingTime.minutes} minutes
-          </ThemedText>
-        </View>
-        <View style={styles.progressContainer}>
-          <View style={[styles.progressBar, { backgroundColor: theme.border }]}>
-            <View style={[styles.progress, { width: `${nextPrayer.progress}%`, backgroundColor: theme.primary }]} />
-          </View>
-        </View>
-      </ThemedView>
-    </TouchableOpacity>
+    <ThemedView style={[styles.container, { backgroundColor: theme.surface }]}> 
+      <ThemedText style={[styles.title, { color: theme.text.primary, textAlign: isRTL() ? 'right' : 'left' }]}> 
+        {t('nextPrayer')} 
+      </ThemedText> 
+      
+      <View style={styles.prayerInfo}>
+        <ThemedText style={[styles.prayerName, { color: theme.primary }]}> 
+          {(() => {
+            const lower = nextPrayer.name.toLowerCase();
+            if (lower === 'fajr') return t('fajr');
+            if (lower === 'sunrise') return t('sunrise');
+            if (lower === 'dhuhr') return t('dhuhr');
+            if (lower === 'asr') return t('asr');
+            if (lower === 'maghrib') return t('maghrib');
+            if (lower === 'isha') return t('isha');
+            return nextPrayer.name;
+          })()} 
+        </ThemedText> 
+        <ThemedText style={[styles.prayerTime, { color: theme.text.primary }]}>
+          {formatTime(nextPrayer.time)}
+        </ThemedText>
+      </View>
+
+      {timeUntil && (
+        <ThemedText style={[styles.timeUntil, { color: theme.text.secondary }]}> 
+          {timeUntil} 
+        </ThemedText> 
+      )}
+
+  <ThemedText style={[styles.location, { color: theme.text.secondary, textAlign: isRTL() ? 'right' : 'center' }]}> 
+        {location}
+      </ThemedText>
+    </ThemedView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
     padding: 20,
-    marginBottom: 20,
+    borderRadius: 12,
+    marginVertical: 10,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
   },
-  content: {
-    alignItems: 'center',
-  },
-  label: {
+  title: {
     fontSize: 16,
-    marginBottom: 8,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  prayerInfo: {
+    alignItems: 'center',
+    marginBottom: 5,
   },
   prayerName: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 5,
   },
-  time: {
+  prayerTime: {
     fontSize: 20,
-    marginBottom: 4,
+    fontWeight: '500',
   },
-  countdown: {
-    fontSize: 16,
-    marginBottom: 16,
+  timeUntil: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 10,
   },
-  progressContainer: {
-    marginTop: 10,
+  location: {
+    fontSize: 12,
+    textAlign: 'center',
+    opacity: 0.7,
   },
-  progressBar: {
-    height: 4,
-    borderRadius: 2,
+  loading: {
+    textAlign: 'center',
+    fontSize: 14,
   },
-  progress: {
-    height: '100%',
-    borderRadius: 2,
+  error: {
+    textAlign: 'center',
+    fontSize: 14,
   },
 });

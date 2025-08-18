@@ -1,9 +1,9 @@
 import React from "react";
 import { StyleSheet, ScrollView, View, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { NextPrayer } from "@/src/components/home/NextPrayer";
 import { DailyContent } from "@/src/components/home/DailyContent";
 import { QuickActions } from "@/src/components/home/QuickActions";
+import NextPrayer from "@/src/components/home/NextPrayer";
 import { ThemedText } from "@/src/components/shared/ThemedText";
 import { ThemedView } from "@/src/components/shared/ThemedView";
 import FacebookStyleTransition from "@/src/components/shared/FacebookStyleTransition";
@@ -13,18 +13,30 @@ import { darkTheme, lightTheme } from "@/src/constants/theme";
 import { useTranslation } from "@/src/i18n";
 
 export default function HomeScreen() {
-  const { isDarkMode } = useSettings();
+  const { isDarkMode, settings } = useSettings();
   const theme = isDarkMode ? darkTheme : lightTheme;
   const { t, getHijriMonths } = useTranslation();
   const insets = useSafeAreaInsets();
 
   const date = new Date();
-  const formattedDate = date.toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const locale = settings.appearance.language || 'en';
+  const formattedDate = (() => {
+    try {
+      return date.toLocaleDateString(locale, {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch {
+      return date.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    }
+  })();
 
   // Use moment-hijri for proper Hijri date formatting
   const hijriMoment = moment();

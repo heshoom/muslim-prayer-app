@@ -91,28 +91,28 @@ const Settings = () => {
               <Text style={styles.sectionTitle}>{t("notifications")}</Text>
             </View>
 
-            <View style={[styles.settingItem, styles.switchItem]}>
-              <View style={styles.settingHeader}>
-                <View style={styles.settingTextContainer}>
-                  <Text style={styles.settingTitle}>
-                    {t("enableNotifications")}
-                  </Text>
-                  <Text style={styles.settingDescription}>
-                    {t("receivePrayerAlerts")}
-                  </Text>
+                <View style={[styles.settingItem, styles.switchItem]}>
+                  <View style={styles.settingHeader}>
+                    <View style={styles.settingTextContainer}>
+                      <Text style={styles.settingTitle}>
+                        Prayer Time Notifications
+                      </Text>
+                      <Text style={styles.settingDescription}>
+                        Get notifications for all prayer times
+                      </Text>
+                    </View>
+                    <Switch
+                      value={settings.notifications.enabled}
+                      onValueChange={(value) =>
+                        updateSettings("notifications", "enabled", value)
+                      }
+                      trackColor={{ false: "#dce4ec", true: "#2980b9" }}
+                      thumbColor={
+                        settings.notifications.enabled ? "#fff" : "#f4f3f4"
+                      }
+                    />
+                  </View>
                 </View>
-                <Switch
-                  value={settings.notifications.enabled}
-                  onValueChange={(value) =>
-                    updateSettings("notifications", "enabled", value)
-                  }
-                  trackColor={{ false: "#dce4ec", true: "#2980b9" }}
-                  thumbColor={
-                    settings.notifications.enabled ? "#fff" : "#f4f3f4"
-                  }
-                />
-              </View>
-            </View>
 
             {settings.notifications.enabled && (
               <>
