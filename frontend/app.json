@@ -23,7 +23,13 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.heshoom.islamicpro",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": ["FOREGROUND_SERVICE"],
+      "config": {
+        "googleServicesFile": "./google-services.json"
+      },
+      "backgroundColor": "#ffffff",
+      "userInterfaceStyle": "automatic"
     },
     "web": {
       "bundler": "metro",

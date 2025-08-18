@@ -97,7 +97,9 @@ export const PrayerTimesProvider = ({ children }: PrayerTimesProviderProps) => {
       
       // Only set up notifications on initial load, not on refresh
       if (isInitialLoad) {
-        await setupNotifications(response.prayerTimes, response.location);
+        if (settings.notifications.enabled) {
+          await setupNotifications(response.prayerTimes, response.location);
+        }
         setIsInitialLoad(false);
       }
       

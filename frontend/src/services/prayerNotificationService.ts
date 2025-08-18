@@ -55,61 +55,72 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
   }
 
   async scheduleAllPrayerNotifications(
-    prayerTimes: PrayerTimes, 
-    location: string, 
-    settings: NotificationSettings
-  ): Promise<void> {
-    try {
-      if (!settings.enabled) {
-        console.log('Notifications are disabled in settings');
-        return;
+  prayerTimes: PrayerTimes, 
+  location: string, 
+  settings: NotificationSettings
+): Promise<void> {
+  try {
+    if (!settings.enabled) {
+      console.log('Notifications are disabled in settings');
+      return;
+    }
+
+    // Build an idempotency key so we don't re-schedule on every reload
+    const dayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const scheduleSignature = `${dayKey}|${location}|${settings.enabled}|${settings.adhan}|${settings.athanSound}|${settings.vibrate}|${prayerTimes.Fajr}|${prayerTimes.Dhuhr}|${prayerTimes.Asr}|${prayerTimes.Maghrib}|${prayerTimes.Isha}`;
+    const STORAGE_KEY = 'prayerNotifications:lastScheduleSignature';
+    const lastSignature = await AsyncStorage.getItem(STORAGE_KEY);
+
+    if (lastSignature === scheduleSignature) {
+      console.log('Prayer notifications already scheduled for today with same settings; skipping re-schedule.');
+      return;
+    }
+
+    // Only cancel if something actually changed
+    await this.cancelAllNotifications();
+
+    // Setup notification channel for Android with custom settings
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('prayer-times', {
+        name: 'Prayer Times',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: settings.vibrate ? [0, 500, 250, 500] : undefined,
+        sound: this.getAthanSoundUri(settings.athanSound, settings.adhan) || 'default',
+        enableLights: true,
+        lightColor: '#2980b9',
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        bypassDnd: true, // Bypass Do Not Disturb
+      });
+    }
+
+    const prayers = [
+      { name: 'Fajr', time: prayerTimes.Fajr },
+      { name: 'Dhuhr', time: prayerTimes.Dhuhr },
+      { name: 'Asr', time: prayerTimes.Asr },
+      { name: 'Maghrib', time: prayerTimes.Maghrib },
+      { name: 'Isha', time: prayerTimes.Isha },
+    ];
+
+    const today = new Date();
+    
+    for (const prayer of prayers) {
+      await this.schedulePrayerNotification(prayer.name, prayer.time, location, today, settings);
+    }
+
+    await AsyncStorage.setItem(STORAGE_KEY, scheduleSignature);
+    console.log('All prayer notifications scheduled successfully');
+  } catch (error) {
+    console.error('Error scheduling prayer notifications:', error);
+  }
+}
+  async stopCurrentSound(): Promise<void> {
+    if (this.currentSound) {
+      try {
+        await this.currentSound.stopAsync();
+        this.cleanup();
+      } catch (error) {
+        console.error('Error stopping current sound:', error);
       }
-
-      // Build an idempotency key so we don't re-schedule on every reload
-      const dayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-      const scheduleSignature = `${dayKey}|${location}|${settings.enabled}|${settings.adhan}|${settings.athanSound}|${settings.vibrate}|${prayerTimes.Fajr}|${prayerTimes.Dhuhr}|${prayerTimes.Asr}|${prayerTimes.Maghrib}|${prayerTimes.Isha}`;
-      const STORAGE_KEY = 'prayerNotifications:lastScheduleSignature';
-      const lastSignature = await AsyncStorage.getItem(STORAGE_KEY);
-      if (lastSignature === scheduleSignature) {
-        console.log('Prayer notifications already scheduled for today with same settings; skipping re-schedule.');
-        return;
-      }
-
-      // Cancel existing notifications before re-scheduling
-      await this.cancelAllNotifications();
-
-      // Setup notification channel for Android with custom settings
-      if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('prayer-times', {
-          name: 'Prayer Times',
-          importance: Notifications.AndroidImportance.MAX,
-          vibrationPattern: settings.vibrate ? [0, 500, 250, 500] : undefined,
-          sound: this.getAthanSoundUri(settings.athanSound, settings.adhan) || 'default',
-          enableLights: true,
-          lightColor: '#2980b9',
-          lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-          bypassDnd: true, // Bypass Do Not Disturb
-        });
-      }
-
-      const prayers = [
-        { name: 'Fajr', time: prayerTimes.Fajr },
-        { name: 'Dhuhr', time: prayerTimes.Dhuhr },
-        { name: 'Asr', time: prayerTimes.Asr },
-        { name: 'Maghrib', time: prayerTimes.Maghrib },
-        { name: 'Isha', time: prayerTimes.Isha },
-      ];
-
-      const today = new Date();
-      
-      for (const prayer of prayers) {
-        await this.schedulePrayerNotification(prayer.name, prayer.time, location, today, settings);
-      }
-
-      await AsyncStorage.setItem(STORAGE_KEY, scheduleSignature);
-      console.log('All prayer notifications scheduled successfully');
-    } catch (error) {
-      console.error('Error scheduling prayer notifications:', error);
     }
   }
 

@@ -34,11 +34,15 @@ class AthanAudioService {
   // Force immediate stop without any fade or transition
   async forceStopSound(): Promise<void> {
     if (this.currentSound) {
-      // Set volume to 0 immediately before stopping for instant silence
-      await this.currentSound.setVolumeAsync(0);
-      await this.currentSound.stopAsync();
-      await this.currentSound.unloadAsync();
-      console.log('Athan sound force stopped immediately');
+      try {
+        // Set volume to 0 immediately before stopping for instant silence
+        await this.currentSound.setVolumeAsync(0);
+        await this.currentSound.stopAsync();
+        await this.currentSound.unloadAsync();
+        console.log('Athan sound force stopped immediately');
+      } catch (error) {
+        console.error('Error force stopping sound:', error);
+      }
       this.currentSound = null;
     }
   }
