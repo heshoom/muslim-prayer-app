@@ -25,7 +25,7 @@ import { clearPrayerTimesCache } from '@/src/services/prayerTimesCache';
 
 const Settings = () => {
   const { settings, updateSettings, isDarkMode } = useSettings();
-  const { testAthanSound, testIosNotificationSound } = useNotifications();
+  const { testIosNotificationSound } = useNotifications();
   const { clearCache } = usePrayerTimes();
   const theme = isDarkMode ? darkTheme : lightTheme;
   const insets = useSafeAreaInsets();
@@ -199,44 +199,7 @@ const Settings = () => {
                         title="Select Athan Sound"
                         theme={theme}
                       />
-                      <TouchableOpacity
-                        style={[
-                          styles.testButton,
-                          { backgroundColor: theme.primary },
-                        ]}
-                        onPress={async () => {
-                          console.log(
-                            "Test button pressed, athan type:",
-                            settings.notifications.athanSound
-                          );
-                          try {
-                            await testAthanSound(
-                              settings.notifications.athanSound
-                            );
-                            Alert.alert(
-                              "Test Notification Sent",
-                              "Check your notification panel for the test athan sound.",
-                              [{ text: "OK" }]
-                            );
-                          } catch (error) {
-                            console.error("Error testing athan:", error);
-                            Alert.alert(
-                              "Test Failed",
-                              "Unable to send test notification. Please check notification permissions.",
-                              [{ text: "OK" }]
-                            );
-                          }
-                        }}
-                      >
-                        <Text
-                          style={[
-                            styles.testButtonText,
-                            { color: theme.text.inverse },
-                          ]}
-                        >
-                          Test Athan Sound
-                        </Text>
-                      </TouchableOpacity>
+                      
                       {Platform.OS === 'ios' && (
                         <TouchableOpacity
                           style={[

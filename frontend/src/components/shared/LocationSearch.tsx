@@ -41,7 +41,7 @@ export const LocationSearch: React.FC<LocationSearchProps> = ({
   const { t } = useTranslation();
   
   const inputRef = useRef<TextInput>(null);
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (initialValue) {
@@ -62,7 +62,8 @@ export const LocationSearch: React.FC<LocationSearchProps> = ({
   // Debounced search for suggestions
   useEffect(() => {
     if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
+      clearTimeout(searchTimeoutRef.current as unknown as number);
+      searchTimeoutRef.current = null;
     }
 
     if (inputValue.trim().length >= 2 && showSuggestions && !showPopularCities) {
@@ -85,7 +86,8 @@ export const LocationSearch: React.FC<LocationSearchProps> = ({
 
     return () => {
       if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
+        clearTimeout(searchTimeoutRef.current as unknown as number);
+        searchTimeoutRef.current = null;
       }
     };
   }, [inputValue, showSuggestions, showPopularCities]);

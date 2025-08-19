@@ -112,6 +112,7 @@ export const fetchPrayerTimes = async (
   latitude: number,
   longitude: number,
   calculationMethod: string = 'auto',
+  madhab: 'shafi' | 'hanafi' = 'shafi',
 ): Promise<PrayerTimesResponse> => {
   try {
     console.log('Fetching prayer times for coordinates:', { latitude, longitude });
@@ -128,9 +129,11 @@ export const fetchPrayerTimes = async (
     if (calculationMethod === 'auto') {
       methodToUse = getRecommendedMethodForCountry(country);
     }
-    const methodNum = getCalculationMethodNumber(methodToUse);
-    // Call Aladhan API with selected method
-    const url = `${ALADHAN_API_URL}/timings?latitude=${latitude}&longitude=${longitude}&method=${methodNum}`;
+  const methodNum = getCalculationMethodNumber(methodToUse);
+  // school: 0 = Shafi (default), 1 = Hanafi
+  const school = madhab === 'hanafi' ? 1 : 0;
+  // Call Aladhan API with selected method and madhab (school) for Asr calculation
+  const url = `${ALADHAN_API_URL}/timings?latitude=${latitude}&longitude=${longitude}&method=${methodNum}&school=${school}`;
     console.log('Making request to:', url);
 
     const response = await fetch(url, {

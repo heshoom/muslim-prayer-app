@@ -14,77 +14,77 @@ export type NextPrayerInfo = {
 
 const PRAYER_ORDER = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
-const parseTime = (timeStr: string, date: Date = new Date()): Date => {
-  // Remove any extra characters and handle 24-hour format
-  const cleanTimeStr = timeStr.replace(/[^\d:]/g, '');
-  const [hours, minutes] = cleanTimeStr.split(':').map(Number);
-  
-  const result = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, 0, 0);
-  return result;
+const parseTime = (timeStr: string | undefined, date: Date = new Date()): Date => {
+  if (!timeStr) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+  }
+  const clean = timeStr.toString().replace(/[^0-9:]/g, '');
+  const parts = clean.split(':').map(Number);
+  const hours = Number.isFinite(parts[0]) ? parts[0] : 0;
+  const minutes = Number.isFinite(parts[1]) ? parts[1] : 0;
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, 0, 0);
 };
 
-export const getNextPrayer = (prayerTimes: PrayerTimes, timeFormat: '12h' | '24h' = '12h', location: string = ''): NextPrayerInfo => {
+export const getNextPrayer = (
+  prayerTimes: PrayerTimes,
+  timeFormat: '12h' | '24h' = '12h',
+  location: string = ''
+): NextPrayerInfo => {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 
-  // Parse today's prayer times
-  const todayPrayers = PRAYER_ORDER.map(name => ({
-    name,
-    time: parseTime(prayerTimes[name as keyof PrayerTimes], today),
-    originalTime: prayerTimes[name as keyof PrayerTimes], // Keep original time string
-  }));
+  const todayPrayers = PRAYER_ORDER.map((name) => {
+    const original = (prayerTimes[name as keyof PrayerTimes] as string) || '00:00';
+    return {
+      name,
+      time: parseTime(original, today),
+      originalTime: original,
+    };
+  });
 
-  // Find next prayer today
-  let nextPrayer = todayPrayers.find(prayer => prayer.time > now);
+  let nextPrayer = todayPrayers.find((prayer) => prayer.time > now);
   let isNextDay = false;
 
-  // If no prayer left today, next prayer is Fajr tomorrow
   if (!nextPrayer) {
+    const fajrOriginal = (prayerTimes.Fajr as string) || '00:00';
     nextPrayer = {
       name: 'Fajr',
-      time: parseTime(prayerTimes.Fajr, tomorrow),
-      originalTime: prayerTimes.Fajr,
+      time: parseTime(fajrOriginal, tomorrow),
+      originalTime: fajrOriginal,
     };
     isNextDay = true;
   }
 
-  // Find current prayer (the last prayer that has passed)
-  let currentPrayer;
+  let currentPrayer: { name: string; time: Date; originalTime: string } | undefined;
   if (isNextDay) {
-    // If next prayer is tomorrow, current prayer is Isha today
-    currentPrayer = todayPrayers[todayPrayers.length - 1]; // Isha
+    currentPrayer = todayPrayers[todayPrayers.length - 1];
   } else {
-    const nextIndex = todayPrayers.findIndex(p => p.name === nextPrayer!.name);
+    const nextIndex = todayPrayers.findIndex((p) => p.name === nextPrayer!.name);
     if (nextIndex === 0) {
-      // If next prayer is Fajr, current prayer was Isha yesterday
-      // For progress calculation, we'll use a reasonable interval
       const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+      const ishaOriginal = (prayerTimes.Isha as string) || '00:00';
       currentPrayer = {
         name: 'Isha',
-        time: parseTime(prayerTimes.Isha, yesterday),
-        originalTime: prayerTimes.Isha,
+        time: parseTime(ishaOriginal, yesterday),
+        originalTime: ishaOriginal,
       };
     } else {
       currentPrayer = todayPrayers[nextIndex - 1];
     }
   }
 
-  // Calculate remaining time
   const diffMs = nextPrayer.time.getTime() - now.getTime();
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
-  // Handle negative values (shouldn't happen but just in case)
   const remainingHours = Math.max(0, diffHours);
   const remainingMinutes = Math.max(0, diffMinutes);
 
-  // Calculate progress
   let progress = 0;
   if (currentPrayer) {
     const intervalMs = nextPrayer.time.getTime() - currentPrayer.time.getTime();
     const elapsedMs = now.getTime() - currentPrayer.time.getTime();
-    
     if (intervalMs > 0) {
       progress = Math.min(100, Math.max(0, (elapsedMs / intervalMs) * 100));
     }
@@ -92,7 +92,7 @@ export const getNextPrayer = (prayerTimes: PrayerTimes, timeFormat: '12h' | '24h
 
   return {
     name: nextPrayer.name,
-    time: formatTime(nextPrayer.originalTime, timeFormat), // Use same formatting as PrayerCard
+    time: formatTime(nextPrayer.originalTime, timeFormat),
     location: location,
     remainingTime: {
       hours: remainingHours,

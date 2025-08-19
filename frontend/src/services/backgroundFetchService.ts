@@ -8,7 +8,8 @@ const BACKGROUND_FETCH_TASK = 'PRAYER_TIMES_BACKGROUND_FETCH';
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async ({ data, error }: any) => {
   if (error) {
     console.error('Background fetch task error:', error);
-    return BackgroundFetch.Result.Failed;
+    // BackgroundFetch result codes: 0 = NewData, 1 = NoData, 2 = Failed
+    return 2; // Failed
   }
 
   try {
@@ -18,31 +19,34 @@ TaskManager.defineTask(BACKGROUND_FETCH_TASK, async ({ data, error }: any) => {
     const { latitude, longitude } = (data && data.coords) || {};
     if (!latitude || !longitude) {
       console.warn('Background fetch: no coordinates provided');
-      return BackgroundFetch.Result.NoData;
+      return 1; // NoData
     }
 
     const dateStr = new Date().toISOString().slice(0,10);
 
-    // We'll fetch a small set of common methods to keep cache fresh
+    // We'll fetch a small set of common methods and both madhabs to keep cache fresh
     const methods = ['mwl','isna','egypt','makkah','karachi','turkey'];
+    const schools: Array<'shafi' | 'hanafi'> = ['shafi', 'hanafi'];
     let anyFetched = false;
     for (const method of methods) {
-      try {
-        const cached = await getCachedPrayerTimes(latitude, longitude, dateStr, method);
-        if (!cached) {
-          const resp = await fetchPrayerTimes(latitude, longitude, method);
-          await setCachedPrayerTimes(latitude, longitude, dateStr, method, resp);
-          anyFetched = true;
+      for (const school of schools) {
+        try {
+          const cached = await getCachedPrayerTimes(latitude, longitude, dateStr, method, school);
+          if (!cached) {
+            const resp = await fetchPrayerTimes(latitude, longitude, method, school);
+            await setCachedPrayerTimes(latitude, longitude, dateStr, method, school, resp);
+            anyFetched = true;
+          }
+        } catch (err) {
+          console.warn('Background fetch: error fetching', { method, school }, err);
         }
-      } catch (err) {
-        console.warn('Background fetch: error fetching method', method, err);
       }
     }
 
-    return anyFetched ? BackgroundFetch.Result.NewData : BackgroundFetch.Result.NoData;
+  return anyFetched ? 0 : 1; // NewData : NoData
   } catch (err) {
-    console.error('Background fetch failed:', err);
-    return BackgroundFetch.Result.Failed;
+  console.error('Background fetch failed:', err);
+  return 2; // Failed
   }
 });
 

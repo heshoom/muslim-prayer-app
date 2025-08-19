@@ -1,11 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PrayerTimesResponse } from './prayerTimesService';
 
-const makeCacheKey = (latitude: number, longitude: number, date: string, method: string) => {
+const makeCacheKey = (latitude: number, longitude: number, date: string, method: string, madhab: 'shafi' | 'hanafi' = 'shafi') => {
   // round coordinates to 4 decimal places to avoid tiny float mismatches
   const lat = latitude.toFixed(4);
   const lon = longitude.toFixed(4);
-  return `prayerTimesCache:${lat}:${lon}:${date}:${method}`;
+  return `prayerTimesCache:${lat}:${lon}:${date}:${method}:school-${madhab}`;
 };
 
 export const getCachedPrayerTimes = async (
@@ -13,9 +13,10 @@ export const getCachedPrayerTimes = async (
   longitude: number,
   date: string,
   method: string,
+  madhab: 'shafi' | 'hanafi' = 'shafi',
 ): Promise<PrayerTimesResponse | null> => {
   try {
-    const key = makeCacheKey(latitude, longitude, date, method);
+    const key = makeCacheKey(latitude, longitude, date, method, madhab);
     const raw = await AsyncStorage.getItem(key);
     if (!raw) return null;
     return JSON.parse(raw) as PrayerTimesResponse;
@@ -30,10 +31,11 @@ export const setCachedPrayerTimes = async (
   longitude: number,
   date: string,
   method: string,
+  madhab: 'shafi' | 'hanafi' = 'shafi',
   payload: PrayerTimesResponse,
 ): Promise<void> => {
   try {
-    const key = makeCacheKey(latitude, longitude, date, method);
+    const key = makeCacheKey(latitude, longitude, date, method, madhab);
     await AsyncStorage.setItem(key, JSON.stringify(payload));
   } catch (error) {
     console.warn('Error writing prayer times cache:', error);

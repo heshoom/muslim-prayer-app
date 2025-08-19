@@ -107,17 +107,35 @@ export const PrayerTimesProvider = ({ children }: PrayerTimesProviderProps) => {
       const dateStr = new Date().toISOString().slice(0, 10);
 
       // Try to read from cache first
-      const cached = await getCachedPrayerTimes(latitude, longitude, dateStr, settings.prayer.calculationMethod);
+      const cached = await getCachedPrayerTimes(
+        latitude,
+        longitude,
+        dateStr,
+        settings.prayer.calculationMethod,
+        settings.prayer.madhab,
+      );
       let response: PrayerTimesResponse;
       if (cached) {
         console.log('Using cached prayer times for method:', settings.prayer.calculationMethod);
         response = cached;
       } else {
         // Fetch prayer times using calculation method from settings
-        response = await fetchPrayerTimes(latitude, longitude, settings.prayer.calculationMethod);
+        response = await fetchPrayerTimes(
+          latitude,
+          longitude,
+          settings.prayer.calculationMethod,
+          settings.prayer.madhab,
+        );
         // Cache the response for quick switching
         try {
-          await setCachedPrayerTimes(latitude, longitude, dateStr, settings.prayer.calculationMethod, response);
+          await setCachedPrayerTimes(
+            latitude,
+            longitude,
+            dateStr,
+            settings.prayer.calculationMethod,
+            settings.prayer.madhab,
+            response,
+          );
         } catch (e) {
           console.warn('Failed to cache prayer times:', e);
         }
@@ -133,11 +151,14 @@ export const PrayerTimesProvider = ({ children }: PrayerTimesProviderProps) => {
         try {
           const otherMethods = ['mwl','isna','egypt','makkah','karachi','tehran','gulf','kuwait','qatar','turkey'];
           for (const m of otherMethods) {
-            if (m === settings.prayer.calculationMethod) continue;
-            const exists = await getCachedPrayerTimes(latitude, longitude, dateStr, m);
-            if (!exists) {
-              const fetched = await fetchPrayerTimes(latitude, longitude, m);
-              await setCachedPrayerTimes(latitude, longitude, dateStr, m, fetched);
+            // prefetch for both schools to make madhab switches instant
+            for (const school of ['shafi','hanafi'] as const) {
+              if (m === settings.prayer.calculationMethod && school === settings.prayer.madhab) continue;
+              const exists = await getCachedPrayerTimes(latitude, longitude, dateStr, m, school);
+              if (!exists) {
+                const fetched = await fetchPrayerTimes(latitude, longitude, m, school);
+                await setCachedPrayerTimes(latitude, longitude, dateStr, m, school, fetched);
+              }
             }
           }
         } catch (err) {

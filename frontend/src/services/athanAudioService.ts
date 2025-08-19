@@ -84,6 +84,67 @@ class AthanAudioService {
     }
   }
 
+  // Play a full adhān file (bundled m4a) using expo-av and keep playback
+  // active in background/locked state. fileName should be the asset filename
+  // e.g. 'fajr_full.m4a' which must be present under assets/sounds/full/.
+  async playFullAthan(fileName: string): Promise<void> {
+    try {
+      // Stop any short sound first
+      await this.stopCurrentSound();
+
+      // Configure audio mode for background playback
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        staysActiveInBackground: true,
+        playsInSilentModeIOS: true,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
+      });
+
+      // Map filenames to required assets so bundler includes them
+      const fullMap: Record<string, any> = {
+        'fajr_full.m4a': require('../../assets/sounds/full/fajr_full.m4a'),
+        'dhuhr_full.m4a': require('../../assets/sounds/full/dhuhr_full.m4a'),
+        'asr_full.m4a': require('../../assets/sounds/full/asr_full.m4a'),
+        'maghrib_full.m4a': require('../../assets/sounds/full/maghrib_full.m4a'),
+        'isha_full.m4a': require('../../assets/sounds/full/isha_full.m4a'),
+      };
+
+      const module = fullMap[fileName];
+      if (!module) {
+        console.warn('Full athan file not found in map:', fileName);
+        return;
+      }
+
+      const { sound } = await Audio.Sound.createAsync(
+        module,
+        {
+          shouldPlay: true,
+          isLooping: false,
+          volume: 1.0,
+        }
+      );
+
+      this.currentSound = sound;
+
+      sound.setOnPlaybackStatusUpdate((status) => {
+        try {
+          if (!status || !(status as any).isLoaded) return;
+          if ((status as any).didJustFinish === true) {
+            this.cleanup();
+          }
+        } catch (err) {
+          console.error('Error in playback status update:', err);
+        }
+      });
+
+      console.log('Playing full athan file:', fileName);
+    } catch (err) {
+      console.error('Error playing full athan:', err);
+      await this.cleanup();
+    }
+  }
+
   private getAthanSoundFile(athanType: string) {
     switch (athanType) {
       case 'makkah':

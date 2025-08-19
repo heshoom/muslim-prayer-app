@@ -1,9 +1,10 @@
 import Expo
 import React
 import ReactAppDependencyProvider
+import UserNotifications
 
 @UIApplicationMain
-public class AppDelegate: ExpoAppDelegate {
+public class AppDelegate: ExpoAppDelegate, UNUserNotificationCenterDelegate {
   var window: UIWindow?
 
   var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
@@ -20,6 +21,20 @@ public class AppDelegate: ExpoAppDelegate {
     reactNativeDelegate = delegate
     reactNativeFactory = factory
     bindReactNativeFactory(factory)
+
+    // Request notification permissions and register for remote notifications
+    UNUserNotificationCenter.current().delegate = self
+    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound, .criticalAlert]) { granted, error in
+      if let error = error {
+        print("Notification permission request error: \(error)")
+      } else {
+        DispatchQueue.main.async {
+          if granted {
+            UIApplication.shared.registerForRemoteNotifications()
+          }
+        }
+      }
+    }
 
 #if os(iOS) || os(tvOS)
     window = UIWindow(frame: UIScreen.main.bounds)
@@ -49,6 +64,19 @@ public class AppDelegate: ExpoAppDelegate {
   ) -> Bool {
     let result = RCTLinkingManager.application(application, continue: userActivity, restorationHandler: restorationHandler)
     return super.application(application, continue: userActivity, restorationHandler: restorationHandler) || result
+  }
+}
+
+// MARK: - UNUserNotificationCenterDelegate
+extension AppDelegate {
+  public func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+    // Show alert and play sound when app is in foreground if desired
+    completionHandler([.banner, .sound, .list])
+  }
+
+  public func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+    // Handle user tapping the notification if you need to forward info to JS
+    completionHandler()
   }
 }
 

@@ -9,6 +9,12 @@
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
+		56312D5E2E544ADA008A41E4 /* egypt_short.aiff in Resources */ = {isa = PBXBuildFile; fileRef = 56312D592E544ADA008A41E4 /* egypt_short.aiff */; };
+		56312D5F2E544ADA008A41E4 /* nasiralqatami_short.aiff in Resources */ = {isa = PBXBuildFile; fileRef = 56312D5C2E544ADA008A41E4 /* nasiralqatami_short.aiff */; };
+		56312D602E544ADA008A41E4 /* makkah_short.aiff in Resources */ = {isa = PBXBuildFile; fileRef = 56312D5B2E544ADA008A41E4 /* makkah_short.aiff */; };
+		56312D612E544ADA008A41E4 /* turkey_short.aiff in Resources */ = {isa = PBXBuildFile; fileRef = 56312D5D2E544ADA008A41E4 /* turkey_short.aiff */; };
+		56312D622E544ADA008A41E4 /* madinah-03_short.aiff in Resources */ = {isa = PBXBuildFile; fileRef = 56312D5A2E544ADA008A41E4 /* madinah-03_short.aiff */; };
+		56312D642E5456EC008A41E4 /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56312D632E5456EC008A41E4 /* UserNotifications.framework */; };
 		638079D318877811A62469D6 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86302D4410E6613BA1C98BA5 /* ExpoModulesProvider.swift */; };
 		930FD7B2766883CB08A301E3 /* libPods-IslamicPro.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E4D2E6B467F38C2CBA61E1C3 /* libPods-IslamicPro.a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
@@ -20,7 +26,13 @@
 		13B07F961A680F5B00A75B9A /* IslamicPro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = IslamicPro.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = IslamicPro/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = IslamicPro/Info.plist; sourceTree = "<group>"; };
-		1DFFF9E11BE9697CF854B4BF /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = IslamicPro/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		1DFFF9E11BE9697CF854B4BF /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = IslamicPro/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		56312D592E544ADA008A41E4 /* egypt_short.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = egypt_short.aiff; sourceTree = "<group>"; };
+		56312D5A2E544ADA008A41E4 /* madinah-03_short.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = "madinah-03_short.aiff"; sourceTree = "<group>"; };
+		56312D5B2E544ADA008A41E4 /* makkah_short.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = makkah_short.aiff; sourceTree = "<group>"; };
+		56312D5C2E544ADA008A41E4 /* nasiralqatami_short.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = nasiralqatami_short.aiff; sourceTree = "<group>"; };
+		56312D5D2E544ADA008A41E4 /* turkey_short.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = turkey_short.aiff; sourceTree = "<group>"; };
+		56312D632E5456EC008A41E4 /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
 		86302D4410E6613BA1C98BA5 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-IslamicPro/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		A953A0429E85E6BA3DD98673 /* Pods-IslamicPro.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-IslamicPro.debug.xcconfig"; path = "Target Support Files/Pods-IslamicPro/Pods-IslamicPro.debug.xcconfig"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = IslamicPro/SplashScreen.storyboard; sourceTree = "<group>"; };
@@ -37,6 +49,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				56312D642E5456EC008A41E4 /* UserNotifications.framework in Frameworks */,
 				930FD7B2766883CB08A301E3 /* libPods-IslamicPro.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -47,6 +60,11 @@
 		13B07FAE1A68108700A75B9A /* IslamicPro */ = {
 			isa = PBXGroup;
 			children = (
+				56312D592E544ADA008A41E4 /* egypt_short.aiff */,
+				56312D5A2E544ADA008A41E4 /* madinah-03_short.aiff */,
+				56312D5B2E544ADA008A41E4 /* makkah_short.aiff */,
+				56312D5C2E544ADA008A41E4 /* nasiralqatami_short.aiff */,
+				56312D5D2E544ADA008A41E4 /* turkey_short.aiff */,
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
 				F11748442D0722820044C1D9 /* IslamicPro-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
@@ -61,6 +79,7 @@
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				56312D632E5456EC008A41E4 /* UserNotifications.framework */,
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
 				E4D2E6B467F38C2CBA61E1C3 /* libPods-IslamicPro.a */,
 			);
@@ -119,7 +138,6 @@
 				A953A0429E85E6BA3DD98673 /* Pods-IslamicPro.debug.xcconfig */,
 				F5552C8D35B96FCCB41DA08E /* Pods-IslamicPro.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -194,6 +212,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
+				56312D5E2E544ADA008A41E4 /* egypt_short.aiff in Resources */,
+				56312D5F2E544ADA008A41E4 /* nasiralqatami_short.aiff in Resources */,
+				56312D602E544ADA008A41E4 /* makkah_short.aiff in Resources */,
+				56312D612E544ADA008A41E4 /* turkey_short.aiff in Resources */,
+				56312D622E544ADA008A41E4 /* madinah-03_short.aiff in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				FAB06C844DEFDF0844D99848 /* PrivacyInfo.xcprivacy in Resources */,
@@ -350,6 +373,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = IslamicPro/IslamicPro.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WZTL3LJ7X2;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -386,6 +410,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = IslamicPro/IslamicPro.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WZTL3LJ7X2;
 				INFOPLIST_FILE = IslamicPro/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -463,10 +488,7 @@
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -521,10 +543,7 @@
 				);
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
 				MTL_ENABLE_DEBUG_INFO = NO;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				USE_HERMES = true;
