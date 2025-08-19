@@ -32,6 +32,7 @@ type NotificationContextType = {
   schedulePrayerNotifications: (prayerTimes: any) => Promise<void>;
   cancelAllNotifications: () => Promise<void>;
   testAthanSound: (athanType: string) => Promise<void>;
+  testIosNotificationSound: (athanType?: string) => Promise<void>;
 };
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -44,10 +45,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   useEffect(() => {
     registerForPushNotificationsAsync();
 
-    // Listener for when notifications are received while app is in foreground
+  // Listener for when notifications are received while app is in foreground
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
       console.log('Notification received:', notification);
-      handleNotificationReceived(notification);
+  handleNotificationReceived(notification);
     });
 
     // Listener for when user taps notification
@@ -55,6 +56,19 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       console.log('Notification response:', response);
       handleNotificationResponse(response);
     });
+
+    // Handle cold-start from notification
+    (async () => {
+      try {
+        const lastResponse = await Notifications.getLastNotificationResponseAsync();
+        if (lastResponse) {
+          console.log('App launched from notification:', lastResponse);
+          await handleNotificationResponse(lastResponse);
+        }
+      } catch (err) {
+        console.warn('Error checking last notification response on launch:', err);
+      }
+    })();
 
     return () => {
       if (notificationListener.current) {
@@ -68,7 +82,18 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const handleNotificationReceived = async (notification: any) => {
     const { data } = notification.request.content;
-    
+    // If the notification has a scheduledAt timestamp, ignore it if it's
+    // significantly older than now. This avoids playing a backlog of athans
+    // immediately when the app is opened and pending deliveries are delivered.
+    const scheduledAt = data?.scheduledAt ? Number(data.scheduledAt) : undefined;
+    const now = Date.now();
+    const STALE_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
+
+    if (scheduledAt && (now - scheduledAt) > STALE_THRESHOLD_MS) {
+      console.log('Ignoring stale notification delivery (scheduledAt too old):', { scheduledAt, now });
+      return;
+    }
+
     // Handle prayer time notifications with custom athan sounds
     if (data?.type === 'prayer-time' && settings.notifications.adhan) {
       await athanAudioService.playAthanSound(settings.notifications.athanSound);
@@ -83,6 +108,16 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     // Handle when user taps on notification
     if (data?.type === 'prayer-time' || data?.type === 'test-athan') {
       console.log('User tapped notification for:', data.prayer || 'test');
+      // If the payload includes a full athan filename, play it using expo-av
+      if (data?.fullAthan) {
+        try {
+          // Stop any currently playing sound and play full adhān through audio service
+          await athanAudioService.forceStopSound();
+          await athanAudioService.playFullAthan(data.fullAthan);
+        } catch (err) {
+          console.error('Error playing full athan on notification tap:', err);
+        }
+      }
     }
   };
 
@@ -147,10 +182,12 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           body: `It's time for ${prayer} prayer. May Allah accept your prayers.`,
           sound: true, // Use default system sound, custom athan handled by listener
           vibrate: settings.notifications.vibrate ? [0, 250, 250, 250] : undefined,
-          data: {
-            prayer: prayer,
-            type: 'prayer-time',
-            athanType: settings.notifications.athanSound
+      data: {
+        prayer: prayer,
+        type: 'prayer-time',
+        athanType: settings.notifications.athanSound,
+        // include a full athan filename so the app can play it when tapped
+        fullAthan: `${prayer.toLowerCase()}_full.m4a`
           }
         },
         trigger: {
@@ -230,8 +267,56 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
+  // Schedules a local notification in ~10 seconds that uses the bundled iOS aiff
+  // This verifies that the OS can find and play the custom notification sound.
+  const testIosNotificationSound = async (athanType?: string) => {
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') {
+        const req = await Notifications.requestPermissionsAsync({
+          ios: { allowAlert: true, allowBadge: true, allowSound: true },
+        });
+        if (req.status !== 'granted') {
+          console.log('Notification permissions not granted');
+          return;
+        }
+      }
+
+      const selected = athanType || settings.notifications.athanSound;
+      // Map to the bundled iOS short aiff filenames
+      const iosMap: Record<string, string> = {
+        makkah: 'makkah_short.aiff',
+        madinah: 'madinah-03_short.aiff',
+        egypt: 'egypt_short.aiff',
+        turkey: 'turkey_short.aiff',
+        nasiralqatami: 'nasiralqatami_short.aiff',
+        default: 'default',
+      };
+      const soundName = iosMap[selected] || 'default';
+
+      const in10 = new Date(Date.now() + 10 * 1000);
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'iOS Custom Sound Test',
+          body: `Playing ${selected} (${soundName}) via notification payload`,
+          sound: Platform.OS === 'ios' ? soundName : true,
+          interruptionLevel: Platform.OS === 'ios' ? 'timeSensitive' : undefined,
+          data: { type: 'test-athan', athanType: selected },
+        },
+        trigger: Platform.select<any>({
+          ios: { date: in10 },
+          android: { seconds: 10 },
+          default: { date: in10 },
+        }),
+      });
+      console.log('Scheduled iOS custom sound test in 10 seconds');
+    } catch (err) {
+      console.error('Error scheduling iOS custom sound test:', err);
+    }
+  };
+
   return (
-    <NotificationContext.Provider value={{ schedulePrayerNotifications, cancelAllNotifications, testAthanSound }}>
+  <NotificationContext.Provider value={{ schedulePrayerNotifications, cancelAllNotifications, testAthanSound, testIosNotificationSound }}>
       {children}
     </NotificationContext.Provider>
   );

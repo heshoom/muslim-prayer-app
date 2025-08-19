@@ -33,7 +33,7 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
           allowAlert: true,
           allowBadge: true,
           allowSound: true,
-          allowCriticalAlerts: true, // For prayer times
+          // Don't request critical alerts; we use time-sensitive interruption level instead
         },
         android: {
           allowAlert: true,
@@ -67,7 +67,8 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
 
     // Build an idempotency key so we don't re-schedule on every reload
     const dayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    const scheduleSignature = `${dayKey}|${location}|${settings.enabled}|${settings.adhan}|${settings.athanSound}|${settings.vibrate}|${prayerTimes.Fajr}|${prayerTimes.Dhuhr}|${prayerTimes.Asr}|${prayerTimes.Maghrib}|${prayerTimes.Isha}`;
+  // Exclude athanSound so changing the reciter doesn't force a full reschedule
+  const scheduleSignature = `${dayKey}|${location}|${settings.enabled}|${settings.adhan}|${settings.vibrate}|${prayerTimes.Fajr}|${prayerTimes.Dhuhr}|${prayerTimes.Asr}|${prayerTimes.Maghrib}|${prayerTimes.Isha}`;
     const STORAGE_KEY = 'prayerNotifications:lastScheduleSignature';
     const lastSignature = await AsyncStorage.getItem(STORAGE_KEY);
 
@@ -109,18 +110,27 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
 
     await AsyncStorage.setItem(STORAGE_KEY, scheduleSignature);
     console.log('All prayer notifications scheduled successfully');
+
+    // Debug: log a summary of scheduled notifications
+    try {
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      console.log(`Scheduled notifications count: ${scheduled.length}`);
+      scheduled.slice(0, 5).forEach((n: any, idx) => {
+        const trig: any = n.trigger || {};
+        console.log(`[#${idx + 1}] id=${n.identifier || 'n/a'} title=${n.content?.title} hour=${trig.hour} minute=${trig.minute} date=${trig.date}`);
+      });
+    } catch (e) {
+      console.warn('Unable to list scheduled notifications:', e);
+    }
   } catch (error) {
     console.error('Error scheduling prayer notifications:', error);
   }
 }
   async stopCurrentSound(): Promise<void> {
-    if (this.currentSound) {
-      try {
-        await this.currentSound.stopAsync();
-        this.cleanup();
-      } catch (error) {
-        console.error('Error stopping current sound:', error);
-      }
+    try {
+      await athanAudioService.stopCurrentSound();
+    } catch (error) {
+      console.error('Error stopping current sound via athanAudioService:', error);
     }
   }
 
@@ -132,16 +142,18 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
     // For expo-notifications, we need to use local file paths
     // The audio files will be bundled with the app
     const athanFiles: { [key: string]: string } = {
-      'makkah': 'makkah.mp3',
-      'madinah': 'madinah.mp3', 
-      'egypt': 'egypt.mp3',
-      'turkey': 'turkey.mp3',
-      'nasiralqatami': 'nasiralqatami.mp3',
+      // iOS expects bundled short aiff filenames that are included in the Xcode project
+      // Android will still use default channel sound; full playback handled by app audio service
+      'makkah': 'makkah_short.aiff',
+      'madinah': 'madinah-03_short.aiff',
+      'egypt': 'egypt_short.aiff',
+      'turkey': 'turkey_short.aiff',
+      'nasiralqatami': 'nasiralqatami_short.aiff',
     };
 
     // For custom sounds, we'll use the default system sound for now
     // Custom notification sounds require additional setup in native projects
-    return athanFiles[athanSound] ? 'default' : 'default';
+    return athanFiles[athanSound] || 'default';
   }
 
   private async schedulePrayerNotification(
@@ -169,22 +181,52 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
       const notificationDate = new Date(date);
       notificationDate.setHours(hours, minutes, 0, 0);
 
-      // Only schedule if the time is in the future (at least 1 minute from now)
+      // Normalize to the next occurrence: if the time is in the past or within 1 minute,
+      // schedule for the next day so the notification won't fire immediately on schedule.
       const now = new Date();
       if (notificationDate.getTime() - now.getTime() < 60000) {
-        // Skip scheduling if the time is in the past or within 1 minute from now
-        console.log(`Skipping ${prayerName} notification: time is in the past or too close to now (${notificationDate.toLocaleString()})`);
-        return;
+        // schedule for next day
+        notificationDate.setDate(notificationDate.getDate() + 1);
       }
 
       let soundUri: string | undefined = 'default';
       if (settings.adhan) {
         if (Platform.OS === 'ios') {
-          soundUri = settings.athanSound + '.aiff';
-        } else if (Platform.OS === 'android') {
+          // Use the short bundled aiff names
           soundUri = this.getAthanSoundUri(settings.athanSound, settings.adhan);
+        } else if (Platform.OS === 'android') {
+          // Android will use channel sound config; keep 'default' here
+          soundUri = 'default';
         }
       }
+
+      // Use a calendar trigger that repeats daily at the hour/minute. This avoids
+      // scheduling a one-off for a past date which some platforms would deliver
+      // immediately. Include a scheduledAt timestamp in the payload so the app
+      // can distinguish freshly-delivered notifications from old ones.
+      const scheduledAt = notificationDate.getTime();
+
+      // Use a repeating daily calendar trigger for both platforms
+      const trigger: Notifications.NotificationTriggerInput = Platform.select({
+        ios: ({
+          hour: notificationDate.getHours(),
+          minute: notificationDate.getMinutes(),
+          repeats: true,
+        } as any),
+        android: ({
+          hour: notificationDate.getHours(),
+          minute: notificationDate.getMinutes(),
+          repeats: true,
+          channelId: 'prayer-times',
+          // alarmManager provides more reliable delivery on Android 12+
+          alarmManager: true,
+        } as any),
+        default: ({
+          hour: notificationDate.getHours(),
+          minute: notificationDate.getMinutes(),
+          repeats: true,
+        } as any),
+      }) as any;
 
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
@@ -194,6 +236,10 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
             : `It's time for ${prayerName} prayer in ${location}`,
           sound: soundUri,
           vibrate: settings.vibrate ? [0, 500, 250, 500] : undefined,
+          // iOS: ensure immediate delivery (requires time-sensitive entitlement enabled)
+          interruptionLevel: Platform.OS === 'ios' ? 'timeSensitive' : undefined,
+          // Android: highest priority for heads-up
+          priority: Platform.OS === 'android' ? Notifications.AndroidNotificationPriority.MAX : undefined,
           data: {
             prayerName,
             prayerTime,
@@ -202,12 +248,10 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
             type: 'prayer-time',
             athanEnabled: settings.adhan,
             athanSound: settings.athanSound,
+            scheduledAt,
           },
         },
-        trigger: {
-          date: notificationDate,
-          channelId: Platform.OS === 'android' ? 'prayer-times' : undefined,
-        } as Notifications.NotificationTriggerInput,
+        trigger,
       });
 
       console.log(`Scheduled ${prayerName} notification for ${notificationDate.toLocaleString()}, ID: ${notificationId}, Sound: ${soundUri}`);

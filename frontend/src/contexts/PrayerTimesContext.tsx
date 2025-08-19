@@ -217,7 +217,8 @@ export const PrayerTimesProvider = ({ children }: PrayerTimesProviderProps) => {
       console.log('Settings changed - updating prayer notifications');
       setupNotifications(prayerTimes, location);
     }
-  }, [settings.notifications.enabled, settings.notifications.adhan, settings.notifications.athanSound, settings.notifications.vibrate]);
+    // Intentionally exclude athanSound so changing the reciter doesn't cancel/reschedule all notifications
+  }, [settings.notifications.enabled, settings.notifications.adhan, settings.notifications.vibrate]);
 
   // Load prayer times on mount
   useEffect(() => {

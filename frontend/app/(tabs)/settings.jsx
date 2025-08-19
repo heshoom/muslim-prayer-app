@@ -25,7 +25,7 @@ import { clearPrayerTimesCache } from '@/src/services/prayerTimesCache';
 
 const Settings = () => {
   const { settings, updateSettings, isDarkMode } = useSettings();
-  const { testAthanSound } = useNotifications();
+  const { testAthanSound, testIosNotificationSound } = useNotifications();
   const { clearCache } = usePrayerTimes();
   const theme = isDarkMode ? darkTheme : lightTheme;
   const insets = useSafeAreaInsets();
@@ -237,6 +237,35 @@ const Settings = () => {
                           Test Athan Sound
                         </Text>
                       </TouchableOpacity>
+                      {Platform.OS === 'ios' && (
+                        <TouchableOpacity
+                          style={[
+                            styles.testButton,
+                            { backgroundColor: theme.primary },
+                          ]}
+                          onPress={async () => {
+                            try {
+                              await testIosNotificationSound(settings.notifications.athanSound);
+                              Alert.alert(
+                                'iOS Notification Test Scheduled',
+                                'Lock your device; a notification with the bundled aiff sound will play in ~10 seconds.',
+                                [{ text: 'OK' }]
+                              );
+                            } catch (e) {
+                              console.error('Error scheduling iOS sound test:', e);
+                            }
+                          }}
+                        >
+                          <Text
+                            style={[
+                              styles.testButtonText,
+                              { color: theme.text.inverse },
+                            ]}
+                          >
+                            Test iOS Notification Sound
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
                 </View>
