@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Platform, Alert, View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
+import { useNotifications } from '@/src/contexts/NotificationContext';
 import { useRouter } from 'expo-router';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { lightTheme, darkTheme } from '@/src/constants/theme';
@@ -38,13 +39,13 @@ export default function Welcome() {
     }
   };
 
+  const notifCtx = useNotifications();
+
   const requestNotifications = async () => {
     try {
       setBusy(true);
-      const { status } = await Notifications.requestPermissionsAsync({
-        ios: { allowAlert: true, allowBadge: true, allowSound: true },
-        android: { allowAlert: true, allowBadge: true, allowSound: true },
-      } as any);
+      await notifCtx.requestPermissionsIfNeeded();
+      const { status } = await Notifications.getPermissionsAsync();
       setNotifGranted(status === 'granted');
       if (status !== 'granted') {
         Alert.alert(
@@ -60,6 +61,14 @@ export default function Welcome() {
   const finish = () => {
     updateSettings('onboarding' as any, 'completed', true);
   router.replace('/');
+  // After completing onboarding, ensure notifications are registered and scheduled if the user granted
+  (async () => {
+    try {
+      await notifCtx.requestPermissionsIfNeeded();
+    } catch (e) {
+      // ignore
+    }
+  })();
   };
 
   return (

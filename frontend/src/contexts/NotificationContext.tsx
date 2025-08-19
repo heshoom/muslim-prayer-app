@@ -35,6 +35,7 @@ type NotificationContextType = {
   cancelAllNotifications: () => Promise<void>;
   testAthanSound: (athanType: string) => Promise<void>;
   testIosNotificationSound: (athanType?: string) => Promise<void>;
+  requestPermissionsIfNeeded: () => Promise<void>;
 };
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -100,12 +101,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, []);
 
   useEffect(() => {
-    registerForPushNotificationsAsync();
-
   // Listener for when notifications are received while app is in foreground
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
       console.log('Notification received:', notification);
-  handleNotificationReceived(notification);
+      handleNotificationReceived(notification);
     });
 
     // Listener for when user taps notification
@@ -218,6 +217,18 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
     
     console.log('Notification permissions granted:', finalStatus);
+  };
+
+  // Expose a helper for other parts of the app (e.g. onboarding) to opt-in
+  // to requesting notification permissions once the user has completed onboarding.
+  const requestPermissionsIfNeeded = async () => {
+    try {
+      await registerForPushNotificationsAsync();
+      // Mark startup done so any scheduling can proceed
+      await AsyncStorage.setItem('app:notificationStartupDone', '1');
+    } catch (e) {
+      console.warn('Error requesting push permissions on demand:', e);
+    }
   };
 
   const schedulePrayerNotifications = async (prayerTimes: any) => {
@@ -383,7 +394,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   return (
-  <NotificationContext.Provider value={{ schedulePrayerNotifications, cancelAllNotifications, testAthanSound, testIosNotificationSound }}>
+  <NotificationContext.Provider value={{ schedulePrayerNotifications, cancelAllNotifications, testAthanSound, testIosNotificationSound, requestPermissionsIfNeeded }}>
       {children}
     </NotificationContext.Provider>
   );
