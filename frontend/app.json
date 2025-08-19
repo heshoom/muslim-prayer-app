@@ -11,7 +11,7 @@
   "ios": {
   "supportsTablet": true,
   "bundleIdentifier": "com.heshoom.islamicpro",
-  "buildNumber": "7",
+  "buildNumber": "8",
       "icon": "./assets/images/icon.png",
       "infoPlist": {
   "ITSAppUsesNonExemptEncryption": false,
