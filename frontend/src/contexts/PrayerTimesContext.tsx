@@ -256,8 +256,11 @@ export const PrayerTimesProvider = ({ children }: PrayerTimesProviderProps) => {
     // Intentionally exclude athanSound so changing the reciter doesn't cancel/reschedule all notifications
   }, [settings.notifications.enabled, settings.notifications.adhan, settings.notifications.vibrate]);
 
-  // Load prayer times on mount
+  // Load prayer times only after onboarding is completed (to avoid prompting
+  // for location permissions before the user has a chance to opt in).
   useEffect(() => {
+    if (!settings.onboarding?.completed) return;
+
     loadPrayerTimes();
     // attempt to register background fetch with approximate location obtained later when loadPrayerTimes runs
     (async () => {
@@ -270,7 +273,7 @@ export const PrayerTimesProvider = ({ children }: PrayerTimesProviderProps) => {
         console.warn('Background fetch registration failed on mount:', err);
       }
     })();
-  }, []);
+  }, [settings.onboarding?.completed]);
 
   // Re-fetch prayer times when prayer-related settings change (calculation method, madhab, adjustments)
   useEffect(() => {
