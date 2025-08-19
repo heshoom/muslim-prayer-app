@@ -65,35 +65,47 @@ export interface PrayerTimesResponse {
 
 import { getCalculationMethodNumber } from '../utils/calculationMethods';
 
-// Helper: Recommend calculation method by country
+// Helper: Recommend calculation method by country using regional defaults
+// Mapping updated per product request:
+// - North America → ISNA
+// - Europe → MWL
+// - Middle East & Africa → Egyptian / Umm al-Qura (we map Africa -> egypt, Middle East -> makkah by country)
+// - South Asia → Karachi
+// - Iran → Tehran
+// - Saudi Arabia → Umm al-Qura (makkah)
+// - High Latitudes → MWL (or ISNA with twilight adjustments)
 const getRecommendedMethodForCountry = (country: string): string => {
-  const countryMap: { [key: string]: string } = {
-    'United States': 'isna',
-    'Canada': 'isna',
-    'United Kingdom': 'mwl',
-    'France': 'france',
-    'Turkey': 'turkey',
-    'Saudi Arabia': 'makkah',
-    'Kuwait': 'kuwait',
-    'Qatar': 'qatar',
-    'Russia': 'russia',
-    'Singapore': 'singapore',
-    'Egypt': 'egypt',
-    'Pakistan': 'karachi',
-    'Iran': 'tehran',
-    'India': 'karachi',
-    'Indonesia': 'mwl',
-    'Malaysia': 'mwl',
-    'UAE': 'makkah',
-    'Oman': 'makkah',
-    'Bahrain': 'makkah',
-    'Jordan': 'mwl',
-    'Morocco': 'mwl',
-    'Algeria': 'mwl',
-    'South Africa': 'mwl',
-    // Add more as needed
-  };
-  return countryMap[country] || 'mwl';
+  const normalized = (country || '').toLowerCase().trim();
+
+  const NORTH_AMERICA = ['united states', 'usa', 'canada', 'mexico'];
+  const EUROPE = [
+    'united kingdom', 'uk', 'france', 'germany', 'spain', 'italy', 'portugal', 'netherlands', 'belgium', 'switzerland', 'austria', 'poland', 'sweden', 'norway', 'finland', 'denmark', 'ireland', 'greece', 'czech republic'
+  ];
+  const SOUTH_ASIA = ['pakistan', 'india', 'bangladesh', 'sri lanka', 'nepal', 'bhutan'];
+  const MIDDLE_EAST = ['united arab emirates', 'uae', 'oman', 'qatar', 'kuwait', 'bahrain', 'jordan', 'lebanon', 'syria', 'iraq', 'israel', 'palestine', 'yemen', 'turkey'];
+  const AFRICA = ['egypt', 'morocco', 'algeria', 'tunisia', 'libya', 'south africa', 'nigeria', 'kenya', 'ethiopia', 'ghana', 'tanzania', 'uganda', 'angola'];
+  const HIGH_LATITUDE = ['norway', 'sweden', 'finland', 'iceland', 'greenland'];
+
+  // Iran and Saudi Arabia explicit mappings
+  if (normalized === 'iran') return 'tehran';
+  if (normalized === 'saudi arabia' || normalized === 'saudi') return 'makkah';
+
+  if (NORTH_AMERICA.includes(normalized)) return 'isna';
+  if (EUROPE.includes(normalized)) return 'mwl';
+  if (SOUTH_ASIA.includes(normalized)) return 'karachi';
+  if (MIDDLE_EAST.includes(normalized)) return 'makkah';
+  if (AFRICA.includes(normalized)) return 'egypt';
+  if (HIGH_LATITUDE.includes(normalized)) {
+    // High-latitude rule: prefer MWL (or ISNA with special twilight handling)
+    return 'mwl';
+  }
+
+  // Fallbacks for common names
+  if (normalized === 'united kingdom' || normalized === 'uk') return 'mwl';
+  if (normalized === 'singapore') return 'singapore';
+
+  // Default to MWL if unknown
+  return 'mwl';
 };
 
 export const fetchPrayerTimes = async (
