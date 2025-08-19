@@ -18,6 +18,7 @@ export default function PrayerTimesScreen() {
   const { prayerTimes, location, loading, error, refreshPrayerTimes } = usePrayerTimes();
   const { settings } = useSettings();
   const { t, isRTL, getHijriMonths } = useTranslation();
+  const { effectiveMethod } = usePrayerTimes();
 
   const formatTime = (time: string) => formatTimeUtil(time, settings.appearance.timeFormat);
 
@@ -153,6 +154,15 @@ export default function PrayerTimesScreen() {
             <ThemedText style={[styles.location, { color: theme.text.secondary }]}>
               {location}
             </ThemedText>
+            {/* Calculation method and madhab info */}
+            <ThemedText style={[styles.metaInfo, { color: theme.text.secondary }]}>
+              {`Method: ${settings.prayer.calculationMethod === 'auto' ? `Auto → ${effectiveMethod || 'Unknown'}` : settings.prayer.calculationMethod.toUpperCase()}`}
+            </ThemedText>
+            <ThemedText style={[styles.metaInfo, { color: theme.text.secondary }]}>Madhab: {settings.prayer.madhab.toUpperCase()}</ThemedText>
+            {/* Show non-zero adjustments */}
+            {Object.entries(settings.prayer.adjustments).some(([,v]) => v !== 0) && (
+              <ThemedText style={[styles.metaInfo, { color: theme.text.secondary }]}>Adjustments: {Object.entries(settings.prayer.adjustments).filter(([,v]) => v !== 0).map(([k,v]) => `${k}:${v}m`).join(', ')}</ThemedText>
+            )}
           </View>
 
           {/* Prayer Times List */}
@@ -257,6 +267,10 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     marginTop: 2,
     marginBottom: 2,
+  },
+  metaInfo: {
+    fontSize: 12,
+    marginTop: 4,
   },
   prayerTimesContainer: {
     borderRadius: 12,

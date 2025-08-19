@@ -51,7 +51,7 @@ const defaultSettings: SettingsType = {
     showHijriDates: true,
   },
   prayer: {
-    calculationMethod: 'mwl',
+    calculationMethod: 'auto',
     madhab: 'shafi',
     adjustments: {
       fajr: 0,

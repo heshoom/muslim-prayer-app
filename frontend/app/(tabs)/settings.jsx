@@ -21,6 +21,7 @@ import { lightTheme, darkTheme } from "@/src/constants/theme";
 import { CustomPicker } from "@/src/components/shared/CustomPicker";
 import FacebookStyleTransition from "@/src/components/shared/FacebookStyleTransition";
 import { useTranslation } from "@/src/i18n";
+import { clearPrayerTimesCache } from '@/src/services/prayerTimesCache';
 
 const Settings = () => {
   const { settings, updateSettings, isDarkMode } = useSettings();
@@ -45,22 +46,51 @@ const Settings = () => {
 
   const handleClearCache = () => {
     Alert.alert(
-      "Clear Cache",
-      "This will clear all cached prayer times. Are you sure?",
+      t('clearCache') || 'Clear Cache',
+      t('clearCacheDesc') || 'This will clear cached prayer times and related data. Are you sure?',
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t('cancel') || 'Cancel', style: 'cancel' },
         {
-          text: "Clear",
-          style: "destructive",
+          text: t('clear') || 'Clear',
+          style: 'destructive',
           onPress: async () => {
             try {
               await clearCache();
-              Alert.alert("Success", "Cache cleared successfully!");
+              // Also clear the dedicated prayer times cache
+              try {
+                await clearPrayerTimesCache();
+              } catch (err) {
+                console.warn('Error clearing prayerTimesCache:', err);
+              }
+              Alert.alert(t('success') || 'Success', t('cacheCleared') || 'Cache cleared successfully!');
             } catch (error) {
-              Alert.alert("Error", "Failed to clear cache");
+              Alert.alert(t('error') || 'Error', t('failedToClearCache') || 'Failed to clear cache');
             }
           },
         },
+      ]
+    );
+  };
+
+  const handleClearPrayerCache = () => {
+    Alert.alert(
+      t('clearPrayerCache') || 'Clear Prayer Cache',
+      t('clearPrayerCacheDesc') || 'This will clear all cached prayer times for your current location and date. Continue?',
+      [
+        { text: t('cancel') || 'Cancel', style: 'cancel' },
+        {
+          text: t('clear') || 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await clearPrayerTimesCache();
+              Alert.alert(t('success') || 'Success', t('prayerCacheCleared') || 'Prayer cache cleared successfully');
+            } catch (error) {
+              console.error('Error clearing prayer cache:', error);
+              Alert.alert(t('error') || 'Error', t('failedToClearPrayerCache') || 'Failed to clear prayer cache');
+            }
+          }
+        }
       ]
     );
   };
@@ -389,6 +419,7 @@ const Settings = () => {
                   updateSettings("prayer", "calculationMethod", value)
                 }
                 items={[
+                  { label: 'Auto (Recommended for Region)', value: 'auto' },
                   { label: t("muslimWorldLeague"), value: "mwl" },
                   { label: t("isna"), value: "isna" },
                   { label: t("egyptianGeneralAuthority"), value: "egypt" },
@@ -398,6 +429,7 @@ const Settings = () => {
                 title={t("selectCalculationMethod")}
                 theme={theme}
               />
+              {/* Clear prayer cache is handled by the main Clear Cache action in Support */}
             </View>
 
             <View style={[styles.settingItem, styles.pickerItem]}>
@@ -722,6 +754,17 @@ const getStyles = (theme, isDarkMode, isRTL = false) =>
     testButtonText: {
       fontSize: 14,
       fontWeight: "500",
+    },
+    clearButton: {
+      marginTop: 12,
+      height: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 6,
+    },
+    clearButtonText: {
+      fontSize: 14,
+      fontWeight: '600',
     },
   });
 

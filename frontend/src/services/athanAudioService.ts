@@ -3,46 +3,16 @@ import { AppState, AppStateStatus } from 'react-native';
 
 class AthanAudioService {
   private currentSound: Audio.Sound | null = null;
-  private appStateSubscription: any = null;
-
-  constructor() {
-    this.setupAudioInterruptions();
-  }
-
-  private setupAudioInterruptions() {
-    // Configure audio mode to handle interruptions properly
-    Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      staysActiveInBackground: true,
-      playsInSilentModeIOS: true,
-      shouldDuckAndroid: true,
-      playThroughEarpieceAndroid: false,
-    });
-
-    // Listen for app state changes (includes lock button press)
-    this.appStateSubscription = AppState.addEventListener('change', this.handleAppStateChange);
-  }
-
-  private handleAppStateChange = async (nextAppState: AppStateStatus) => {
-    // Force immediate stop when app goes to background or inactive (lock button pressed)
-    if (nextAppState === 'background' || nextAppState === 'inactive') {
-      console.log('App went to background/inactive - forcing immediate athan stop');
-      await this.forceStopSound();
-    }
-  };
+  // Removed app state forced stop to allow background playback
 
   // Force immediate stop without any fade or transition
   async forceStopSound(): Promise<void> {
     if (this.currentSound) {
-      try {
-        // Set volume to 0 immediately before stopping for instant silence
-        await this.currentSound.setVolumeAsync(0);
-        await this.currentSound.stopAsync();
-        await this.currentSound.unloadAsync();
-        console.log('Athan sound force stopped immediately');
-      } catch (error) {
-        console.error('Error force stopping sound:', error);
-      }
+      // Set volume to 0 immediately before stopping for instant silence
+      await this.currentSound.setVolumeAsync(0);
+      await this.currentSound.stopAsync();
+      await this.currentSound.unloadAsync();
+      console.log('Athan sound force stopped immediately');
       this.currentSound = null;
     }
   }
@@ -52,12 +22,12 @@ class AthanAudioService {
       // Stop any currently playing sound immediately
       await this.stopCurrentSound();
 
-      // Configure audio mode for immediate interruption handling
+      // Configure audio mode for background playback
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
-        staysActiveInBackground: false, // Changed to false for immediate stop
+        staysActiveInBackground: true,
         playsInSilentModeIOS: true,
-        shouldDuckAndroid: false, // Changed to false for immediate stop
+        shouldDuckAndroid: true,
         playThroughEarpieceAndroid: false,
       });
 
@@ -164,11 +134,7 @@ class AthanAudioService {
 
   // Method to clean up subscriptions when service is destroyed
   destroy(): void {
-    this.forceStopSound();
-    if (this.appStateSubscription) {
-      this.appStateSubscription.remove();
-      this.appStateSubscription = null;
-    }
+  this.forceStopSound();
   }
 }
 

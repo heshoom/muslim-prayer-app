@@ -62,48 +62,95 @@ export interface PrayerTimesResponse {
   method: string;
 }
 
-export const fetchPrayerTimes = async (latitude: number, longitude: number): Promise<PrayerTimesResponse> => {
+
+import { getCalculationMethodNumber } from '../utils/calculationMethods';
+
+// Helper: Recommend calculation method by country
+const getRecommendedMethodForCountry = (country: string): string => {
+  const countryMap: { [key: string]: string } = {
+    'United States': 'isna',
+    'Canada': 'isna',
+    'United Kingdom': 'mwl',
+    'France': 'france',
+    'Turkey': 'turkey',
+    'Saudi Arabia': 'makkah',
+    'Kuwait': 'kuwait',
+    'Qatar': 'qatar',
+    'Russia': 'russia',
+    'Singapore': 'singapore',
+    'Egypt': 'egypt',
+    'Pakistan': 'karachi',
+    'Iran': 'tehran',
+    'India': 'karachi',
+    'Indonesia': 'mwl',
+    'Malaysia': 'mwl',
+    'UAE': 'makkah',
+    'Oman': 'makkah',
+    'Bahrain': 'makkah',
+    'Jordan': 'mwl',
+    'Morocco': 'mwl',
+    'Algeria': 'mwl',
+    'South Africa': 'mwl',
+    // Add more as needed
+  };
+  return countryMap[country] || 'mwl';
+};
+
+export const fetchPrayerTimes = async (
+  latitude: number,
+  longitude: number,
+  calculationMethod: string = 'auto',
+): Promise<PrayerTimesResponse> => {
   try {
     console.log('Fetching prayer times for coordinates:', { latitude, longitude });
-    
-    // Get city name from coordinates
+    // Get city name and country from coordinates
     const cityName = await getCityFromCoordinates(latitude, longitude);
     console.log('Location resolved to:', cityName);
-    
-    // Call Aladhan API directly with ISNA method (method 2)
-    const url = `${ALADHAN_API_URL}/timings?latitude=${latitude}&longitude=${longitude}&method=2`;
+
+    // Try to extract country from cityName string
+    let country = 'Unknown';
+    const parts = cityName.split(',').map(s => s.trim());
+    if (parts.length > 1) country = parts[parts.length - 1];
+
+    let methodToUse = calculationMethod;
+    if (calculationMethod === 'auto') {
+      methodToUse = getRecommendedMethodForCountry(country);
+    }
+    const methodNum = getCalculationMethodNumber(methodToUse);
+    // Call Aladhan API with selected method
+    const url = `${ALADHAN_API_URL}/timings?latitude=${latitude}&longitude=${longitude}&method=${methodNum}`;
     console.log('Making request to:', url);
-    
+
     const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
-      redirect: 'follow', // Follow redirects
+      redirect: 'follow',
     });
-    
+
     console.log('Response status:', response.status);
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const data = await response.json();
     console.log('API Response:', data);
-    
+
     if (data.code !== 200) {
       throw new Error(data.data || 'Failed to fetch prayer times');
     }
-    
+
     // Transform Aladhan API response to our format
     const timings = data.data.timings;
     const date = data.data.date;
     const meta = data.data.meta;
-    
+
     const transformedResponse: PrayerTimesResponse = {
       success: true,
-      location: cityName, // Use the resolved city name
+      location: cityName,
       date: `${date.readable}`,
       prayerTimes: {
         Fajr: timings.Fajr,
@@ -117,9 +164,9 @@ export const fetchPrayerTimes = async (latitude: number, longitude: number): Pro
         latitude: parseFloat(meta.latitude),
         longitude: parseFloat(meta.longitude),
       },
-      method: meta.method.name || 'Islamic Society of North America (ISNA)',
+      method: meta.method.name || methodToUse,
     };
-    
+
     console.log('Successfully fetched prayer times for:', transformedResponse.location);
     return transformedResponse;
   } catch (error) {

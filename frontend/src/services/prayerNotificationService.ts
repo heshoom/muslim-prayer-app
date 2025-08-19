@@ -165,15 +165,26 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
         return;
       }
       
+
       const notificationDate = new Date(date);
       notificationDate.setHours(hours, minutes, 0, 0);
 
-      // If the time has passed today, schedule for tomorrow
-      if (notificationDate <= new Date()) {
-        notificationDate.setDate(notificationDate.getDate() + 1);
+      // Only schedule if the time is in the future (at least 1 minute from now)
+      const now = new Date();
+      if (notificationDate.getTime() - now.getTime() < 60000) {
+        // Skip scheduling if the time is in the past or within 1 minute from now
+        console.log(`Skipping ${prayerName} notification: time is in the past or too close to now (${notificationDate.toLocaleString()})`);
+        return;
       }
 
-      const soundUri = this.getAthanSoundUri(settings.athanSound, settings.adhan);
+      let soundUri: string | undefined = 'default';
+      if (settings.adhan) {
+        if (Platform.OS === 'ios') {
+          soundUri = settings.athanSound + '.aiff';
+        } else if (Platform.OS === 'android') {
+          soundUri = this.getAthanSoundUri(settings.athanSound, settings.adhan);
+        }
+      }
 
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
@@ -181,7 +192,7 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
           body: settings.adhan 
             ? `It's time for ${prayerName} prayer in ${location}. \ud83d\udd4c` 
             : `It's time for ${prayerName} prayer in ${location}`,
-          sound: soundUri || 'default',
+          sound: soundUri,
           vibrate: settings.vibrate ? [0, 500, 250, 500] : undefined,
           data: {
             prayerName,
@@ -199,7 +210,7 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
         } as Notifications.NotificationTriggerInput,
       });
 
-      console.log(`Scheduled ${prayerName} notification for ${notificationDate.toLocaleString()}, ID: ${notificationId}, Sound: ${soundUri || 'default'}`);
+      console.log(`Scheduled ${prayerName} notification for ${notificationDate.toLocaleString()}, ID: ${notificationId}, Sound: ${soundUri}`);
     } catch (error) {
       console.error(`Error scheduling ${prayerName} notification:`, error);
     }
