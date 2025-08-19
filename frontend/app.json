@@ -8,10 +8,10 @@
     "scheme": "islamic-pro",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.heshoom.islamicpro",
-      "buildNumber": "6",
+  "ios": {
+  "supportsTablet": true,
+  "bundleIdentifier": "com.heshoom.islamicpro",
+  "buildNumber": "7",
       "icon": "./assets/images/icon.png",
       "infoPlist": {
   "ITSAppUsesNonExemptEncryption": false,
