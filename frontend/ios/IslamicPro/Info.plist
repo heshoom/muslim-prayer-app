@@ -33,7 +33,7 @@
       </dict>
     </array>
   <key>CFBundleVersion</key>
-  <string>8</string>
+  <string>9</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
     <key>LSMinimumSystemVersion</key>
@@ -82,7 +82,9 @@
     <string>Automatic</string>
     <key>UIBackgroundModes</key>
     <array>
-      <string>audio</string>
+  <string>audio</string>
+  <string>fetch</string>
+  <string>remote-notification</string>
     </array>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
