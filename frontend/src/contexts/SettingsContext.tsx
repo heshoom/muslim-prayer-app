@@ -3,6 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'react-native';
 
 export type SettingsType = {
+  onboarding?: {
+    completed: boolean;
+  };
   notifications: {
     enabled: boolean;
     adhan: boolean;
@@ -36,6 +39,9 @@ export type SettingsType = {
 };
 
 const defaultSettings: SettingsType = {
+  onboarding: {
+    completed: false,
+  },
   notifications: {
     enabled: true,
     adhan: true,

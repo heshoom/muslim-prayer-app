@@ -10,7 +10,7 @@ import { NotificationProvider } from '@/src/contexts/NotificationContext';
 import { PrayerTimesProvider } from '@/src/contexts/PrayerTimesContext';
 
 function RootLayoutNav() {
-  const { isDarkMode } = useSettings();
+  const { isDarkMode, settings } = useSettings() as any;
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -19,10 +19,13 @@ function RootLayoutNav() {
     return null;
   }
 
+  const initial = settings?.onboarding?.completed ? '(tabs)' : 'welcome';
+
   return (
     <SafeAreaProvider>
       <ThemeProvider value={isDarkMode ? DarkTheme : DefaultTheme}>
-        <Stack>
+        <Stack initialRouteName={initial}>
+          <Stack.Screen name="welcome" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>
