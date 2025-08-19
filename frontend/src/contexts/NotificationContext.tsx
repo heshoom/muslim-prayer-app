@@ -65,7 +65,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }
         await AsyncStorage.setItem(BUILD_KEY, currentBuild);
 
-        // Proactively cancel any scheduled notifications that are about to fire immediately
+  // Proactively cancel any scheduled notifications that are about to fire immediately
         try {
           const scheduled = await Notifications.getAllScheduledNotificationsAsync();
           const now = Date.now();
@@ -85,6 +85,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           }
         } catch (listErr) {
           // Safe to ignore if listing isn't supported on platform
+        }
+        // Mark that startup notification cleanup has finished so other modules
+        // (which may schedule notifications) can wait to avoid races.
+        try {
+          await AsyncStorage.setItem('app:notificationStartupDone', '1');
+        } catch (e) {
+          // best-effort
         }
       } catch (e) {
         console.warn('Startup notification cleanup encountered an issue:', e);
@@ -138,18 +145,19 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const scheduledAt = data?.scheduledAt ? Number(data.scheduledAt) : undefined;
     const now = Date.now();
     const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
-    const STARTUP_GRACE_MS = 10 * 1000; // 10 seconds after app start
+    const STARTUP_GRACE_MS = 15 * 1000; // 15 seconds after app start
 
-    if (scheduledAt && (now - scheduledAt) > STALE_THRESHOLD_MS) {
-      console.log('Ignoring stale notification delivery (scheduledAt too old):', { scheduledAt, now });
+    // Suppress any notification deliveries that arrive immediately after app start.
+    // Some OSes may flush or immediately deliver scheduled notifications when an
+    // app is launched or freshly installed; suppressing for a short window prevents
+    // the 'burst' behavior where many alarms play at once on first launch.
+    if ((now - appStartMs.current) < STARTUP_GRACE_MS) {
+      console.log('Ignoring notification during startup grace window to avoid burst', { now, appStart: appStartMs.current, scheduledAt });
       return;
     }
 
-    // If there's no scheduledAt (legacy notifications from older builds),
-    // ignore anything that arrives within the first few seconds after app start
-    // to prevent a burst when the OS flushes pending deliveries on launch.
-    if (!scheduledAt && (now - appStartMs.current) < STARTUP_GRACE_MS) {
-      console.log('Ignoring potential legacy notification during startup grace window');
+    if (scheduledAt && (now - scheduledAt) > STALE_THRESHOLD_MS) {
+      console.log('Ignoring stale notification delivery (scheduledAt too old):', { scheduledAt, now });
       return;
     }
 

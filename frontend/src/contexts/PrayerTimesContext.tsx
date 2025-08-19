@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { PrayerTimes, PrayerTimesResponse, fetchPrayerTimes } from '../services/prayerTimesService';
 import { getCachedPrayerTimes, setCachedPrayerTimes, clearPrayerTimesCache } from '../services/prayerTimesCache';
@@ -68,6 +69,20 @@ export const PrayerTimesProvider = ({ children }: PrayerTimesProviderProps) => {
       }
 
       const permissionGranted = await prayerNotificationService.setupNotifications();
+      // Wait for NotificationContext to finish startup cleanup to avoid racing where
+      // cleanup cancels schedules while we are scheduling them. This polls AsyncStorage
+      // for a short period (max 5s) for the 'app:notificationStartupDone' flag.
+      try {
+        const start = Date.now();
+        while (Date.now() - start < 5000) {
+          const v = await AsyncStorage.getItem('app:notificationStartupDone');
+          if (v === '1') break;
+          // small delay
+          await new Promise(res => setTimeout(res, 250));
+        }
+      } catch (e) {
+        // ignore
+      }
       if (permissionGranted) {
         await prayerNotificationService.scheduleAllPrayerNotifications(times, loc, notificationSettings);
         setNotificationsEnabled(true);
