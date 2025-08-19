@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { useSettings } from './SettingsContext';
@@ -41,6 +43,54 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const { settings } = useSettings();
   const notificationListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
+  // Record app start to ignore any legacy/stale deliveries right at boot
+  const appStartMs = useRef<number>(Date.now());
+
+  // On startup, clear any presented notifications and, on build change, clear scheduled ones
+  useEffect(() => {
+    (async () => {
+      try {
+        // Remove any already-presented notifications to avoid a visible backlog
+        await Notifications.dismissAllNotificationsAsync();
+
+        // Detect build changes and clear legacy schedules (common after reinstall/rebuild)
+        const BUILD_KEY = 'app:lastBuildId';
+        const currentBuild = String(
+          (Constants as any)?.nativeBuildVersion || (Constants as any)?.expoConfig?.version || 'unknown'
+        );
+        const previousBuild = await AsyncStorage.getItem(BUILD_KEY);
+        if (previousBuild && previousBuild !== currentBuild) {
+          console.log('Build version changed. Clearing all scheduled notifications to avoid legacy bursts.');
+          await Notifications.cancelAllScheduledNotificationsAsync();
+        }
+        await AsyncStorage.setItem(BUILD_KEY, currentBuild);
+
+        // Proactively cancel any scheduled notifications that are about to fire immediately
+        try {
+          const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+          const now = Date.now();
+          for (const req of scheduled as any[]) {
+            const trigger: any = (req as any).trigger;
+            try {
+              const next = await (Notifications as any).getNextTriggerDateAsync?.(trigger);
+              if (typeof next === 'number' && next - now < 5000) {
+                // Cancel to avoid burst on launch
+                if ((req as any).identifier) {
+                  await Notifications.cancelScheduledNotificationAsync((req as any).identifier);
+                }
+              }
+            } catch (inner) {
+              // Ignore errors per-request to be resilient
+            }
+          }
+        } catch (listErr) {
+          // Safe to ignore if listing isn't supported on platform
+        }
+      } catch (e) {
+        console.warn('Startup notification cleanup encountered an issue:', e);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     registerForPushNotificationsAsync();
@@ -87,10 +137,19 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     // immediately when the app is opened and pending deliveries are delivered.
     const scheduledAt = data?.scheduledAt ? Number(data.scheduledAt) : undefined;
     const now = Date.now();
-    const STALE_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
+    const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+    const STARTUP_GRACE_MS = 10 * 1000; // 10 seconds after app start
 
     if (scheduledAt && (now - scheduledAt) > STALE_THRESHOLD_MS) {
       console.log('Ignoring stale notification delivery (scheduledAt too old):', { scheduledAt, now });
+      return;
+    }
+
+    // If there's no scheduledAt (legacy notifications from older builds),
+    // ignore anything that arrives within the first few seconds after app start
+    // to prevent a burst when the OS flushes pending deliveries on launch.
+    if (!scheduledAt && (now - appStartMs.current) < STARTUP_GRACE_MS) {
+      console.log('Ignoring potential legacy notification during startup grace window');
       return;
     }
 

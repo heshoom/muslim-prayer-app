@@ -105,7 +105,7 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
     const today = new Date();
     
     for (const prayer of prayers) {
-      await this.schedulePrayerNotification(prayer.name, prayer.time, location, today, settings);
+      await this.schedulePrayerNotification(prayer.name, prayer.time, location, today, settings, scheduleSignature);
     }
 
     await AsyncStorage.setItem(STORAGE_KEY, scheduleSignature);
@@ -161,7 +161,8 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
     prayerTime: string,
     location: string,
     date: Date,
-    settings: NotificationSettings
+    settings: NotificationSettings,
+    scheduleSignature?: string
   ): Promise<void> {
     try {
       // Sanitize time string (handles values like "05:13 (EDT)" or "05:13:00")
@@ -249,6 +250,7 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
             athanEnabled: settings.adhan,
             athanSound: settings.athanSound,
             scheduledAt,
+            scheduleSignature,
           },
         },
         trigger,
