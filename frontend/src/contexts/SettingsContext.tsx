@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { useColorScheme } from 'react-native';
 
 export type SettingsType = {
@@ -93,8 +94,32 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const loadSettings = async () => {
     try {
       const savedSettings = await AsyncStorage.getItem('userSettings');
+      let parsed: SettingsType | null = null;
       if (savedSettings) {
-        setSettings(JSON.parse(savedSettings));
+        parsed = JSON.parse(savedSettings) as SettingsType;
+      }
+
+      // If the build changed since last run, force onboarding to show so users
+      // see the welcome flow again (helps catch permissions and first-run flows).
+      try {
+        const BUILD_KEY = 'app:lastBuildId';
+        const currentBuild = String((Constants as any)?.nativeBuildVersion || (Constants as any)?.expoConfig?.version || 'unknown');
+        const previousBuild = await AsyncStorage.getItem(BUILD_KEY);
+        if (!parsed || (previousBuild && previousBuild !== currentBuild)) {
+          // fresh install or build changed -> ensure onboarding not marked complete
+          if (!parsed) parsed = { ...defaultSettings };
+          parsed.onboarding = { completed: false };
+          await AsyncStorage.setItem(BUILD_KEY, currentBuild);
+          // persist this sanitized settings object so startup is consistent
+          await AsyncStorage.setItem('userSettings', JSON.stringify(parsed));
+        }
+      } catch (e) {
+        console.warn('Error while checking build id for onboarding reset:', e);
+      }
+
+      if (parsed) {
+        setSettings(parsed);
+        console.log('Loaded settings on startup:', parsed);
       }
     } catch (error) {
       console.error('Error loading settings:', error);
