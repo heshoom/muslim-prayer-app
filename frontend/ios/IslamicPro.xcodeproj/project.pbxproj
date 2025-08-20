@@ -27,6 +27,7 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = IslamicPro/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = IslamicPro/Info.plist; sourceTree = "<group>"; };
 		1DFFF9E11BE9697CF854B4BF /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = IslamicPro/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		561D91C22E5599DC002B1EBE /* ci_post_clone.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = ci_post_clone.sh; sourceTree = "<group>"; };
 		56312D592E544ADA008A41E4 /* egypt_short.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = egypt_short.aiff; sourceTree = "<group>"; };
 		56312D5A2E544ADA008A41E4 /* madinah-03_short.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = "madinah-03_short.aiff"; sourceTree = "<group>"; };
 		56312D5B2E544ADA008A41E4 /* makkah_short.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = makkah_short.aiff; sourceTree = "<group>"; };
@@ -94,6 +95,14 @@
 			name = IslamicPro;
 			sourceTree = "<group>";
 		};
+		561D91C12E55990E002B1EBE /* ci_scripts */ = {
+			isa = PBXGroup;
+			children = (
+				561D91C22E5599DC002B1EBE /* ci_post_clone.sh */,
+			);
+			path = ci_scripts;
+			sourceTree = "<group>";
+		};
 		6D6F8FB8EF854FD9F187BF29 /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
@@ -112,6 +121,7 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
+				561D91C12E55990E002B1EBE /* ci_scripts */,
 				13B07FAE1A68108700A75B9A /* IslamicPro */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
@@ -165,7 +175,6 @@
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
 				15A43689936AE3E4F2850D9E /* [CP] Embed Pods Frameworks */,
-				561D91BF2E5554DE002B1EBE /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -281,23 +290,6 @@
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-IslamicPro/Pods-IslamicPro-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
-		};
-		561D91BF2E5554DE002B1EBE /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path./Users/heshami/Desktop/muslim-prayer-app/scripts/xcode-cloud/pod-install.sh\n";
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
