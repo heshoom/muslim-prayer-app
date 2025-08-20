@@ -239,6 +239,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
     const today = new Date();
+    const now = new Date();
 
     for (const prayer of prayers) {
       const prayerTime = prayerTimes[prayer];
@@ -248,9 +249,55 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const prayerDate = new Date(today);
       prayerDate.setHours(hours, minutes, 0, 0);
 
-      // Skip if prayer time has passed today
-      if (prayerDate < new Date()) {
+      const hasPassedToday = prayerDate.getTime() <= now.getTime();
+
+      // If prayer time has passed today, schedule for tomorrow
+      if (hasPassedToday) {
         prayerDate.setDate(prayerDate.getDate() + 1);
+        console.log(`${prayer} has passed today, scheduling for tomorrow: ${prayerDate.toLocaleString()}`);
+      } else {
+        console.log(`${prayer} is upcoming today, scheduling for: ${prayerDate.toLocaleString()}`);
+      }
+
+      // Choose trigger type based on whether prayer has passed
+      let mainTrigger: Notifications.NotificationTriggerInput;
+      if (hasPassedToday) {
+        // Use repeating trigger for prayers that have passed
+        mainTrigger = {
+          type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+          hour: hours,
+          minute: minutes,
+          repeats: true,
+        };
+      } else {
+        // Use one-time trigger for today, then schedule repeating for future
+        mainTrigger = {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: prayerDate,
+        };
+        
+        // Also schedule repeating notification for future days
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: `🕌 ${prayer} Prayer Time`,
+            body: `It's time for ${prayer} prayer. May Allah accept your prayers.`,
+            sound: true,
+            vibrate: settings.notifications.vibrate ? [0, 250, 250, 250] : undefined,
+            data: {
+              prayer: prayer,
+              type: 'prayer-time',
+              athanType: settings.notifications.athanSound,
+              fullAthan: `${prayer.toLowerCase()}_full.m4a`,
+              isRepeating: true,
+            }
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+            hour: hours,
+            minute: minutes,
+            repeats: true,
+          },
+        });
       }
 
       // Schedule main prayer notification
@@ -265,21 +312,58 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         type: 'prayer-time',
         athanType: settings.notifications.athanSound,
         // include a full athan filename so the app can play it when tapped
-        fullAthan: `${prayer.toLowerCase()}_full.m4a`
+        fullAthan: `${prayer.toLowerCase()}_full.m4a`,
+        isRepeating: hasPassedToday,
           }
         },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-          hour: prayerDate.getHours(),
-          minute: prayerDate.getMinutes(),
-          repeats: true,
-        },
+        trigger: mainTrigger,
       });
 
       // Schedule pre-prayer reminder if enabled
       if (settings.notifications.prePrayer) {
         const reminderDate = new Date(prayerDate);
         reminderDate.setMinutes(reminderDate.getMinutes() - settings.notifications.prePrayerTime);
+
+        // Check if reminder time has also passed
+        const reminderHasPassed = reminderDate.getTime() <= now.getTime();
+        
+        let reminderTrigger: Notifications.NotificationTriggerInput;
+        if (reminderHasPassed) {
+          // Reminder has passed - use repeating trigger for tomorrow
+          reminderTrigger = {
+            type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+            hour: reminderDate.getHours(),
+            minute: reminderDate.getMinutes(),
+            repeats: true,
+          };
+        } else {
+          // Reminder hasn't passed - use one-time trigger for today
+          reminderTrigger = {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: reminderDate,
+          };
+          
+          // Also schedule repeating reminder for future days
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: `🔔 ${prayer} Prayer Reminder`,
+              body: `${prayer} prayer is in ${settings.notifications.prePrayerTime} minutes. Prepare for prayer.`,
+              sound: true,
+              vibrate: settings.notifications.vibrate ? [0, 150, 150, 150] : undefined,
+              data: {
+                prayer: prayer,
+                type: 'pre-prayer-reminder',
+                isRepeating: true,
+              }
+            },
+            trigger: {
+              type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+              hour: reminderDate.getHours(),
+              minute: reminderDate.getMinutes(),
+              repeats: true,
+            },
+          });
+        }
 
         await Notifications.scheduleNotificationAsync({
           content: {
@@ -289,15 +373,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             vibrate: settings.notifications.vibrate ? [0, 150, 150, 150] : undefined,
             data: {
               prayer: prayer,
-              type: 'pre-prayer-reminder'
+              type: 'pre-prayer-reminder',
+              isRepeating: reminderHasPassed,
             }
           },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-            hour: reminderDate.getHours(),
-            minute: reminderDate.getMinutes(),
-            repeats: true,
-          },
+          trigger: reminderTrigger,
         });
       }
     }

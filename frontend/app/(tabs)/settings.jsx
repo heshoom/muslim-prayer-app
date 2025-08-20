@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -11,9 +11,12 @@ import {
   Alert,
   I18nManager,
   Linking,
+  Modal,
+  AppState,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FontAwesome5 } from "@expo/vector-icons";
+import * as Location from 'expo-location';
 import { useSettings } from "@/src/contexts/SettingsContext";
 import { useNotifications } from "@/src/contexts/NotificationContext";
 import { usePrayerTimes } from "@/src/contexts/PrayerTimesContext";
@@ -30,6 +33,77 @@ const Settings = () => {
   const theme = isDarkMode ? darkTheme : lightTheme;
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useTranslation();
+
+  const [showLocationTutorial, setShowLocationTutorial] = useState(false);
+  const [locationPermissionStatus, setLocationPermissionStatus] = useState(null);
+
+  // Check location permission status when component mounts
+  useEffect(() => {
+    checkLocationPermission();
+  }, []);
+
+  // Listen for app state changes to refresh permission status
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState) => {
+      if (nextAppState === 'active') {
+        // App has come to the foreground, check permissions again
+        checkLocationPermission();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription?.remove();
+  }, []);
+
+  const checkLocationPermission = async () => {
+    try {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      setLocationPermissionStatus(status);
+      
+      // If permission is now granted and GPS was supposed to be enabled, update the setting
+      if (status === 'granted' && settings.location.useGPS && locationPermissionStatus === 'denied') {
+        console.log('Location permission granted - updating GPS setting');
+      }
+    } catch (error) {
+      console.warn('Error checking location permission:', error);
+    }
+  };
+
+  const handleGPSToggle = async (value) => {
+    if (value) {
+      // User wants to enable GPS - check permission first
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        
+        if (status === 'granted') {
+          // Permission already granted, enable GPS
+          updateSettings("location", "useGPS", value);
+          setLocationPermissionStatus(status);
+        } else if (status === 'undetermined') {
+          // Ask for permission
+          const { status: requestStatus } = await Location.requestForegroundPermissionsAsync();
+          if (requestStatus === 'granted') {
+            updateSettings("location", "useGPS", value);
+            setLocationPermissionStatus(requestStatus);
+          } else {
+            // Permission denied - show tutorial
+            setShowLocationTutorial(true);
+            setLocationPermissionStatus(requestStatus);
+          }
+        } else {
+          // Permission was denied previously - show tutorial
+          setShowLocationTutorial(true);
+          setLocationPermissionStatus(status);
+        }
+      } catch (error) {
+        console.error('Error requesting location permission:', error);
+        Alert.alert('Error', 'Unable to check location permissions. Please try again.');
+      }
+    } else {
+      // User wants to disable GPS
+      updateSettings("location", "useGPS", value);
+    }
+  };
 
   const handleSave = () => {
     Alert.alert(t("settingsSaved"), t("preferencesUpdated"), [
@@ -483,16 +557,30 @@ const Settings = () => {
                   <Text style={styles.settingDescription}>
                     Get precise prayer times for your exact location
                   </Text>
+                  {locationPermissionStatus === 'denied' && settings.location.useGPS && (
+                    <Text style={[styles.permissionWarning, { color: '#e74c3c' }]}>
+                      ⚠️ Location permission is required. Tap to learn how to enable it.
+                    </Text>
+                  )}
                 </View>
                 <Switch
                   value={settings.location.useGPS}
-                  onValueChange={(value) =>
-                    updateSettings("location", "useGPS", value)
-                  }
+                  onValueChange={handleGPSToggle}
                   trackColor={{ false: "#dce4ec", true: "#2980b9" }}
                   thumbColor={settings.location.useGPS ? "#fff" : "#f4f3f4"}
                 />
               </View>
+              {locationPermissionStatus === 'denied' && settings.location.useGPS && (
+                <TouchableOpacity
+                  style={[styles.permissionButton, { backgroundColor: '#e74c3c' }]}
+                  onPress={() => setShowLocationTutorial(true)}
+                >
+                  <FontAwesome5 name="exclamation-triangle" size={16} color="#fff" />
+                  <Text style={[styles.permissionButtonText, { color: '#fff' }]}>
+                    Enable Location in iOS Settings
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {!settings.location.useGPS && (
@@ -644,6 +732,118 @@ const Settings = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Location Permission Tutorial Modal */}
+      <Modal
+        visible={showLocationTutorial}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowLocationTutorial(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
+            <View style={styles.modalHeader}>
+              <FontAwesome5 name="map-marker-alt" size={24} color="#2980b9" />
+              <Text style={[styles.modalTitle, { color: theme.text.primary }]}>
+                Enable Location Access
+              </Text>
+            </View>
+            
+            <Text style={[styles.modalDescription, { color: theme.text.secondary }]}>
+              To provide accurate prayer times for your location, please enable location access in your device settings.
+            </Text>
+
+            <View style={styles.stepsContainer}>
+              <Text style={[styles.stepsTitle, { color: theme.text.primary }]}>
+                Follow these steps:
+              </Text>
+              
+              <View style={styles.step}>
+                <View style={[styles.stepNumber, { backgroundColor: '#2980b9' }]}>
+                  <Text style={styles.stepNumberText}>1</Text>
+                </View>
+                <Text style={[styles.stepText, { color: theme.text.secondary }]}>
+                  Go to your device's Settings app
+                </Text>
+              </View>
+
+              <View style={styles.step}>
+                <View style={[styles.stepNumber, { backgroundColor: '#2980b9' }]}>
+                  <Text style={styles.stepNumberText}>2</Text>
+                </View>
+                <Text style={[styles.stepText, { color: theme.text.secondary }]}>
+                  Scroll down and find "Islamic Pro" in the apps list
+                </Text>
+              </View>
+
+              <View style={styles.step}>
+                <View style={[styles.stepNumber, { backgroundColor: '#2980b9' }]}>
+                  <Text style={styles.stepNumberText}>3</Text>
+                </View>
+                <Text style={[styles.stepText, { color: theme.text.secondary }]}>
+                  Tap on "Location" and select "While Using App" or "Ask Next Time"
+                </Text>
+              </View>
+
+              <View style={styles.step}>
+                <View style={[styles.stepNumber, { backgroundColor: '#2980b9' }]}>
+                  <Text style={styles.stepNumberText}>4</Text>
+                </View>
+                <Text style={[styles.stepText, { color: theme.text.secondary }]}>
+                  Return to Islamic Pro and toggle GPS location again
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.settingsButton, { backgroundColor: '#2980b9' }]}
+                onPress={() => {
+                  setShowLocationTutorial(false);
+                  Linking.openSettings();
+                }}
+              >
+                <FontAwesome5 name="cog" size={16} color="#fff" />
+                <Text style={[styles.modalButtonText, { color: '#fff' }]}>
+                  Open Settings
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.modalButton, styles.tryAgainButton, { backgroundColor: '#27ae60' }]}
+                onPress={async () => {
+                  await checkLocationPermission();
+                  if (locationPermissionStatus === 'granted') {
+                    setShowLocationTutorial(false);
+                    updateSettings("location", "useGPS", true);
+                    Alert.alert('Success!', 'Location access enabled successfully.');
+                  } else {
+                    Alert.alert('Still Denied', 'Please enable location access in Settings first.');
+                  }
+                }}
+              >
+                <FontAwesome5 name="sync-alt" size={16} color="#fff" />
+                <Text style={[styles.modalButtonText, { color: '#fff' }]}>
+                  Try Again
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.laterButtonFull, { backgroundColor: theme.border, marginTop: 12 }]}
+              onPress={() => {
+                setShowLocationTutorial(false);
+                // Turn off GPS toggle since permission is denied
+                updateSettings("location", "useGPS", false);
+              }}
+            >
+              <Text style={[styles.modalButtonText, { color: theme.text.secondary }]}>
+                Maybe Later
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
     </FacebookStyleTransition>
   );
@@ -800,6 +1000,128 @@ const getStyles = (theme, isDarkMode, isRTL = false) =>
       borderRadius: 6,
     },
     clearButtonText: {
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    permissionWarning: {
+      fontSize: 12,
+      marginTop: 4,
+      fontWeight: '500',
+    },
+    permissionButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 6,
+      gap: 8,
+    },
+    permissionButtonText: {
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+    },
+    modalContent: {
+      width: '100%',
+      maxWidth: 400,
+      borderRadius: 12,
+      padding: 24,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.3,
+          shadowRadius: 12,
+        },
+        android: {
+          elevation: 8,
+        },
+      }),
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+      gap: 12,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+    },
+    modalDescription: {
+      fontSize: 16,
+      lineHeight: 22,
+      marginBottom: 20,
+    },
+    stepsContainer: {
+      marginBottom: 24,
+    },
+    stepsTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 16,
+    },
+    step: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      marginBottom: 16,
+      gap: 12,
+    },
+    stepNumber: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 2,
+    },
+    stepNumberText: {
+      color: '#fff',
+      fontSize: 12,
+      fontWeight: 'bold',
+    },
+    stepText: {
+      flex: 1,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    modalButtons: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    modalButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      gap: 8,
+    },
+    settingsButton: {
+      // Specific styles for settings button
+    },
+    tryAgainButton: {
+      // Specific styles for try again button  
+    },
+    laterButtonFull: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+    },
+    modalButtonText: {
       fontSize: 14,
       fontWeight: '600',
     },
