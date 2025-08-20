@@ -58,7 +58,36 @@ else
     echo "Node.js is already installed: $(node --version)"
 fi
 
-# 3️⃣ Check CocoaPods installation
+# 3️⃣ Install JS dependencies (required for Expo autolinking in Podfile)
+# We need node_modules present so that `require.resolve('expo/package.json')` works from Podfile.
+FRONTEND_DIR="$(cd .. && pwd)"
+if [ -f "$FRONTEND_DIR/package.json" ]; then
+    echo "Installing JavaScript dependencies in $FRONTEND_DIR"
+    # Prefer clean, reproducible install when lockfile is present
+    if [ -f "$FRONTEND_DIR/package-lock.json" ]; then
+        (cd "$FRONTEND_DIR" && npm ci --no-audit --no-fund) || (cd "$FRONTEND_DIR" && npm install --no-audit --no-fund)
+    else
+        (cd "$FRONTEND_DIR" && npm install --no-audit --no-fund)
+    fi
+
+    echo "Verifying JS dependencies needed by Podfile autolinking..."
+    if (cd "$FRONTEND_DIR" && node -p "require.resolve('expo/package.json')" >/dev/null 2>&1); then
+        echo "✓ Expo package resolved"
+    else
+        echo "Error: Could not resolve 'expo' package after npm install."
+        exit 1
+    fi
+    if (cd "$FRONTEND_DIR" && node -p "require.resolve('react-native/package.json')" >/dev/null 2>&1); then
+        echo "✓ React Native package resolved"
+    else
+        echo "Error: Could not resolve 'react-native' package after npm install."
+        exit 1
+    fi
+else
+    echo "Warning: Could not find frontend package.json at $FRONTEND_DIR. Skipping JS dependency install."
+fi
+
+# 4️⃣ Check CocoaPods installation
 if ! command -v pod >/dev/null 2>&1; then
     echo "CocoaPods not found. Installing..."
     gem install cocoapods --no-document --user-install
@@ -69,13 +98,13 @@ else
     echo "CocoaPods is already installed."
 fi
 
-# 4️⃣ Check Podfile exists
+# 5️⃣ Check Podfile exists
 if [ ! -f "Podfile" ]; then
     echo "Error: Podfile not found in current directory."
     exit 1
 fi
 
-# 5️⃣ Install pods (retry in case of network issues)
+# 6️⃣ Install pods (retry in case of network issues)
 MAX_RETRIES=3
 COUNTER=1
 while [ $COUNTER -le $MAX_RETRIES ]; do
@@ -95,7 +124,7 @@ while [ $COUNTER -le $MAX_RETRIES ]; do
     fi
 done
 
-# 6️⃣ Verify the critical xcconfig file exists
+# 7️⃣ Verify the critical xcconfig file exists
 XCFILE="Pods/Target Support Files/Pods-IslamicPro/Pods-IslamicPro.release.xcconfig"
 if [ ! -f "$XCFILE" ]; then
     echo "Error: $XCFILE not found. Pods may not have installed correctly."
