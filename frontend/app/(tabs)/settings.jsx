@@ -72,6 +72,31 @@ const Settings = () => {
     );
   };
 
+  // DEBUG: Reset onboarding for testing (remove in production)
+  const handleResetOnboarding = () => {
+    Alert.alert(
+      '🔄 Reset Onboarding (Debug)',
+      'This will reset the onboarding flow and restart the app. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+              await AsyncStorage.multiRemove(['userSettings', 'app:lastBuildId']);
+              Alert.alert('✅ Success', 'Onboarding reset! Please reload the app to see the welcome screen.');
+            } catch (error) {
+              console.error('Error resetting onboarding:', error);
+              Alert.alert('❌ Error', 'Failed to reset onboarding');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleClearPrayerCache = () => {
     Alert.alert(
       t('clearPrayerCache') || 'Clear Prayer Cache',
@@ -583,6 +608,26 @@ const Settings = () => {
                 />
               </View>
             </TouchableOpacity>
+
+            {/* DEBUG: Reset Onboarding Button - Remove in production
+            <TouchableOpacity
+              style={[styles.settingItem, styles.linkItem]}
+              onPress={handleResetOnboarding}
+            >
+              <View style={styles.settingHeader}>
+                <View style={styles.settingTextContainer}>
+                  <Text style={[styles.settingTitle, { color: '#e74c3c' }]}>🔄 Reset Onboarding (Debug)</Text>
+                  <Text style={styles.settingDescription}>
+                    Reset app to show welcome screen again
+                  </Text>
+                </View>
+                <FontAwesome5 
+                  name="redo" 
+                  size={16} 
+                  color="#e74c3c" 
+                />
+              </View>
+            </TouchableOpacity> */}
 
             <View style={[styles.settingItem, styles.infoItem]}>
               <View style={styles.settingTextContainer}>

@@ -54,7 +54,7 @@ const defaultSettings: SettingsType = {
   appearance: {
     theme: 'system',
     language: 'en',
-    timeFormat: '24h',
+    timeFormat: '12h',
     showHijriDates: true,
   },
   prayer: {
@@ -95,34 +95,69 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       const savedSettings = await AsyncStorage.getItem('userSettings');
       let parsed: SettingsType | null = null;
+      
       if (savedSettings) {
-        parsed = JSON.parse(savedSettings) as SettingsType;
+        try {
+          parsed = JSON.parse(savedSettings) as SettingsType;
+        } catch (parseError) {
+          console.warn('Error parsing saved settings, using defaults:', parseError);
+          parsed = null;
+        }
       }
 
-      // If the build changed since last run, force onboarding to show so users
-      // see the welcome flow again (helps catch permissions and first-run flows).
+      // If this is a fresh install (no saved settings), ensure onboarding is set to false
+      if (!parsed) {
+        parsed = { ...defaultSettings };
+        parsed.onboarding = { completed: false };
+        console.log('Fresh install detected, setting onboarding to incomplete');
+      } else {
+        // For existing installations, ensure onboarding exists in the settings
+        if (!parsed.onboarding) {
+          parsed.onboarding = { completed: false };
+          console.log('Missing onboarding setting, setting to incomplete');
+        }
+      }
+
+      // Build change detection - only reset onboarding if it was previously completed
+      // This prevents interference with fresh installs
       try {
         const BUILD_KEY = 'app:lastBuildId';
-        const currentBuild = String((Constants as any)?.nativeBuildVersion || (Constants as any)?.expoConfig?.version || 'unknown');
+        const currentBuild = String(
+          Constants?.expoConfig?.version || 
+          (Constants as any)?.nativeBuildVersion || 
+          '1.0.0'
+        );
         const previousBuild = await AsyncStorage.getItem(BUILD_KEY);
-        if (!parsed || (previousBuild && previousBuild !== currentBuild)) {
-          // fresh install or build changed -> ensure onboarding not marked complete
-          if (!parsed) parsed = { ...defaultSettings };
+        
+        // Only reset onboarding if:
+        // 1. We have a previous build recorded (not a fresh install)
+        // 2. The build version actually changed
+        // 3. Onboarding was previously completed
+        if (previousBuild && previousBuild !== currentBuild && parsed.onboarding?.completed) {
+          console.log(`Build changed from ${previousBuild} to ${currentBuild}, resetting onboarding`);
           parsed.onboarding = { completed: false };
-          await AsyncStorage.setItem(BUILD_KEY, currentBuild);
-          // persist this sanitized settings object so startup is consistent
-          await AsyncStorage.setItem('userSettings', JSON.stringify(parsed));
         }
+        
+        await AsyncStorage.setItem(BUILD_KEY, currentBuild);
       } catch (e) {
         console.warn('Error while checking build id for onboarding reset:', e);
       }
 
-      if (parsed) {
-        setSettings(parsed);
-        console.log('Loaded settings on startup:', parsed);
-      }
+      // Always persist the settings to ensure consistency
+      await AsyncStorage.setItem('userSettings', JSON.stringify(parsed));
+      setSettings(parsed);
+      console.log('Loaded settings on startup:', { 
+        onboarding: parsed.onboarding,
+        hasLocation: !!parsed.location,
+        hasNotifications: !!parsed.notifications 
+      });
+      
     } catch (error) {
       console.error('Error loading settings:', error);
+      // Fallback to default settings if everything fails
+      const fallbackSettings = { ...defaultSettings };
+      fallbackSettings.onboarding = { completed: false };
+      setSettings(fallbackSettings);
     }
   };
 

@@ -16,6 +16,7 @@ const getCityFromCoordinates = async (latitude: number, longitude: number): Prom
     }
     
     const data = await response.json();
+    console.log('🗺️  Geocoding response:', data.address);
     
     // Extract location components
     const address = data.address || {};
@@ -23,18 +24,22 @@ const getCityFromCoordinates = async (latitude: number, longitude: number): Prom
     const state = address.state || address.region || address.province;
     const country = address.country;
     
-    // Build location string
+    // Build location string with proper country detection
+    let locationString = '';
     if (city && state && country) {
-      return `${city}, ${state}`;
+      locationString = `${city}, ${state}, ${country}`;
     } else if (city && country) {
-      return `${city}, ${country}`;
+      locationString = `${city}, ${country}`;
     } else if (state && country) {
-      return `${state}, ${country}`;
+      locationString = `${state}, ${country}`;
     } else if (country) {
-      return country;
+      locationString = country;
     } else {
-      return 'Unknown Location';
+      locationString = 'Unknown Location';
     }
+    
+    console.log(`🌍 Location resolved: "${locationString}"`);
+    return locationString;
   } catch (error) {
     console.warn('Could not get city name, using coordinates:', error);
     return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
@@ -77,34 +82,77 @@ import { getCalculationMethodNumber } from '../utils/calculationMethods';
 const getRecommendedMethodForCountry = (country: string): string => {
   const normalized = (country || '').toLowerCase().trim();
 
-  const NORTH_AMERICA = ['united states', 'usa', 'canada', 'mexico'];
+  const NORTH_AMERICA = [
+    'united states', 'usa', 'us', 'america', 'united states of america',
+    'canada', 'mexico'
+  ];
   const EUROPE = [
-    'united kingdom', 'uk', 'france', 'germany', 'spain', 'italy', 'portugal', 'netherlands', 'belgium', 'switzerland', 'austria', 'poland', 'sweden', 'norway', 'finland', 'denmark', 'ireland', 'greece', 'czech republic'
+    'united kingdom', 'uk', 'britain', 'great britain', 'england', 'scotland', 'wales',
+    'france', 'germany', 'spain', 'italy', 'portugal', 'netherlands', 'belgium', 
+    'switzerland', 'austria', 'poland', 'sweden', 'norway', 'finland', 'denmark', 
+    'ireland', 'greece', 'czech republic', 'romania', 'hungary', 'bulgaria'
   ];
   const SOUTH_ASIA = ['pakistan', 'india', 'bangladesh', 'sri lanka', 'nepal', 'bhutan'];
-  const MIDDLE_EAST = ['united arab emirates', 'uae', 'oman', 'qatar', 'kuwait', 'bahrain', 'jordan', 'lebanon', 'syria', 'iraq', 'israel', 'palestine', 'yemen', 'turkey'];
-  const AFRICA = ['egypt', 'morocco', 'algeria', 'tunisia', 'libya', 'south africa', 'nigeria', 'kenya', 'ethiopia', 'ghana', 'tanzania', 'uganda', 'angola'];
-  const HIGH_LATITUDE = ['norway', 'sweden', 'finland', 'iceland', 'greenland'];
+  const MIDDLE_EAST = [
+    'united arab emirates', 'uae', 'oman', 'qatar', 'kuwait', 'bahrain', 'jordan', 
+    'lebanon', 'syria', 'iraq', 'israel', 'palestine', 'yemen', 'turkey'
+  ];
+  const AFRICA = [
+    'egypt', 'morocco', 'algeria', 'tunisia', 'libya', 'south africa', 'nigeria', 
+    'kenya', 'ethiopia', 'ghana', 'tanzania', 'uganda', 'angola', 'sudan', 
+    'libya', 'mozambique', 'madagascar', 'cameroon', 'ivory coast', 'mali', 'burkina faso'
+  ];
+  const HIGH_LATITUDE = ['norway', 'sweden', 'finland', 'iceland', 'greenland', 'alaska'];
+
+  console.log(`🗺️  Country detection: "${country}" normalized to "${normalized}"`);
 
   // Iran and Saudi Arabia explicit mappings
-  if (normalized === 'iran') return 'tehran';
-  if (normalized === 'saudi arabia' || normalized === 'saudi') return 'makkah';
+  if (normalized === 'iran') {
+    console.log('✅ Detected Iran → Using Tehran method');
+    return 'tehran';
+  }
+  if (normalized === 'saudi arabia' || normalized === 'saudi') {
+    console.log('✅ Detected Saudi Arabia → Using Makkah method');
+    return 'makkah';
+  }
 
-  if (NORTH_AMERICA.includes(normalized)) return 'isna';
-  if (EUROPE.includes(normalized)) return 'mwl';
-  if (SOUTH_ASIA.includes(normalized)) return 'karachi';
-  if (MIDDLE_EAST.includes(normalized)) return 'makkah';
-  if (AFRICA.includes(normalized)) return 'egypt';
+  if (NORTH_AMERICA.includes(normalized)) {
+    console.log('✅ Detected North America → Using ISNA method');
+    return 'isna';
+  }
+  if (EUROPE.includes(normalized)) {
+    console.log('✅ Detected Europe → Using MWL method');
+    return 'mwl';
+  }
+  if (SOUTH_ASIA.includes(normalized)) {
+    console.log('✅ Detected South Asia → Using Karachi method');
+    return 'karachi';
+  }
+  if (MIDDLE_EAST.includes(normalized)) {
+    console.log('✅ Detected Middle East → Using Makkah method');
+    return 'makkah';
+  }
+  if (AFRICA.includes(normalized)) {
+    console.log('✅ Detected Africa → Using Egypt method');
+    return 'egypt';
+  }
   if (HIGH_LATITUDE.includes(normalized)) {
-    // High-latitude rule: prefer MWL (or ISNA with special twilight handling)
+    console.log('✅ Detected High Latitude → Using MWL method');
     return 'mwl';
   }
 
   // Fallbacks for common names
-  if (normalized === 'united kingdom' || normalized === 'uk') return 'mwl';
-  if (normalized === 'singapore') return 'singapore';
+  if (normalized === 'united kingdom' || normalized === 'uk') {
+    console.log('✅ Detected UK → Using MWL method');
+    return 'mwl';
+  }
+  if (normalized === 'singapore') {
+    console.log('✅ Detected Singapore → Using Singapore method');
+    return 'singapore';
+  }
 
   // Default to MWL if unknown
+  console.log(`⚠️  Unknown country "${normalized}" → Using MWL method as fallback`);
   return 'mwl';
 };
 
@@ -123,11 +171,18 @@ export const fetchPrayerTimes = async (
     // Try to extract country from cityName string
     let country = 'Unknown';
     const parts = cityName.split(',').map(s => s.trim());
-    if (parts.length > 1) country = parts[parts.length - 1];
+    if (parts.length > 1) {
+      country = parts[parts.length - 1];
+    }
+    
+    console.log(`🌍 Location breakdown: "${cityName}" → Country: "${country}"`);
 
     let methodToUse = calculationMethod;
     if (calculationMethod === 'auto') {
       methodToUse = getRecommendedMethodForCountry(country);
+      console.log(`🕌 Auto calculation method: "${country}" → "${methodToUse}"`);
+    } else {
+      console.log(`🕌 Manual calculation method: "${calculationMethod}"`);
     }
   const methodNum = getCalculationMethodNumber(methodToUse);
   // school: 0 = Shafi (default), 1 = Hanafi

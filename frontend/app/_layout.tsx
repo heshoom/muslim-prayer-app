@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useState, useEffect } from 'react';
 
 import { SettingsProvider, useSettings } from '@/src/contexts/SettingsContext';
 import { NotificationProvider } from '@/src/contexts/NotificationContext';
@@ -19,12 +20,11 @@ function RootLayoutNav() {
     return null;
   }
 
-  const initial = settings?.onboarding?.completed ? '(tabs)' : 'welcome';
-
   return (
     <SafeAreaProvider>
       <ThemeProvider value={isDarkMode ? DarkTheme : DefaultTheme}>
-        <Stack initialRouteName={initial}>
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="welcome" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
