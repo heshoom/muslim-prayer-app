@@ -27,7 +27,38 @@ fi
 echo "Using iOS directory: $IOS_DIR"
 cd "$IOS_DIR"
 
-# 2️⃣ Check CocoaPods installation
+# 2️⃣ Check Node.js installation (required for Expo Podfile)
+if ! command -v node >/dev/null 2>&1; then
+    echo "Node.js not found. Installing via nvm..."
+    
+    # Install nvm if not present
+    if [ ! -f "$HOME/.nvm/nvm.sh" ]; then
+        echo "Installing nvm..."
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    else
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    fi
+    
+    # Install and use Node.js LTS
+    nvm install --lts
+    nvm use --lts
+    
+    # Verify installation
+    if ! command -v node >/dev/null 2>&1; then
+        echo "Error: Node.js installation failed"
+        exit 1
+    fi
+    
+    echo "Node.js installed: $(node --version)"
+    echo "npm version: $(npm --version)"
+else
+    echo "Node.js is already installed: $(node --version)"
+fi
+
+# 3️⃣ Check CocoaPods installation
 if ! command -v pod >/dev/null 2>&1; then
     echo "CocoaPods not found. Installing..."
     gem install cocoapods --no-document --user-install
@@ -38,13 +69,13 @@ else
     echo "CocoaPods is already installed."
 fi
 
-# 3️⃣ Check Podfile exists
+# 4️⃣ Check Podfile exists
 if [ ! -f "Podfile" ]; then
     echo "Error: Podfile not found in current directory."
     exit 1
 fi
 
-# 4️⃣ Install pods (retry in case of network issues)
+# 5️⃣ Install pods (retry in case of network issues)
 MAX_RETRIES=3
 COUNTER=1
 while [ $COUNTER -le $MAX_RETRIES ]; do
@@ -64,7 +95,7 @@ while [ $COUNTER -le $MAX_RETRIES ]; do
     fi
 done
 
-# 5️⃣ Verify the critical xcconfig file exists
+# 6️⃣ Verify the critical xcconfig file exists
 XCFILE="Pods/Target Support Files/Pods-IslamicPro/Pods-IslamicPro.release.xcconfig"
 if [ ! -f "$XCFILE" ]; then
     echo "Error: $XCFILE not found. Pods may not have installed correctly."
