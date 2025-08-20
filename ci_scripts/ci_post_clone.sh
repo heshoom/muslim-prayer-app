@@ -1,13 +1,17 @@
-#
-//  ci_post_clone.sh
-//  IslamicPro
-//
-//  Created by Hesham on 8/20/25.
-//
-
 #!/bin/sh
 set -e
-echo ">>> Cleaning and reinstalling Pods"
-cd frontend/ios
-gem install cocoapods --user-install
+set -x
+
+# Go to iOS folder
+cd frontend/ios || exit 1
+
+echo ">>> Ensuring CocoaPods is installed"
+if ! command -v pod >/dev/null 2>&1; then
+  echo "CocoaPods not found. Installing..."
+  gem install cocoapods
+fi
+
+echo ">>> Installing pods"
 pod install --repo-update --verbose
+
+echo ">>> Pods installed successfully"
