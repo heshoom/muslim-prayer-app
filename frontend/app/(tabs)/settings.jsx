@@ -146,31 +146,6 @@ const Settings = () => {
     );
   };
 
-  // DEBUG: Reset onboarding for testing (remove in production)
-  const handleResetOnboarding = () => {
-    Alert.alert(
-      '🔄 Reset Onboarding (Debug)',
-      'This will reset the onboarding flow and restart the app. Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-              await AsyncStorage.multiRemove(['userSettings', 'app:lastBuildId']);
-              Alert.alert('✅ Success', 'Onboarding reset! Please reload the app to see the welcome screen.');
-            } catch (error) {
-              console.error('Error resetting onboarding:', error);
-              Alert.alert('❌ Error', 'Failed to reset onboarding');
-            }
-          },
-        },
-      ]
-    );
-  };
-
   const handleClearPrayerCache = () => {
     Alert.alert(
       t('clearPrayerCache') || 'Clear Prayer Cache',
@@ -697,25 +672,65 @@ const Settings = () => {
               </View>
             </TouchableOpacity>
 
-            {/* DEBUG: Reset Onboarding Button - Remove in production
             <TouchableOpacity
               style={[styles.settingItem, styles.linkItem]}
-              onPress={handleResetOnboarding}
+              onPress={() => {
+                Alert.alert(
+                  'Test Notification & Debug',
+                  'What would you like to do?',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Send Test Notification',
+                      onPress: async () => {
+                        try {
+                          const Notifications = require('expo-notifications');
+                          await Notifications.scheduleNotificationAsync({
+                            content: {
+                              title: 'Test Prayer Notification',
+                              body: 'This is a test notification for debugging',
+                              sound: true,
+                            },
+                            trigger: { seconds: 3 },
+                          });
+                          Alert.alert('✅ Success', 'Test notification scheduled for 3 seconds!');
+                        } catch (error) {
+                          console.error('Test notification error:', error);
+                          Alert.alert('❌ Error', 'Failed to schedule test notification');
+                        }
+                      },
+                    },
+                    {
+                      text: 'Show Scheduled Notifications',
+                      onPress: async () => {
+                        try {
+                          const { prayerNotificationService } = require('../../src/services/prayerNotificationService');
+                          const summary = await prayerNotificationService.getScheduledNotificationsSummary();
+                          Alert.alert('📊 Scheduled Notifications', summary, [{ text: 'OK' }]);
+                        } catch (error) {
+                          console.error('Error getting notification summary:', error);
+                          Alert.alert('❌ Error', 'Failed to get notification summary');
+                        }
+                      },
+                    },
+                  ]
+                );
+              }}
             >
               <View style={styles.settingHeader}>
                 <View style={styles.settingTextContainer}>
-                  <Text style={[styles.settingTitle, { color: '#e74c3c' }]}>🔄 Reset Onboarding (Debug)</Text>
+                  <Text style={[styles.settingTitle, { color: '#2980b9' }]}>🔔 Debug Notifications</Text>
                   <Text style={styles.settingDescription}>
-                    Reset app to show welcome screen again
+                    Test notifications and view scheduled notifications
                   </Text>
                 </View>
                 <FontAwesome5 
-                  name="redo" 
+                  name="bug" 
                   size={16} 
-                  color="#e74c3c" 
+                  color="#2980b9" 
                 />
               </View>
-            </TouchableOpacity> */}
+            </TouchableOpacity>
 
             <View style={[styles.settingItem, styles.infoItem]}>
               <View style={styles.settingTextContainer}>

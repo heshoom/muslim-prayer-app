@@ -9,6 +9,8 @@ export interface NotificationSettings {
   adhan: boolean;
   athanSound: string;
   vibrate: boolean;
+  prePrayer: boolean;
+  prePrayerTime: number;
 }
 
 // Note: The global notification handler is configured in NotificationContext.
@@ -22,9 +24,30 @@ export interface PrayerNotificationService {
     settings: NotificationSettings
   ) => Promise<void>;
   cancelAllNotifications: () => Promise<void>;
+  getScheduledNotificationsSummary: () => Promise<string>;
 }
 
 class PrayerNotificationServiceImpl implements PrayerNotificationService {
+  // Cancel all notifications for a given date (by matching data.date)
+  private async cancelNotificationsByDate(dateStr: string): Promise<void> {
+    try {
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      const toCancel = scheduled.filter((notification: any) => {
+        const data = notification?.content?.data;
+        return data?.date === dateStr;
+      });
+      for (const notification of toCancel) {
+        if ((notification as any).identifier) {
+          await Notifications.cancelScheduledNotificationAsync((notification as any).identifier);
+        }
+      }
+      if (toCancel.length > 0) {
+        console.log(`Cancelled ${toCancel.length} notifications for date: ${dateStr}`);
+      }
+    } catch (error) {
+      console.error(`Error cancelling notifications for date ${dateStr}:`, error);
+    }
+  }
   async setupNotifications(): Promise<boolean> {
     try {
       // Request permissions
@@ -62,38 +85,29 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
   try {
     if (!settings.enabled) {
       console.log('Notifications are disabled in settings');
+      await this.cancelAllNotifications(); // Clear all if disabled
       return;
     }
 
-    // Build an idempotency key so we don't re-schedule on every reload
-    const dayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  // Exclude athanSound so changing the reciter doesn't force a full reschedule
-  const scheduleSignature = `${dayKey}|${location}|${settings.enabled}|${settings.adhan}|${settings.vibrate}|${prayerTimes.Fajr}|${prayerTimes.Dhuhr}|${prayerTimes.Asr}|${prayerTimes.Maghrib}|${prayerTimes.Isha}`;
-    const STORAGE_KEY = 'prayerNotifications:lastScheduleSignature';
-    const lastSignature = await AsyncStorage.getItem(STORAGE_KEY);
 
-    if (lastSignature === scheduleSignature) {
-      console.log('Prayer notifications already scheduled for today with same settings; skipping re-schedule.');
-      return;
-    }
 
-    // Only cancel if something actually changed
-    await this.cancelAllNotifications();
+    // Strict flow: cancel yesterday's notifications, then schedule today's only
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+    const yesterdayDate = new Date(now);
+    yesterdayDate.setDate(now.getDate() - 1);
+    const yesterdayStr = yesterdayDate.toISOString().slice(0, 10);
 
-    // Setup notification channel for Android with custom settings
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('prayer-times', {
-        name: 'Prayer Times',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: settings.vibrate ? [0, 500, 250, 500] : undefined,
-        sound: this.getAthanSoundUri(settings.athanSound, settings.adhan) || 'default',
-        enableLights: true,
-        lightColor: '#2980b9',
-        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-        bypassDnd: true, // Bypass Do Not Disturb
-      });
-    }
+    // 1. Cancel all notifications for yesterday
+    await this.cancelNotificationsByDate(yesterdayStr);
 
+    // 2. Schedule today's notifications for each prayer
+    const canonicalLocation = (typeof location === 'string' && location.length < 40) ? location : 'Unknown';
+    const canonicalTime = (t: string) => {
+      if (!t) return '00:00';
+      const parts = t.split(':');
+      return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+    };
     const prayers = [
       { name: 'Fajr', time: prayerTimes.Fajr },
       { name: 'Dhuhr', time: prayerTimes.Dhuhr },
@@ -101,56 +115,25 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
       { name: 'Maghrib', time: prayerTimes.Maghrib },
       { name: 'Isha', time: prayerTimes.Isha },
     ];
-
-    const today = new Date();
-    
     for (const prayer of prayers) {
-      await this.schedulePrayerNotification(prayer.name, prayer.time, location, today, settings, scheduleSignature);
-    }
-
-    await AsyncStorage.setItem(STORAGE_KEY, scheduleSignature);
-    console.log('All prayer notifications scheduled successfully');
-
-    // Debug: log a summary of scheduled notifications
-    try {
-      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-      console.log(`🔔 Scheduled notifications count: ${scheduled.length}`);
-      
-      const upcomingToday: string[] = [];
-      const forTomorrow: string[] = [];
-      const repeating: string[] = [];
-      
-      scheduled.forEach((n: any) => {
-        const trig: any = n.trigger || {};
-        const title = n.content?.title || 'Untitled';
-        
-        if (trig.date) {
-          const schedDate = new Date(trig.date);
-          const today = new Date().toDateString();
-          if (schedDate.toDateString() === today) {
-            upcomingToday.push(`${title} at ${schedDate.toLocaleTimeString()}`);
-          } else {
-            forTomorrow.push(`${title} at ${schedDate.toLocaleTimeString()}`);
-          }
-        } else if (trig.repeats) {
-          repeating.push(`${title} daily at ${String(trig.hour).padStart(2, '0')}:${String(trig.minute).padStart(2, '0')}`);
-        }
+      const [hour, minute] = canonicalTime(prayer.time).split(':').map(Number);
+      const notifDate = new Date(now);
+      notifDate.setHours(hour, minute, 0, 0);
+      // If the time is in the past, skip
+      if (notifDate < now) continue;
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `${prayer.name} Prayer`,
+          body: `It's time for ${prayer.name} prayer.`,
+          sound: settings.adhan ? settings.athanSound || 'default' : undefined,
+          data: { prayer: prayer.name, date: todayStr },
+        },
+        trigger: ({ date: notifDate } as any),
       });
-      
-      if (upcomingToday.length > 0) {
-        console.log(`📅 Today's remaining notifications:`, upcomingToday);
-      }
-      if (forTomorrow.length > 0) {
-        console.log(`📅 Tomorrow's one-time notifications:`, forTomorrow);
-      }
-      if (repeating.length > 0) {
-        console.log(`🔁 Daily repeating notifications:`, repeating);
-      }
-      
-    } catch (e) {
-      console.warn('Unable to list scheduled notifications:', e);
     }
-  } catch (error) {
+    console.log("Scheduled today's notifications for all prayers.");
+  }
+  catch (error) {
     console.error('Error scheduling prayer notifications:', error);
   }
 }
@@ -353,12 +336,229 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
     }
   }
 
+  private async schedulePrePrayerReminder(
+    prayerName: string,
+    prayerTime: string,
+    location: string,
+    date: Date,
+    settings: NotificationSettings,
+    scheduleSignature?: string
+  ): Promise<void> {
+    try {
+      // Sanitize time string (handles values like "05:13 (EDT)" or "05:13:00")
+      const clean = (prayerTime || '').toString().replace(/[^\d:]/g, '').trim();
+      const parts = clean.split(':');
+      const hours = Number(parts[0]);
+      const minutes = Number(parts[1]);
+
+      // Validate parsed values
+      const isValid = Number.isFinite(hours) && Number.isFinite(minutes) && hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
+      if (!isValid) {
+        console.warn(`Skipping pre-prayer reminder for ${prayerName}: invalid time string "${prayerTime}" -> parsed "${clean}"`);
+        return;
+      }
+
+      // Calculate reminder time
+      const reminderDate = new Date(date);
+      reminderDate.setHours(hours, minutes, 0, 0);
+      reminderDate.setMinutes(reminderDate.getMinutes() - settings.prePrayerTime);
+
+      const now = new Date();
+      const hasPassedToday = reminderDate.getTime() <= now.getTime();
+      
+      // If reminder time has passed today, schedule for tomorrow
+      if (hasPassedToday) {
+        reminderDate.setDate(reminderDate.getDate() + 1);
+        console.log(`${prayerName} reminder has passed today, scheduling for tomorrow: ${reminderDate.toLocaleString()}`);
+      } else {
+        console.log(`${prayerName} reminder is upcoming today, scheduling for: ${reminderDate.toLocaleString()}`);
+      }
+
+      const scheduledAt = reminderDate.getTime();
+
+      // For reminders that haven't passed today, use a one-time trigger for today
+      // and schedule a separate repeating notification for future days
+      let trigger: Notifications.NotificationTriggerInput;
+      
+      if (hasPassedToday) {
+        // Reminder has passed today - use repeating calendar trigger starting tomorrow
+        trigger = Platform.select({
+          ios: ({
+            hour: reminderDate.getHours(),
+            minute: reminderDate.getMinutes(),
+            repeats: true,
+          } as any),
+          android: ({
+            hour: reminderDate.getHours(),
+            minute: reminderDate.getMinutes(),
+            repeats: true,
+            channelId: 'prayer-times',
+            alarmManager: true,
+          } as any),
+          default: ({
+            hour: reminderDate.getHours(),
+            minute: reminderDate.getMinutes(),
+            repeats: true,
+          } as any),
+        }) as any;
+      } else {
+        // Reminder hasn't passed today - use one-time trigger for today
+        trigger = {
+          date: reminderDate,
+        } as any;
+        
+        // Also schedule a repeating notification for future days
+        const repeatTrigger = Platform.select({
+          ios: ({
+            hour: reminderDate.getHours(),
+            minute: reminderDate.getMinutes(),
+            repeats: true,
+          } as any),
+          android: ({
+            hour: reminderDate.getHours(),
+            minute: reminderDate.getMinutes(),
+            repeats: true,
+            channelId: 'prayer-times',
+            alarmManager: true,
+          } as any),
+          default: ({
+            hour: reminderDate.getHours(),
+            minute: reminderDate.getMinutes(),
+            repeats: true,
+          } as any),
+        }) as any;
+
+        // Schedule the repeating notification with a different ID
+        const repeatNotificationId = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: `🔔 ${prayerName} Prayer Reminder`,
+            body: `${prayerName} prayer is in ${settings.prePrayerTime} minutes. Prepare for prayer.`,
+            sound: true,
+            vibrate: settings.vibrate ? [0, 150, 150, 150] : undefined,
+            interruptionLevel: Platform.OS === 'ios' ? 'timeSensitive' : undefined,
+            priority: Platform.OS === 'android' ? Notifications.AndroidNotificationPriority.HIGH : undefined,
+            data: {
+              prayerName,
+              prayerTime,
+              location,
+              type: 'pre-prayer-reminder',
+              prePrayerTime: settings.prePrayerTime,
+              scheduledAt,
+              scheduleSignature,
+              isRepeating: true,
+            },
+          },
+          trigger: repeatTrigger,
+        });
+        
+        console.log(`Scheduled repeating ${prayerName} reminder for future days, ID: ${repeatNotificationId}`);
+      }
+
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `🔔 ${prayerName} Prayer Reminder`,
+          body: `${prayerName} prayer is in ${settings.prePrayerTime} minutes. Prepare for prayer.`,
+          sound: true,
+          vibrate: settings.vibrate ? [0, 150, 150, 150] : undefined,
+          // iOS: ensure immediate delivery
+          interruptionLevel: Platform.OS === 'ios' ? 'timeSensitive' : undefined,
+          // Android: high priority for heads-up
+          priority: Platform.OS === 'android' ? Notifications.AndroidNotificationPriority.HIGH : undefined,
+          data: {
+            prayerName,
+            prayerTime,
+            location,
+            type: 'pre-prayer-reminder',
+            prePrayerTime: settings.prePrayerTime,
+            scheduledAt,
+            scheduleSignature,
+            isRepeating: hasPassedToday,
+          },
+        },
+        trigger,
+      });
+
+      if (hasPassedToday) {
+        console.log(`Scheduled ${prayerName} reminder repeating notification starting tomorrow, ID: ${notificationId}`);
+      } else {
+        console.log(`Scheduled ${prayerName} reminder notification for today at ${reminderDate.toLocaleString()}, ID: ${notificationId}`);
+      }
+    } catch (error) {
+      console.error(`Error scheduling ${prayerName} reminder notification:`, error);
+    }
+  }
+
   async cancelAllNotifications(): Promise<void> {
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
       console.log('All notifications cancelled');
     } catch (error) {
       console.error('Error cancelling notifications:', error);
+    }
+  }
+
+  private async cancelNotificationsByType(type: string): Promise<void> {
+    try {
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      const toCancel = scheduled.filter((notification: any) => {
+        const data = notification?.content?.data;
+        return data?.type === type;
+      });
+
+      console.log(`Cancelling ${toCancel.length} notifications of type: ${type}`);
+      
+      for (const notification of toCancel) {
+        if ((notification as any).identifier) {
+          await Notifications.cancelScheduledNotificationAsync((notification as any).identifier);
+        }
+      }
+    } catch (error) {
+      console.error(`Error cancelling notifications of type ${type}:`, error);
+    }
+  }
+
+  async getScheduledNotificationsSummary(): Promise<string> {
+    try {
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      
+      const prayerNotifications = scheduled.filter((n: any) => n.content?.data?.type === 'prayer-time');
+      const reminderNotifications = scheduled.filter((n: any) => n.content?.data?.type === 'pre-prayer-reminder');
+      
+      const summary = [
+        `📊 Notification Summary:`,
+        `🕌 Prayer Time Notifications: ${prayerNotifications.length}`,
+        `🔔 Pre-Prayer Reminders: ${reminderNotifications.length}`,
+        `📋 Total Scheduled: ${scheduled.length}`,
+        ``
+      ];
+
+      if (prayerNotifications.length > 0) {
+        summary.push(`Prayer Times:`);
+        prayerNotifications.forEach((n: any) => {
+          const data = n.content?.data;
+          const trigger = (n as any).trigger;
+          const timeStr = trigger?.date ? new Date(trigger.date).toLocaleString() : 
+                         trigger?.hour !== undefined ? `${trigger.hour}:${String(trigger.minute).padStart(2, '0')} daily` : 'Unknown';
+          summary.push(`  • ${data?.prayerName}: ${timeStr}`);
+        });
+        summary.push(``);
+      }
+
+      if (reminderNotifications.length > 0) {
+        summary.push(`Reminders:`);
+        reminderNotifications.forEach((n: any) => {
+          const data = n.content?.data;
+          const trigger = (n as any).trigger;
+          const timeStr = trigger?.date ? new Date(trigger.date).toLocaleString() : 
+                         trigger?.hour !== undefined ? `${trigger.hour}:${String(trigger.minute).padStart(2, '0')} daily` : 'Unknown';
+          summary.push(`  • ${data?.prayerName} (${data?.prePrayerTime}min before): ${timeStr}`);
+        });
+      }
+
+      return summary.join('\n');
+    } catch (error) {
+      console.error('Error getting notifications summary:', error);
+      return 'Error retrieving notification summary';
     }
   }
 }

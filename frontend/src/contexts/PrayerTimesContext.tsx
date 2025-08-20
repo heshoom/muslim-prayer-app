@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { PrayerTimes, PrayerTimesResponse, fetchPrayerTimes } from '../services/prayerTimesService';
@@ -57,6 +57,8 @@ export const PrayerTimesProvider = ({ children }: PrayerTimesProviderProps) => {
     adhan: settings.notifications.adhan,
     athanSound: settings.notifications.athanSound,
     vibrate: settings.notifications.vibrate,
+    prePrayer: settings.notifications.prePrayer,
+    prePrayerTime: settings.notifications.prePrayerTime,
   });
 
   const setupNotifications = async (times: PrayerTimes, loc: string) => {
@@ -247,14 +249,30 @@ export const PrayerTimesProvider = ({ children }: PrayerTimesProviderProps) => {
     }
   };
 
-  // Re-setup notifications when settings change (but not on initial load)
+  // Only re-setup notifications if the canonical signature changes
+  const lastNotifSignatureRef = useRef<string | null>(null);
   useEffect(() => {
     if (prayerTimes && location && !isInitialLoad) {
-      console.log('Settings changed - updating prayer notifications');
-      setupNotifications(prayerTimes, location);
+      // Canonicalize location and times (must match logic in prayerNotificationService)
+      const canonicalLocation = (typeof location === 'string' && location.length < 40) ? location : 'Unknown';
+      const canonicalTime = (t: string) => {
+        if (!t) return '00:00';
+        const parts = t.split(':');
+        return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+      };
+      const notifSignature = `${canonicalLocation}|${settings.notifications.enabled}|${settings.notifications.adhan}|${settings.notifications.vibrate}|${settings.notifications.prePrayer}|${settings.notifications.prePrayerTime}|${canonicalTime(prayerTimes.Fajr)}|${canonicalTime(prayerTimes.Dhuhr)}|${canonicalTime(prayerTimes.Asr)}|${canonicalTime(prayerTimes.Maghrib)}|${canonicalTime(prayerTimes.Isha)}`;
+      if (notifSignature !== lastNotifSignatureRef.current) {
+        lastNotifSignatureRef.current = notifSignature;
+        console.log('Notification settings changed - updating notifications (signature changed)');
+        setupNotifications(prayerTimes, location);
+      } else {
+        console.log('Notification settings changed - no update needed (signature unchanged)');
+      }
     }
-    // Intentionally exclude athanSound so changing the reciter doesn't cancel/reschedule all notifications
-  }, [settings.notifications.enabled, settings.notifications.adhan, settings.notifications.vibrate]);
+    // Note: athanSound changes are excluded because they don't require rescheduling,
+    // just updating the sound file used when notifications fire
+    // The new logic in prayerNotificationService will handle granular updates
+  }, [settings.notifications.enabled, settings.notifications.adhan, settings.notifications.vibrate, settings.notifications.prePrayer, settings.notifications.prePrayerTime, location, prayerTimes, isInitialLoad]);
 
   // Load prayer times only after onboarding is completed (to avoid prompting
   // for location permissions before the user has a chance to opt in).
