@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 set -e
 set -x  # Print each command for debugging
@@ -15,7 +15,10 @@ cd "$IOS_DIR"
 # 2️⃣ Check CocoaPods installation
 if ! command -v pod >/dev/null 2>&1; then
     echo "CocoaPods not found. Installing..."
-    gem install cocoapods --no-document
+    gem install cocoapods --no-document --user-install
+    # Add user gem bin to PATH
+    GEM_USER_BIN=$(ruby -rubygems -e 'print Gem.user_dir')/bin
+    export PATH="$GEM_USER_BIN:$PATH"
 else
     echo "CocoaPods is already installed."
 fi
