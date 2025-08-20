@@ -4,6 +4,28 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PrayerTimes } from './prayerTimesService';
 import { athanAudioService } from './athanAudioService';
 
+// Ensure Android notification channel is created at startup
+export async function ensureAndroidPrayerChannel(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+
+  try {
+    await Notifications.setNotificationChannelAsync('prayer-times', {
+      name: 'Prayer Times',
+      importance: Notifications.AndroidImportance.HIGH, // heads-up notifications
+      vibrationPattern: [0, 500, 250, 500],
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      sound: 'default', // use a raw sound if you add one to android/res/raw
+      bypassDnd: true,
+      audioAttributes: {
+        usage: Notifications.AndroidAudioUsage.ALARM,
+      },
+    });
+    console.log('Android prayer-times notification channel created/updated');
+  } catch (error) {
+    console.error('Error creating Android notification channel:', error);
+  }
+}
+
 export interface NotificationSettings {
   enabled: boolean;
   adhan: boolean;
@@ -23,8 +45,14 @@ export interface PrayerNotificationService {
     location: string, 
     settings: NotificationSettings
   ) => Promise<void>;
+  scheduleDailyNotifications: (
+    prayerTimes: PrayerTimes, 
+    location: string, 
+    settings: NotificationSettings
+  ) => Promise<void>;
   cancelAllNotifications: () => Promise<void>;
   getScheduledNotificationsSummary: () => Promise<string>;
+  testNotification: () => Promise<void>;
 }
 
 class PrayerNotificationServiceImpl implements PrayerNotificationService {
@@ -46,6 +74,26 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
       }
     } catch (error) {
       console.error(`Error cancelling notifications for date ${dateStr}:`, error);
+    }
+  }
+
+  private async cancelNotificationsBySignature(signature: string): Promise<void> {
+    try {
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      const toCancel = scheduled.filter((notification: any) => {
+        const data = notification?.content?.data;
+        return data?.scheduleSignature === signature;
+      });
+      for (const notification of toCancel) {
+        if ((notification as any).identifier) {
+          await Notifications.cancelScheduledNotificationAsync((notification as any).identifier);
+        }
+      }
+      if (toCancel.length > 0) {
+        console.log(`Cancelled ${toCancel.length} notifications with signature: ${signature}`);
+      }
+    } catch (error) {
+      console.error(`Error cancelling notifications with signature ${signature}:`, error);
     }
   }
   async setupNotifications(): Promise<boolean> {
@@ -78,65 +126,128 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
   }
 
   async scheduleAllPrayerNotifications(
-  prayerTimes: PrayerTimes, 
-  location: string, 
-  settings: NotificationSettings
-): Promise<void> {
-  try {
-    if (!settings.enabled) {
-      console.log('Notifications are disabled in settings');
-      await this.cancelAllNotifications(); // Clear all if disabled
-      return;
+    prayerTimes: PrayerTimes, 
+    location: string, 
+    settings: NotificationSettings
+  ): Promise<void> {
+    try {
+      if (!settings.enabled) {
+        console.log('Notifications are disabled in settings');
+        await this.cancelAllNotifications(); // Clear all if disabled
+        return;
+      }
+
+      // Ensure Android channel is created
+      await ensureAndroidPrayerChannel();
+
+      // Create a unique signature for this scheduling session to avoid duplicates
+      const scheduleSignature = `prayer-${Date.now()}`;
+      const now = new Date();
+      const todayStr = now.toISOString().slice(0, 10);
+
+      // Cancel any existing notifications before scheduling new ones
+      await this.cancelNotificationsBySignature(scheduleSignature);
+
+      const canonicalLocation = (typeof location === 'string' && location.length < 40) ? location : 'Unknown';
+      const prayers = [
+        { name: 'Fajr', time: prayerTimes.Fajr },
+        { name: 'Dhuhr', time: prayerTimes.Dhuhr },
+        { name: 'Asr', time: prayerTimes.Asr },
+        { name: 'Maghrib', time: prayerTimes.Maghrib },
+        { name: 'Isha', time: prayerTimes.Isha },
+      ];
+
+      // Schedule both prayer notifications and pre-prayer reminders
+      for (const prayer of prayers) {
+        // Schedule the main prayer notification
+        await this.schedulePrayerNotification(
+          prayer.name, 
+          prayer.time, 
+          canonicalLocation, 
+          now, 
+          settings, 
+          scheduleSignature
+        );
+
+        // Schedule pre-prayer reminder if enabled
+        if (settings.prePrayer && settings.prePrayerTime > 0) {
+          await this.schedulePrePrayerReminder(
+            prayer.name, 
+            prayer.time, 
+            canonicalLocation, 
+            now, 
+            settings, 
+            scheduleSignature
+          );
+        }
+      }
+
+      console.log(`Scheduled prayer notifications and reminders with signature: ${scheduleSignature}`);
+    } catch (error) {
+      console.error('Error scheduling prayer notifications:', error);
     }
+  }
 
+  async scheduleDailyNotifications(
+    prayerTimes: PrayerTimes, 
+    location: string, 
+    settings: NotificationSettings
+  ): Promise<void> {
+    try {
+      if (!settings.enabled) {
+        console.log('Notifications are disabled in settings');
+        await this.cancelAllNotifications(); // Clear all if disabled
+        return;
+      }
 
+      // Ensure Android channel is created
+      await ensureAndroidPrayerChannel();
 
-    // Strict flow: cancel yesterday's notifications, then schedule today's only
-    const now = new Date();
-    const todayStr = now.toISOString().slice(0, 10);
-    const yesterdayDate = new Date(now);
-    yesterdayDate.setDate(now.getDate() - 1);
-    const yesterdayStr = yesterdayDate.toISOString().slice(0, 10);
+      // Create a unique signature for daily scheduling to avoid duplicates
+      const scheduleSignature = `daily-${new Date().toISOString().slice(0, 10)}`;
+      
+      // Cancel any existing daily notifications before scheduling new ones
+      await this.cancelNotificationsBySignature(scheduleSignature);
 
-    // 1. Cancel all notifications for yesterday
-    await this.cancelNotificationsByDate(yesterdayStr);
+      const canonicalLocation = (typeof location === 'string' && location.length < 40) ? location : 'Unknown';
+      const prayers = [
+        { name: 'Fajr', time: prayerTimes.Fajr },
+        { name: 'Dhuhr', time: prayerTimes.Dhuhr },
+        { name: 'Asr', time: prayerTimes.Asr },
+        { name: 'Maghrib', time: prayerTimes.Maghrib },
+        { name: 'Isha', time: prayerTimes.Isha },
+      ];
 
-    // 2. Schedule today's notifications for each prayer
-    const canonicalLocation = (typeof location === 'string' && location.length < 40) ? location : 'Unknown';
-    const canonicalTime = (t: string) => {
-      if (!t) return '00:00';
-      const parts = t.split(':');
-      return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
-    };
-    const prayers = [
-      { name: 'Fajr', time: prayerTimes.Fajr },
-      { name: 'Dhuhr', time: prayerTimes.Dhuhr },
-      { name: 'Asr', time: prayerTimes.Asr },
-      { name: 'Maghrib', time: prayerTimes.Maghrib },
-      { name: 'Isha', time: prayerTimes.Isha },
-    ];
-    for (const prayer of prayers) {
-      const [hour, minute] = canonicalTime(prayer.time).split(':').map(Number);
-      const notifDate = new Date(now);
-      notifDate.setHours(hour, minute, 0, 0);
-      // If the time is in the past, skip
-      if (notifDate < now) continue;
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: `${prayer.name} Prayer`,
-          body: `It's time for ${prayer.name} prayer.`,
-          sound: settings.adhan ? settings.athanSound || 'default' : undefined,
-          data: { prayer: prayer.name, date: todayStr },
-        },
-        trigger: ({ date: notifDate } as any),
-      });
+      // Schedule both prayer notifications and pre-prayer reminders for daily pattern
+      for (const prayer of prayers) {
+        // Schedule the main prayer notification
+        await this.schedulePrayerNotification(
+          prayer.name, 
+          prayer.time, 
+          canonicalLocation, 
+          new Date(), 
+          settings, 
+          scheduleSignature
+        );
+
+        // Schedule pre-prayer reminder if enabled
+        if (settings.prePrayer && settings.prePrayerTime > 0) {
+          await this.schedulePrePrayerReminder(
+            prayer.name, 
+            prayer.time, 
+            canonicalLocation, 
+            new Date(), 
+            settings, 
+            scheduleSignature
+          );
+        }
+      }
+
+      console.log(`Scheduled daily prayer notifications and reminders with signature: ${scheduleSignature}`);
+    } catch (error) {
+      console.error('Error scheduling daily prayer notifications:', error);
     }
-    console.log("Scheduled today's notifications for all prayers.");
   }
-  catch (error) {
-    console.error('Error scheduling prayer notifications:', error);
-  }
-}
   async stopCurrentSound(): Promise<void> {
     try {
       await athanAudioService.stopCurrentSound();
@@ -234,7 +345,6 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
             minute: minutes,
             repeats: true,
             channelId: 'prayer-times',
-            alarmManager: true,
           } as any),
           default: ({
             hour: hours,
@@ -260,7 +370,6 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
             minute: minutes,
             repeats: true,
             channelId: 'prayer-times',
-            alarmManager: true,
           } as any),
           default: ({
             hour: hours,
@@ -393,7 +502,6 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
             minute: reminderDate.getMinutes(),
             repeats: true,
             channelId: 'prayer-times',
-            alarmManager: true,
           } as any),
           default: ({
             hour: reminderDate.getHours(),
@@ -419,7 +527,6 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
             minute: reminderDate.getMinutes(),
             repeats: true,
             channelId: 'prayer-times',
-            alarmManager: true,
           } as any),
           default: ({
             hour: reminderDate.getHours(),
@@ -559,6 +666,34 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
     } catch (error) {
       console.error('Error getting notifications summary:', error);
       return 'Error retrieving notification summary';
+    }
+  }
+
+  // Test method to schedule a notification for 10 seconds from now
+  async testNotification(): Promise<void> {
+    try {
+      const testTime = new Date();
+      testTime.setSeconds(testTime.getSeconds() + 10);
+      
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '🧪 Test Notification',
+          body: 'This is a test notification to verify the system is working.',
+          sound: 'default',
+          vibrate: [0, 500, 250, 500],
+          data: {
+            type: 'test',
+            scheduledAt: Date.now(),
+          },
+        },
+        trigger: {
+          date: testTime,
+        } as any,
+      });
+      
+      console.log(`Test notification scheduled for ${testTime.toLocaleString()}, ID: ${notificationId}`);
+    } catch (error) {
+      console.error('Error scheduling test notification:', error);
     }
   }
 }

@@ -16,6 +16,9 @@
       "infoPlist": {
   "ITSAppUsesNonExemptEncryption": false,
   "UIBackgroundModes": ["fetch", "remote-notification"]
+      },
+      "entitlements": {
+        "com.apple.developer.usernotifications.time-sensitive": true
       }
     },
     "android": {

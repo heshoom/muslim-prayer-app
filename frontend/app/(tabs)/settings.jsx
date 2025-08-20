@@ -25,6 +25,7 @@ import { CustomPicker } from "@/src/components/shared/CustomPicker";
 import FacebookStyleTransition from "@/src/components/shared/FacebookStyleTransition";
 import { useTranslation } from "@/src/i18n";
 import { clearPrayerTimesCache } from '@/src/services/prayerTimesCache';
+import { NotificationTestButton } from '@/src/components/debug/NotificationTestButton';
 
 const Settings = () => {
   const { settings, updateSettings, isDarkMode } = useSettings();
@@ -672,65 +673,9 @@ const Settings = () => {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.settingItem, styles.linkItem]}
-              onPress={() => {
-                Alert.alert(
-                  'Test Notification & Debug',
-                  'What would you like to do?',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Send Test Notification',
-                      onPress: async () => {
-                        try {
-                          const Notifications = require('expo-notifications');
-                          await Notifications.scheduleNotificationAsync({
-                            content: {
-                              title: 'Test Prayer Notification',
-                              body: 'This is a test notification for debugging',
-                              sound: true,
-                            },
-                            trigger: { seconds: 3 },
-                          });
-                          Alert.alert('✅ Success', 'Test notification scheduled for 3 seconds!');
-                        } catch (error) {
-                          console.error('Test notification error:', error);
-                          Alert.alert('❌ Error', 'Failed to schedule test notification');
-                        }
-                      },
-                    },
-                    {
-                      text: 'Show Scheduled Notifications',
-                      onPress: async () => {
-                        try {
-                          const { prayerNotificationService } = require('../../src/services/prayerNotificationService');
-                          const summary = await prayerNotificationService.getScheduledNotificationsSummary();
-                          Alert.alert('📊 Scheduled Notifications', summary, [{ text: 'OK' }]);
-                        } catch (error) {
-                          console.error('Error getting notification summary:', error);
-                          Alert.alert('❌ Error', 'Failed to get notification summary');
-                        }
-                      },
-                    },
-                  ]
-                );
-              }}
-            >
-              <View style={styles.settingHeader}>
-                <View style={styles.settingTextContainer}>
-                  <Text style={[styles.settingTitle, { color: '#2980b9' }]}>🔔 Debug Notifications</Text>
-                  <Text style={styles.settingDescription}>
-                    Test notifications and view scheduled notifications
-                  </Text>
-                </View>
-                <FontAwesome5 
-                  name="bug" 
-                  size={16} 
-                  color="#2980b9" 
-                />
-              </View>
-            </TouchableOpacity>
+            <View style={styles.settingItem}>
+              <NotificationTestButton />
+            </View>
 
             <View style={[styles.settingItem, styles.infoItem]}>
               <View style={styles.settingTextContainer}>

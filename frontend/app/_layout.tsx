@@ -9,12 +9,18 @@ import { useState, useEffect } from 'react';
 import { SettingsProvider, useSettings } from '@/src/contexts/SettingsContext';
 import { NotificationProvider } from '@/src/contexts/NotificationContext';
 import { PrayerTimesProvider } from '@/src/contexts/PrayerTimesContext';
+import { ensureAndroidPrayerChannel } from '@/src/services/prayerNotificationService';
 
 function RootLayoutNav() {
   const { isDarkMode, settings } = useSettings() as any;
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
+
+  // Ensure Android notification channel is created at app startup
+  useEffect(() => {
+    ensureAndroidPrayerChannel();
+  }, []);
 
   if (!loaded) {
     return null;

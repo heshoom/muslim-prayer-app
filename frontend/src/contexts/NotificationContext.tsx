@@ -188,14 +188,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const registerForPushNotificationsAsync = async () => {
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('prayer-times', {
-        name: 'Prayer Times',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#2980b9',
-      });
-    }
+    // Android channel creation is now handled centrally in prayerNotificationService
+    // No need to duplicate here
 
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;

@@ -86,7 +86,8 @@ export const PrayerTimesProvider = ({ children }: PrayerTimesProviderProps) => {
         // ignore
       }
       if (permissionGranted) {
-        await prayerNotificationService.scheduleAllPrayerNotifications(times, loc, notificationSettings);
+        // Use daily scheduling pattern for better reliability
+        await prayerNotificationService.scheduleDailyNotifications(times, loc, notificationSettings);
         setNotificationsEnabled(true);
         console.log('Prayer notifications set up successfully with adhan sound:', notificationSettings.athanSound);
       } else {
@@ -292,6 +293,29 @@ export const PrayerTimesProvider = ({ children }: PrayerTimesProviderProps) => {
       }
     })();
   }, [settings.onboarding?.completed]);
+
+  // Daily rescheduler - check if we need to reschedule notifications for a new day
+  useEffect(() => {
+    if (!settings.onboarding?.completed || !prayerTimes || !notificationsEnabled) return;
+
+    const checkAndRescheduleDaily = async () => {
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        const lastScheduledDay = await AsyncStorage.getItem('app:lastScheduledDay');
+        
+        if (lastScheduledDay !== today) {
+          console.log('New day detected - rescheduling notifications');
+          const notificationSettings = getNotificationSettings();
+          await prayerNotificationService.scheduleDailyNotifications(prayerTimes, location, notificationSettings);
+          await AsyncStorage.setItem('app:lastScheduledDay', today);
+        }
+      } catch (error) {
+        console.error('Error in daily rescheduler:', error);
+      }
+    };
+
+    checkAndRescheduleDaily();
+  }, [settings.onboarding?.completed, prayerTimes, notificationsEnabled, location]);
 
   // Re-fetch prayer times when prayer-related settings change (calculation method, madhab, adjustments)
   useEffect(() => {
