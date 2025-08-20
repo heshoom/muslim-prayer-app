@@ -1,28 +1,46 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 set -e
 set -x  # Print each command for debugging
 
-IOS_DIR="frontend/ios"
+# Debug: Print current working directory and list contents
+echo "Current working directory: $(pwd)"
+echo "Contents of current directory:"
+ls -la
 
-# 1️⃣ Ensure the iOS folder exists
-if [ ! -d "$IOS_DIR" ]; then
-    echo "Error: iOS directory '$IOS_DIR' does not exist."
+# Since this script is in frontend/ios/ci_scripts/, we're already close to the iOS directory
+# The iOS directory should be the parent directory
+IOS_DIR="."
+if [ -f "Podfile" ]; then
+    echo "Found Podfile in current directory"
+    IOS_DIR="."
+elif [ -f "../Podfile" ]; then
+    echo "Found Podfile in parent directory"
+    IOS_DIR=".."
+else
+    echo "Error: Podfile not found. Searched in current directory and parent."
+    echo "Current directory structure:"
+    find . -name "*.xcodeproj" -o -name "Podfile" 2>/dev/null || true
     exit 1
 fi
+
+echo "Using iOS directory: $IOS_DIR"
 cd "$IOS_DIR"
 
 # 2️⃣ Check CocoaPods installation
 if ! command -v pod >/dev/null 2>&1; then
     echo "CocoaPods not found. Installing..."
-    gem install cocoapods --no-document
+    gem install cocoapods --no-document --user-install
+    # Add user gem bin to PATH
+    GEM_USER_BIN=$(ruby -rubygems -e 'print Gem.user_dir')/bin
+    export PATH="$GEM_USER_BIN:$PATH"
 else
     echo "CocoaPods is already installed."
 fi
 
 # 3️⃣ Check Podfile exists
 if [ ! -f "Podfile" ]; then
-    echo "Error: Podfile not found in $IOS_DIR."
+    echo "Error: Podfile not found in current directory."
     exit 1
 fi
 
