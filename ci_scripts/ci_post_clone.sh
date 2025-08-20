@@ -3,13 +3,30 @@
 set -e
 set -x  # Print each command for debugging
 
-IOS_DIR="frontend/ios"
+# Debug: Print current working directory and list contents
+echo "Current working directory: $(pwd)"
+echo "Contents of current directory:"
+ls -la
 
-# 1️⃣ Ensure the iOS folder exists
-if [ ! -d "$IOS_DIR" ]; then
-    echo "Error: iOS directory '$IOS_DIR' does not exist."
+# Find the iOS directory - it might be in different locations
+IOS_DIR=""
+if [ -d "frontend/ios" ]; then
+    IOS_DIR="frontend/ios"
+elif [ -d "ios" ]; then
+    IOS_DIR="ios"
+elif [ -d "../frontend/ios" ]; then
+    IOS_DIR="../frontend/ios"
+else
+    echo "Error: iOS directory not found. Searched in:"
+    echo "  - frontend/ios"
+    echo "  - ios" 
+    echo "  - ../frontend/ios"
+    echo "Current directory structure:"
+    find . -name "*.xcodeproj" -o -name "Podfile" 2>/dev/null || true
     exit 1
 fi
+
+echo "Found iOS directory: $IOS_DIR"
 cd "$IOS_DIR"
 
 # 2️⃣ Check CocoaPods installation
