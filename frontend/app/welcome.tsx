@@ -5,6 +5,7 @@ import * as Notifications from 'expo-notifications';
 import { useNotifications } from '@/src/contexts/NotificationContext';
 import { useRouter } from 'expo-router';
 import { useSettings } from '@/src/contexts/SettingsContext';
+import { usePrayerTimes } from '@/src/contexts/PrayerTimesContext';
 import { lightTheme, darkTheme } from '@/src/constants/theme';
 import { useTranslation } from '@/src/i18n';
 
@@ -16,6 +17,7 @@ export default function Welcome() {
   const [locGranted, setLocGranted] = useState<boolean | null>(null);
   const [notifGranted, setNotifGranted] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
+  const { refreshPrayerTimes } = usePrayerTimes();
 
   useEffect(() => {
     console.log('Welcome screen mounted, onboarding completed:', settings.onboarding?.completed);
@@ -59,6 +61,12 @@ export default function Welcome() {
         );
       } else {
         console.log('Location permission granted');
+        try {
+          // Start loading prayer times immediately now that permission is granted
+          await refreshPrayerTimes();
+        } catch (e) {
+          console.warn('Error refreshing prayer times after granting location:', e);
+        }
       }
     } catch (error) {
       console.error('Error requesting location permission:', error);
@@ -119,6 +127,13 @@ export default function Welcome() {
         } catch (e) {
           console.warn('Error requesting location permission at finish:', e);
         }
+      }
+
+      // Start loading prayer times now that permission is granted (during onboarding)
+      try {
+        await refreshPrayerTimes();
+      } catch (e) {
+        console.warn('Error loading prayer times during onboarding:', e);
       }
 
       // Mark onboarding as completed
