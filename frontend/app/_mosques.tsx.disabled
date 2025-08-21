@@ -1,0 +1,23 @@
+import React from 'react';
+import { StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { NearbyMosques } from '@/src/components/shared/NearbyMosques';
+import { useSettings } from '@/src/contexts/SettingsContext';
+import { darkTheme, lightTheme } from '@/src/constants/theme';
+
+export default function MosquesScreen() {
+  const { isDarkMode } = useSettings();
+  const theme = isDarkMode ? darkTheme : lightTheme;
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+      <NearbyMosques />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});

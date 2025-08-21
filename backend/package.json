@@ -3,16 +3,23 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "build": "echo 'No build step required for this project'",
+    "dev": "node index.js"
   },
-  "keywords": [],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "keywords": ["prayer", "islamic", "api", "backend"],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Backend API for Muslim Prayer Times app",
   "dependencies": {
-    "axios": "^1.9.0",
+    "axios": "^1.7.2",
     "cors": "^2.8.5",
-    "dotenv": "^16.5.0",
-    "express": "^5.1.0"
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
   }
 }
