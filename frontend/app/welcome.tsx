@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Platform, Alert, View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
-import { useNotifications } from '@/src/contexts/NotificationContext';
+import { useNotifications } from '../src/contexts/NotificationContext';
 import { useRouter } from 'expo-router';
-import { useSettings } from '@/src/contexts/SettingsContext';
-import { lightTheme, darkTheme } from '@/src/constants/theme';
-import { useTranslation } from '@/src/i18n';
+import { useSettings } from '../src/contexts/SettingsContext';
+import { lightTheme, darkTheme } from '../src/constants/theme';
+import { useTranslation } from '../src/i18n';
 
 export default function Welcome() {
   const router = useRouter();

@@ -2,15 +2,15 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
 
-import { HapticTab } from '@/src/components/layout/HapticTab';
-import { MosqueIcon } from '@/src/components/shared/MosqueIcon';
-import { ClockIcon } from '@/src/components/shared/ClockIcon';
-import { SettingsIcon } from '@/src/components/shared/SettingsIcon';
-import TabBarBackground from '@/src/components/shared/TabBarBackground';
-import AnimatedTabBar from '@/src/components/shared/AnimatedTabBar';
-import { darkTheme, lightTheme } from '@/src/constants/theme';
-import { useSettings } from '@/src/contexts/SettingsContext';
-import { useTranslation } from '@/src/i18n';
+import { HapticTab } from '../../src/components/layout/HapticTab';
+import { MosqueIcon } from '../../src/components/shared/MosqueIcon';
+import { ClockIcon } from '../../src/components/shared/ClockIcon';
+import { SettingsIcon } from '../../src/components/shared/SettingsIcon';
+import TabBarBackground from '../../src/components/shared/TabBarBackground';
+import AnimatedTabBar from '../../src/components/shared/AnimatedTabBar';
+import { darkTheme, lightTheme } from '../../src/constants/theme';
+import { useSettings } from '../../src/contexts/SettingsContext';
+import { useTranslation } from '../../src/i18n';
 
 export default function TabLayout() {
   const { isDarkMode } = useSettings();

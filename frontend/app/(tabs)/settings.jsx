@@ -17,15 +17,15 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FontAwesome5 } from "@expo/vector-icons";
 import * as Location from 'expo-location';
-import { useSettings } from "@/src/contexts/SettingsContext";
-import { useNotifications } from "@/src/contexts/NotificationContext";
-import { usePrayerTimes } from "@/src/contexts/PrayerTimesContext";
-import { lightTheme, darkTheme } from "@/src/constants/theme";
-import { CustomPicker } from "@/src/components/shared/CustomPicker";
-import FacebookStyleTransition from "@/src/components/shared/FacebookStyleTransition";
-import { useTranslation } from "@/src/i18n";
-import { clearPrayerTimesCache } from '@/src/services/prayerTimesCache';
-import { NotificationTestButton } from '@/src/components/debug/NotificationTestButton';
+import { useSettings } from "../../src/contexts/SettingsContext";
+import { useNotifications } from "../../src/contexts/NotificationContext";
+import { usePrayerTimes } from "../../src/contexts/PrayerTimesContext";
+import { lightTheme, darkTheme } from "../../src/constants/theme";
+import { CustomPicker } from "../../src/components/shared/CustomPicker";
+import FacebookStyleTransition from "../../src/components/shared/FacebookStyleTransition";
+import { useTranslation } from "../../src/i18n";
+import { clearPrayerTimesCache } from '../../src/services/prayerTimesCache';
+import { NotificationTestButton } from '../../src/components/debug/NotificationTestButton';
 
 const Settings = () => {
   const { settings, updateSettings, isDarkMode } = useSettings();

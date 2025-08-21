@@ -1,16 +1,16 @@
 import React from "react";
 import { StyleSheet, ScrollView, View, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { DailyContent } from "@/src/components/home/DailyContent";
-import { QuickActions } from "@/src/components/home/QuickActions";
-import NextPrayer from "@/src/components/home/NextPrayer";
-import { ThemedText } from "@/src/components/shared/ThemedText";
-import { ThemedView } from "@/src/components/shared/ThemedView";
-import FacebookStyleTransition from "@/src/components/shared/FacebookStyleTransition";
+import { DailyContent } from "../../src/components/home/DailyContent";
+import { QuickActions } from "../../src/components/home/QuickActions";
+import NextPrayer from "../../src/components/home/NextPrayer";
+import { ThemedText } from "../../src/components/shared/ThemedText";
+import { ThemedView } from "../../src/components/shared/ThemedView";
+import FacebookStyleTransition from "../../src/components/shared/FacebookStyleTransition";
 import moment from "moment-hijri";
-import { useSettings } from "@/src/contexts/SettingsContext";
-import { darkTheme, lightTheme } from "@/src/constants/theme";
-import { useTranslation } from "@/src/i18n";
+import { useSettings } from "../../src/contexts/SettingsContext";
+import { darkTheme, lightTheme } from "../../src/constants/theme";
+import { useTranslation } from "../../src/i18n";
 
 export default function HomeScreen() {
   const { isDarkMode, settings } = useSettings();

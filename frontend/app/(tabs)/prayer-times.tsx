@@ -1,14 +1,14 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ThemedView } from '@/src/components/shared/ThemedView';
-import { ThemedText } from '@/src/components/shared/ThemedText';
-import FacebookStyleTransition from '@/src/components/shared/FacebookStyleTransition';
-import { useSettings } from '@/src/contexts/SettingsContext';
-import { usePrayerTimes } from '@/src/contexts/PrayerTimesContext';
-import { darkTheme, lightTheme } from '@/src/constants/theme';
-import { useTranslation } from '@/src/i18n';
-import { formatTime as formatTimeUtil } from '@/src/utils/timeUtils';
+import { ThemedView } from '../../src/components/shared/ThemedView';
+import { ThemedText } from '../../src/components/shared/ThemedText';
+import FacebookStyleTransition from '../../src/components/shared/FacebookStyleTransition';
+import { useSettings } from '../../src/contexts/SettingsContext';
+import { usePrayerTimes } from '../../src/contexts/PrayerTimesContext';
+import { darkTheme, lightTheme } from '../../src/constants/theme';
+import { useTranslation } from '../../src/i18n';
+import { formatTime as formatTimeUtil } from '../../src/utils/timeUtils';
 import moment from 'moment-hijri';
 
 export default function PrayerTimesScreen() {

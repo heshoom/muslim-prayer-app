@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '../hooks/useColorScheme';
+import { useColorScheme } from '../src/utils/useColorScheme';
 import { OnboardingProvider, useOnboarding } from '../src/contexts/OnboardingContext';
 
 function LoadingScreen() {

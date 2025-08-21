@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { useSettings } from '@/src/contexts/SettingsContext';
+import { useSettings } from '../src/contexts/SettingsContext';
 import { View, ActivityIndicator } from 'react-native';
-import { ThemedView } from '@/src/components/shared/ThemedView';
-import { ThemedText } from '@/src/components/shared/ThemedText';
-import { lightTheme, darkTheme } from '@/src/constants/theme';
+import { ThemedView } from '../src/components/shared/ThemedView';
+import { ThemedText } from '../src/components/shared/ThemedText';
+import { lightTheme, darkTheme } from '../src/constants/theme';
 
 export default function IndexScreen() {
   const router = useRouter();
