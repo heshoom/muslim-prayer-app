@@ -249,13 +249,13 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
 
       const now = new Date();
       
-      // FUTURE DATE GUARD: If prayer time has passed today, schedule for tomorrow
+      // SIMPLE LOGIC: Only schedule if prayer time is in the future
       if (notificationDate <= now) {
-        notificationDate.setDate(notificationDate.getDate() + 1);
-        console.log(`${prayerName} has passed today, scheduling for tomorrow: ${notificationDate.toLocaleString()}`);
-      } else {
-        console.log(`${prayerName} is upcoming today, scheduling for: ${notificationDate.toLocaleString()}`);
+        console.log(`${prayerName} has already passed today, skipping notification`);
+        return; // Don't schedule anything for past prayers
       }
+
+      console.log(`${prayerName} is upcoming today, scheduling for: ${notificationDate.toLocaleString()}`);
 
       let soundUri: string | undefined = 'default';
       if (settings.adhan) {
@@ -492,13 +492,13 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
       const reminderDate = new Date(prayerDate.getTime() - (settings.prePrayerTime * 60 * 1000));
       const now = new Date();
 
-      // FUTURE DATE GUARD: If reminder time has passed today, schedule for tomorrow
+      // SIMPLE LOGIC: Only schedule if reminder time is in the future
       if (reminderDate <= now) {
-        reminderDate.setDate(reminderDate.getDate() + 1);
-        console.log(`${prayerName} reminder has passed today, scheduling for tomorrow: ${reminderDate.toLocaleString()}`);
-      } else {
-        console.log(`${prayerName} reminder is upcoming today, scheduling for: ${reminderDate.toLocaleString()}`);
+        console.log(`${prayerName} reminder has already passed today, skipping notification`);
+        return; // Don't schedule anything for past reminders
       }
+
+      console.log(`${prayerName} reminder is upcoming today, scheduling for: ${reminderDate.toLocaleString()}`);
 
       // Schedule the reminder notification
       const notificationId = await Notifications.scheduleNotificationAsync({
@@ -759,7 +759,7 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
       const testTime = new Date();
       testTime.setSeconds(testTime.getSeconds() + 10);
       
-      // FUTURE DATE GUARD: Ensure test time is in the future
+      // SIMPLE LOGIC: Ensure test time is in the future
       const now = new Date();
       if (testTime <= now) {
         testTime.setSeconds(now.getSeconds() + 10);

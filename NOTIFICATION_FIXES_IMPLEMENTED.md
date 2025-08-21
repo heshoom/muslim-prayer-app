@@ -47,13 +47,13 @@ This document summarizes all the fixes implemented to resolve the prayer notific
   - `shouldShowBanner: true`
   - `shouldPlaySound: false` (handled manually via athan service)
 
-### 6. **Daily Rescheduling Pattern with Future Date Guards**
+### 6. **Simple Future-Only Scheduling Pattern**
 **Problem**: Notifications weren't being rescheduled daily, and past prayer times were firing immediately at app launch.
 
 **Fix**:
 - Implemented clean daily reschedule pattern that cancels ALL notifications before rescheduling
-- Added **Future Date Guards** to prevent immediate firing of past prayer times
-- If prayer time has passed today, schedule for tomorrow instead
+- Added **Simple Future-Only Logic**: Only schedule notifications for future times
+- Past prayer times are completely ignored (no scheduling for tomorrow)
 - Same logic applied to pre-prayer reminders
 - Added `rescheduleDailyIfNeeded()` method for automatic daily rescheduling
 - Removed complex signature-based scheduling in favor of clean slate approach
@@ -131,7 +131,7 @@ This document summarizes all the fixes implemented to resolve the prayer notific
 ### Both Platforms
 - ✅ Pre-prayer reminders scheduled when enabled
 - ✅ **No immediate firing of past prayer times at app launch**
-- ✅ **Future date guards prevent instant notifications**
+- ✅ **Simple future-only logic: past prayers are ignored**
 - ✅ Clean daily rescheduling pattern
 - ✅ No duplicate notifications
 - ✅ Proper cleanup of old notifications
@@ -141,7 +141,7 @@ This document summarizes all the fixes implemented to resolve the prayer notific
 - [ ] Android channel created at startup
 - [ ] Pre-prayer reminders are scheduled when enabled
 - [ ] **No immediate firing of past prayer times at app launch**
-- [ ] **Future date guards work for both prayers and reminders**
+- [ ] **Past prayers are completely ignored (not scheduled for tomorrow)**
 - [ ] Daily rescheduler runs after midnight
 - [ ] Test notifications work on both platforms
 - [ ] No duplicate notifications created
