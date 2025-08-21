@@ -47,32 +47,38 @@ This document summarizes all the fixes implemented to resolve the prayer notific
   - `shouldShowBanner: true`
   - `shouldPlaySound: false` (handled manually via athan service)
 
-### 6. **Daily Rescheduling Pattern**
-**Problem**: Notifications weren't being rescheduled daily, leading to potential gaps.
+### 6. **Daily Rescheduling Pattern with Future Date Guards**
+**Problem**: Notifications weren't being rescheduled daily, and past prayer times were firing immediately at app launch.
 
 **Fix**:
-- Added `scheduleDailyNotifications()` method with proper signature-based scheduling
-- Added daily rescheduler in `PrayerTimesContext` that runs when app is opened after midnight
-- Implemented signature-based cancellation to prevent duplicates
+- Implemented clean daily reschedule pattern that cancels ALL notifications before rescheduling
+- Added **Future Date Guards** to prevent immediate firing of past prayer times
+- If prayer time has passed today, schedule for tomorrow instead
+- Same logic applied to pre-prayer reminders
+- Added `rescheduleDailyIfNeeded()` method for automatic daily rescheduling
+- Removed complex signature-based scheduling in favor of clean slate approach
 
-### 7. **Notification Duplication Prevention**
-**Problem**: Multiple scheduling calls could create duplicate notifications.
+### 7. **Clean Daily Reschedule Pattern**
+**Problem**: Multiple scheduling calls could create duplicate notifications, and complex signature management was error-prone.
 
 **Fix**:
-- Added `cancelNotificationsBySignature()` method
-- Each scheduling session gets a unique signature
-- Previous notifications with the same signature are cancelled before scheduling new ones
+- Implemented clean slate approach: cancel ALL notifications before rescheduling
+- Removed complex signature-based scheduling
+- Each daily reschedule starts with a clean slate
+- Simple and reliable like Muslim Pro's approach
 
 ## Files Modified
 
 ### Core Service Files
 - `frontend/src/services/prayerNotificationService.ts`
   - Added `ensureAndroidPrayerChannel()` function
-  - Fixed `scheduleAllPrayerNotifications()` to call pre-prayer reminders
-  - Added `scheduleDailyNotifications()` method
-  - Added `cancelNotificationsBySignature()` method
+  - Implemented clean daily reschedule pattern with future date guards
+  - Added `schedulePrayerNotificationWithFutureGuard()` method
+  - Added `schedulePrePrayerReminderWithFutureGuard()` method
+  - Added `rescheduleDailyIfNeeded()` method for automatic daily rescheduling
   - Removed `alarmManager: true` from Android triggers
   - Added `testNotification()` method for debugging
+  - Simplified `scheduleAllPrayerNotifications()` to use daily pattern
 
 ### App Configuration
 - `frontend/app.json`
@@ -84,9 +90,9 @@ This document summarizes all the fixes implemented to resolve the prayer notific
 
 ### Context Updates
 - `frontend/src/contexts/PrayerTimesContext.tsx`
-  - Updated to use `scheduleDailyNotifications()` instead of `scheduleAllPrayerNotifications()`
-  - Added daily rescheduler that runs when app is opened after midnight
-  - Added proper signature tracking for notification changes
+  - Updated to use `rescheduleDailyIfNeeded()` for automatic daily rescheduling
+  - Simplified daily rescheduler logic
+  - Removed complex signature tracking in favor of clean slate approach
 
 ### Debug Tools
 - `frontend/src/components/debug/NotificationTestButton.tsx`
@@ -124,7 +130,9 @@ This document summarizes all the fixes implemented to resolve the prayer notific
 
 ### Both Platforms
 - ✅ Pre-prayer reminders scheduled when enabled
-- ✅ Daily rescheduling to prevent gaps
+- ✅ **No immediate firing of past prayer times at app launch**
+- ✅ **Future date guards prevent instant notifications**
+- ✅ Clean daily rescheduling pattern
 - ✅ No duplicate notifications
 - ✅ Proper cleanup of old notifications
 
@@ -132,6 +140,8 @@ This document summarizes all the fixes implemented to resolve the prayer notific
 
 - [ ] Android channel created at startup
 - [ ] Pre-prayer reminders are scheduled when enabled
+- [ ] **No immediate firing of past prayer times at app launch**
+- [ ] **Future date guards work for both prayers and reminders**
 - [ ] Daily rescheduler runs after midnight
 - [ ] Test notifications work on both platforms
 - [ ] No duplicate notifications created

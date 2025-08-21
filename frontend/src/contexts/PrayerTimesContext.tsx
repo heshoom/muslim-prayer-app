@@ -300,15 +300,8 @@ export const PrayerTimesProvider = ({ children }: PrayerTimesProviderProps) => {
 
     const checkAndRescheduleDaily = async () => {
       try {
-        const today = new Date().toISOString().slice(0, 10);
-        const lastScheduledDay = await AsyncStorage.getItem('app:lastScheduledDay');
-        
-        if (lastScheduledDay !== today) {
-          console.log('New day detected - rescheduling notifications');
-          const notificationSettings = getNotificationSettings();
-          await prayerNotificationService.scheduleDailyNotifications(prayerTimes, location, notificationSettings);
-          await AsyncStorage.setItem('app:lastScheduledDay', today);
-        }
+        const notificationSettings = getNotificationSettings();
+        await prayerNotificationService.rescheduleDailyIfNeeded(prayerTimes, location, notificationSettings);
       } catch (error) {
         console.error('Error in daily rescheduler:', error);
       }
