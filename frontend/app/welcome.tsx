@@ -99,10 +99,31 @@ export default function Welcome() {
     try {
       setBusy(true);
       console.log('Completing onboarding...');
-      
+      // Ensure location permission is requested before completing onboarding
+      if (locGranted !== true) {
+        try {
+          console.log('Location not granted yet — requesting before finishing onboarding');
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          const granted = status === 'granted';
+          setLocGranted(granted);
+          if (!granted) {
+            // If user denies, show guidance and do not mark onboarding as completed automatically
+            Alert.alert(
+              t('locationPermissionRequired') || 'Location permission is required to find nearby mosques',
+              t('couldNotDetermineLocation') || 'This feature requires location access. You can enable it in Settings if you change your mind.'
+            );
+            console.log('User denied location permission at finish; keeping onboarding open');
+            setBusy(false);
+            return;
+          }
+        } catch (e) {
+          console.warn('Error requesting location permission at finish:', e);
+        }
+      }
+
       // Mark onboarding as completed
       updateSettings('onboarding' as any, 'completed', true);
-      
+
       // Schedule notifications if permissions were granted
       if (notifGranted) {
         try {
@@ -111,7 +132,7 @@ export default function Welcome() {
           console.warn('Error setting up notifications after onboarding:', e);
         }
       }
-      
+
       console.log('Onboarding completed, navigating to home');
       router.replace('/(tabs)');
       
@@ -133,7 +154,7 @@ export default function Welcome() {
         </Text>
       </View>
 
-      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
+  <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
         <Text style={[styles.cardTitle, { color: theme.text.primary }]}>Allow Location</Text>
         <Text style={[styles.cardDesc, { color: theme.text.secondary }]}>
           We use your location to calculate precise prayer times for your area.
@@ -150,7 +171,7 @@ export default function Welcome() {
           onPress={requestLocation}
         >
           <Text style={[styles.buttonText, { color: theme.text.inverse }]}>
-            {busy && locGranted === null ? 'Requesting...' : locGranted ? '✓ Granted' : 'Enable Location'}
+    {busy && locGranted === null ? 'Requesting...' : locGranted ? '✓ Granted' : 'Continue'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -172,7 +193,7 @@ export default function Welcome() {
           onPress={requestNotifications}
         >
           <Text style={[styles.buttonText, { color: theme.text.inverse }]}>
-            {busy && notifGranted === null ? 'Requesting...' : notifGranted ? '✓ Granted' : 'Enable Notifications'}
+            {busy && notifGranted === null ? 'Requesting...' : notifGranted ? '✓ Granted' : 'Continue'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -189,7 +210,7 @@ export default function Welcome() {
         onPress={finish}
       >
         <Text style={[styles.buttonText, { color: theme.text.inverse }]}>
-          {busy ? 'Setting up...' : 'Continue to App'}
+          {busy ? 'Setting up...' : 'Next'}
         </Text>
       </TouchableOpacity>
       
