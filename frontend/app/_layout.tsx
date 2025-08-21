@@ -5,13 +5,9 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import 'react-native-reanimated';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { SettingsProvider, useSettings } from '../src/contexts/SettingsContext';
-import { NotificationProvider } from '../src/contexts/NotificationContext';
-import { PrayerTimesProvider } from '../src/contexts/PrayerTimesContext';
+import { useColorScheme } from '../hooks/useColorScheme';
 import { OnboardingProvider, useOnboarding } from '../src/contexts/OnboardingContext';
-import { ensureAndroidPrayerChannel } from '../src/services/prayerNotificationService';
 
 function LoadingScreen() {
   return (
@@ -23,17 +19,10 @@ function LoadingScreen() {
 
 function RootLayoutNav() {
   const { isOnboardingCompleted, isLoading } = useOnboarding();
-  const { isDarkMode } = useSettings() as any;
   const segments = useSegments();
   const router = useRouter();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
 
-  // Ensure Android notification channel is created at app startup
-  useEffect(() => {
-    ensureAndroidPrayerChannel();
-  }, []);
+
 
   useEffect(() => {
     if (isLoading) return;
@@ -58,37 +47,37 @@ function RootLayoutNav() {
     }
   }, [isOnboardingCompleted, segments, isLoading]);
 
-  if (!loaded || isLoading) {
+  if (isLoading) {
     return <LoadingScreen />;
   }
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider value={isDarkMode ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="welcome" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <Stack>
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="+not-found" />
+    </Stack>
   );
 }
 
 export default function RootLayout() {
+  const colorScheme = useColorScheme();
+  const [loaded] = useFonts({
+    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+  });
+
+  if (!loaded) {
+    // Async font loading only occurs in development.
+    return null;
+  }
+
   return (
-    <SettingsProvider>
-      <NotificationProvider>
-        <PrayerTimesProvider>
-          <OnboardingProvider>
-            <RootLayoutNav />
-          </OnboardingProvider>
-        </PrayerTimesProvider>
-      </NotificationProvider>
-    </SettingsProvider>
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <OnboardingProvider>
+        <RootLayoutNav />
+        <StatusBar style="auto" />
+      </OnboardingProvider>
+    </ThemeProvider>
   );
 }
 

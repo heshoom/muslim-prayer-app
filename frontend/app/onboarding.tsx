@@ -8,14 +8,16 @@ import {
   Alert,
   Platform,
   ActivityIndicator,
+  Dimensions,
+  ScrollView,
 } from 'react-native';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
-import { useOnboarding } from '@/hooks/useOnboarding';
+import { useOnboarding } from '../src/contexts/OnboardingContext';
 
 export default function OnboardingScreen() {
-  const { markOnboardingCompleted } = useOnboarding();
+  const { markOnboardingCompleted, isOnboardingCompleted } = useOnboarding();
   const [locationPermission, setLocationPermission] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -90,8 +92,22 @@ export default function OnboardingScreen() {
 
   const handleContinue = async () => {
     if (locationPermission && notificationPermission) {
-      await markOnboardingCompleted();
-      router.replace('/(tabs)');
+      console.log('Starting onboarding completion...');
+      setIsLoading(true);
+      try {
+        console.log('Marking onboarding as completed...');
+        await markOnboardingCompleted();
+        console.log('Onboarding marked as completed');
+        
+        // The context will handle the state update, so we can navigate immediately
+        console.log('Navigating to main app...');
+        router.replace('/(tabs)');
+      } catch (error) {
+        console.error('Error completing onboarding:', error);
+        Alert.alert('Error', 'Failed to complete onboarding. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -121,148 +137,167 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Welcome to Muslim Prayer App</Text>
-          <Text style={styles.subtitle}>
-            Let's set up your app to provide accurate prayer times and reminders
-          </Text>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Welcome to Muslim Prayer App</Text>
+            <Text style={styles.subtitle}>
+              Let's set up your app to provide accurate prayer times and reminders
+            </Text>
+          </View>
+
+          <View style={styles.stepsContainer}>
+            {/* Step 1: Location Permission */}
+            <View style={styles.stepContainer}>
+              <View style={styles.stepHeader}>
+                <View style={[
+                  styles.stepNumber, 
+                  { 
+                    backgroundColor: getStepStatus(1) ? '#27ae60' : currentStep === 1 ? '#2980b9' : '#bdc3c7',
+                    borderWidth: currentStep === 1 ? 2 : 0,
+                    borderColor: '#2980b9'
+                  }
+                ]}>
+                  <Text style={styles.stepNumberText}>1</Text>
+                </View>
+                <Text style={[styles.stepTitle, { color: currentStep === 1 ? '#2980b9' : '#2c3e50' }]}>Location Access</Text>
+              </View>
+              <Text style={styles.stepDescription}>
+                Allow location access to get accurate prayer times for your area
+              </Text>
+              <TouchableOpacity
+                style={getButtonStyle(1)}
+                onPress={requestLocationPermission}
+                disabled={isLoading || locationPermission}
+              >
+                {isLoading && currentStep === 1 ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={getButtonTextStyle(1)}>
+                    {locationPermission ? '✓ Location Granted' : 'Grant Location Access'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Step 2: Notification Permission */}
+            <View style={styles.stepContainer}>
+              <View style={styles.stepHeader}>
+                <View style={[
+                  styles.stepNumber, 
+                  { 
+                    backgroundColor: getStepStatus(2) ? '#27ae60' : currentStep === 2 ? '#2980b9' : '#bdc3c7',
+                    borderWidth: currentStep === 2 ? 2 : 0,
+                    borderColor: '#2980b9'
+                  }
+                ]}>
+                  <Text style={styles.stepNumberText}>2</Text>
+                </View>
+                <Text style={[styles.stepTitle, { color: currentStep === 2 ? '#2980b9' : '#2c3e50' }]}>Notifications</Text>
+              </View>
+              <Text style={styles.stepDescription}>
+                Enable notifications to receive prayer time reminders
+              </Text>
+              <TouchableOpacity
+                style={getButtonStyle(2)}
+                onPress={requestNotificationPermission}
+                disabled={isLoading || !locationPermission || notificationPermission}
+              >
+                {isLoading && currentStep === 2 ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={getButtonTextStyle(2)}>
+                    {notificationPermission ? '✓ Notifications Granted' : 'Grant Notification Access'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Step 3: Continue Button */}
+            <View style={styles.stepContainer}>
+              <View style={styles.stepHeader}>
+                <View style={[
+                  styles.stepNumber, 
+                  { 
+                    backgroundColor: getStepStatus(3) ? '#27ae60' : currentStep === 3 ? '#2980b9' : '#bdc3c7',
+                    borderWidth: currentStep === 3 ? 2 : 0,
+                    borderColor: '#2980b9'
+                  }
+                ]}>
+                  <Text style={styles.stepNumberText}>3</Text>
+                </View>
+                <Text style={[styles.stepTitle, { color: currentStep === 3 ? '#2980b9' : '#2c3e50' }]}>Get Started</Text>
+              </View>
+              <Text style={styles.stepDescription}>
+                You're all set! Tap continue to start using the app
+              </Text>
+              <TouchableOpacity
+                style={getButtonStyle(3)}
+                onPress={handleContinue}
+                disabled={!locationPermission || !notificationPermission || isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={getButtonTextStyle(3)}>Continue to App</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-
-        <View style={styles.stepsContainer}>
-          {/* Step 1: Location Permission */}
-          <View style={styles.stepContainer}>
-            <View style={styles.stepHeader}>
-              <View style={[
-                styles.stepNumber, 
-                { 
-                  backgroundColor: getStepStatus(1) ? '#27ae60' : currentStep === 1 ? '#2980b9' : '#bdc3c7',
-                  borderWidth: currentStep === 1 ? 2 : 0,
-                  borderColor: '#2980b9'
-                }
-              ]}>
-                <Text style={styles.stepNumberText}>1</Text>
-              </View>
-              <Text style={[styles.stepTitle, { color: currentStep === 1 ? '#2980b9' : '#2c3e50' }]}>Location Access</Text>
-            </View>
-            <Text style={styles.stepDescription}>
-              Allow location access to get accurate prayer times for your area
-            </Text>
-            <TouchableOpacity
-              style={getButtonStyle(1)}
-              onPress={requestLocationPermission}
-              disabled={isLoading || locationPermission}
-            >
-              {isLoading && currentStep === 1 ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={getButtonTextStyle(1)}>
-                  {locationPermission ? '✓ Location Granted' : 'Grant Location Access'}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Step 2: Notification Permission */}
-          <View style={styles.stepContainer}>
-            <View style={styles.stepHeader}>
-              <View style={[
-                styles.stepNumber, 
-                { 
-                  backgroundColor: getStepStatus(2) ? '#27ae60' : currentStep === 2 ? '#2980b9' : '#bdc3c7',
-                  borderWidth: currentStep === 2 ? 2 : 0,
-                  borderColor: '#2980b9'
-                }
-              ]}>
-                <Text style={styles.stepNumberText}>2</Text>
-              </View>
-              <Text style={[styles.stepTitle, { color: currentStep === 2 ? '#2980b9' : '#2c3e50' }]}>Notifications</Text>
-            </View>
-            <Text style={styles.stepDescription}>
-              Enable notifications to receive prayer time reminders
-            </Text>
-            <TouchableOpacity
-              style={getButtonStyle(2)}
-              onPress={requestNotificationPermission}
-              disabled={isLoading || !locationPermission || notificationPermission}
-            >
-              {isLoading && currentStep === 2 ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={getButtonTextStyle(2)}>
-                  {notificationPermission ? '✓ Notifications Granted' : 'Grant Notification Access'}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Step 3: Continue Button */}
-          <View style={styles.stepContainer}>
-            <View style={styles.stepHeader}>
-              <View style={[
-                styles.stepNumber, 
-                { 
-                  backgroundColor: getStepStatus(3) ? '#27ae60' : currentStep === 3 ? '#2980b9' : '#bdc3c7',
-                  borderWidth: currentStep === 3 ? 2 : 0,
-                  borderColor: '#2980b9'
-                }
-              ]}>
-                <Text style={styles.stepNumberText}>3</Text>
-              </View>
-              <Text style={[styles.stepTitle, { color: currentStep === 3 ? '#2980b9' : '#2c3e50' }]}>Get Started</Text>
-            </View>
-            <Text style={styles.stepDescription}>
-              You're all set! Tap continue to start using the app
-            </Text>
-            <TouchableOpacity
-              style={getButtonStyle(3)}
-              onPress={handleContinue}
-              disabled={!locationPermission || !notificationPermission}
-            >
-              <Text style={getButtonTextStyle(3)}>Continue to App</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f0f4f8',
   },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
   content: {
     flex: 1,
-    padding: 20,
-    paddingTop: Platform.OS === 'android' ? 40 : 20,
+    padding: Math.min(20, screenWidth * 0.05),
+    paddingTop: Platform.OS === 'android' ? Math.min(40, screenHeight * 0.05) : Math.min(20, screenHeight * 0.025),
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: Math.min(40, screenHeight * 0.05),
   },
   title: {
-    fontSize: 28,
+    fontSize: Math.min(28, screenWidth * 0.07),
     fontWeight: 'bold',
     color: '#2980b9',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: Math.min(10, screenHeight * 0.012),
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: Math.min(16, screenWidth * 0.04),
     color: '#7f8c8d',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: Math.min(24, screenWidth * 0.06),
   },
   stepsContainer: {
     flex: 1,
   },
   stepContainer: {
-    marginBottom: 30,
+    marginBottom: Math.min(30, screenHeight * 0.035),
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: Math.min(12, screenWidth * 0.03),
+    padding: Math.min(20, screenWidth * 0.05),
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -275,41 +310,41 @@ const styles = StyleSheet.create({
   stepHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: Math.min(10, screenHeight * 0.012),
   },
   stepNumber: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: Math.min(30, screenWidth * 0.075),
+    height: Math.min(30, screenWidth * 0.075),
+    borderRadius: Math.min(15, screenWidth * 0.0375),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: Math.min(15, screenWidth * 0.0375),
   },
   stepNumberText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: Math.min(16, screenWidth * 0.04),
     fontWeight: 'bold',
   },
   stepTitle: {
-    fontSize: 18,
+    fontSize: Math.min(18, screenWidth * 0.045),
     fontWeight: 'bold',
     color: '#2c3e50',
   },
   stepDescription: {
-    fontSize: 14,
+    fontSize: Math.min(14, screenWidth * 0.035),
     color: '#7f8c8d',
-    lineHeight: 20,
-    marginBottom: 15,
+    lineHeight: Math.min(20, screenWidth * 0.05),
+    marginBottom: Math.min(15, screenHeight * 0.018),
   },
   permissionButton: {
-    height: 50,
+    height: Math.min(50, screenHeight * 0.06),
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
-    paddingHorizontal: 20,
+    borderRadius: Math.min(8, screenWidth * 0.02),
+    paddingHorizontal: Math.min(20, screenWidth * 0.05),
   },
   permissionButtonText: {
-    fontSize: 16,
+    fontSize: Math.min(16, screenWidth * 0.04),
     fontWeight: 'bold',
   },
 });

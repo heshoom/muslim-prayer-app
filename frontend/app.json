@@ -1,39 +1,27 @@
 {
   "expo": {
-    "name": "Islamic Pro",
-    "slug": "islamic-pro",
-  "version": "1.0.2",
+    "name": "frontend",
+    "slug": "frontend",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "islamic-pro",
+    "scheme": "frontend",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-  "ios": {
-  "supportsTablet": true,
-  "bundleIdentifier": "com.heshoom.islamicpro",
-  "buildNumber": "10",
-      "icon": "./assets/images/icon.png",
-      "infoPlist": {
-  "ITSAppUsesNonExemptEncryption": false,
-  "UIBackgroundModes": ["fetch", "remote-notification"]
-      },
-      "entitlements": {
-        "com.apple.developer.usernotifications.time-sensitive": true
-      }
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.heshams.frontend"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.heshoom.islamicpro",
       "edgeToEdgeEnabled": true,
-      "permissions": ["FOREGROUND_SERVICE"],
-      "config": {
-        "googleServicesFile": "./google-services.json"
-      },
-      "backgroundColor": "#ffffff",
-      "userInterfaceStyle": "automatic"
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -42,13 +30,6 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/images/icon.png",
-          "color": "#2980b9"
-        }
-      ],
       [
         "expo-splash-screen",
         {
@@ -64,36 +45,16 @@
           "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location to provide accurate prayer times for your area."
         }
       ],
-      "expo-web-browser"
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#ffffff"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
-    },
-    "extra": {
-      "description": "Islamic Pro - A comprehensive Islamic companion app with prayer times, Qibla direction, and daily spiritual content.",
-      "keywords": [
-        "islamic",
-        "prayer",
-        "muslim",
-        "qibla",
-        "quran",
-        "islam",
-        "pro",
-        "islamic",
-        "prayer",
-        "muslim",
-        "qibla",
-        "quran",
-        "islam",
-        "pro"
-      ],
-      "supportUrl": "mailto:support@islamicpro.org",
-      "privacyPolicyUrl": "https://www.islamicpro.org/privacy",
-      "termsOfServiceUrl": "https://www.islamicpro.org/terms",
-      "router": {},
-      "eas": {
-        "projectId": "d645d17a-5c8b-44a3-b079-0ce0fbe1e6d9"
-      }
     }
   }
 }

@@ -1,18 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ONBOARDING_COMPLETED_KEY = 'onboarding_completed';
 
-interface OnboardingContextType {
-  isOnboardingCompleted: boolean | null;
-  isLoading: boolean;
-  markOnboardingCompleted: () => Promise<void>;
-  resetOnboarding: () => Promise<void>;
-}
-
-const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
-
-export function OnboardingProvider({ children }: { children: ReactNode }) {
+export function useOnboarding() {
   const [isOnboardingCompleted, setIsOnboardingCompleted] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -37,13 +28,13 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       console.log('Setting onboarding completed in AsyncStorage...');
       await AsyncStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
       
-      // Update state immediately
-      setIsOnboardingCompleted(true);
+      // Force a re-check of the status
+      await checkOnboardingStatus();
       
       console.log('Onboarding completion verified');
     } catch (error) {
       console.error('Error marking onboarding as completed:', error);
-      throw error;
+      throw error; // Re-throw to handle in the calling component
     }
   };
 
@@ -56,24 +47,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  return (
-    <OnboardingContext.Provider
-      value={{
-        isOnboardingCompleted,
-        isLoading,
-        markOnboardingCompleted,
-        resetOnboarding,
-      }}
-    >
-      {children}
-    </OnboardingContext.Provider>
-  );
-}
-
-export function useOnboarding() {
-  const context = useContext(OnboardingContext);
-  if (context === undefined) {
-    throw new Error('useOnboarding must be used within an OnboardingProvider');
-  }
-  return context;
+  return {
+    isOnboardingCompleted,
+    isLoading,
+    markOnboardingCompleted,
+    resetOnboarding,
+  };
 }
