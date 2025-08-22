@@ -31,6 +31,7 @@
 		566613DA2E591AED00F54DF3 /* makkah_short.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = makkah_short.aiff; sourceTree = "<group>"; };
 		566613DB2E591AED00F54DF3 /* nasiralqatami_short.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = nasiralqatami_short.aiff; sourceTree = "<group>"; };
 		566613DC2E591AED00F54DF3 /* turkey_short.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = turkey_short.aiff; sourceTree = "<group>"; };
+		566613E32E59242800F54DF3 /* ci_post_clone.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = ci_post_clone.sh; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = IslamicPro/SplashScreen.storyboard; sourceTree = "<group>"; };
 		B5757412EF864EEE0CDB8BC2 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = IslamicPro/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
@@ -95,6 +96,14 @@
 			path = Pods;
 			sourceTree = "<group>";
 		};
+		566613E22E59240500F54DF3 /* ci_scripts */ = {
+			isa = PBXGroup;
+			children = (
+				566613E32E59242800F54DF3 /* ci_post_clone.sh */,
+			);
+			path = ci_scripts;
+			sourceTree = "<group>";
+		};
 		56BF34FC443337485B39BBD0 /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
@@ -113,6 +122,7 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
+				566613E22E59240500F54DF3 /* ci_scripts */,
 				13B07FAE1A68108700A75B9A /* IslamicPro */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
