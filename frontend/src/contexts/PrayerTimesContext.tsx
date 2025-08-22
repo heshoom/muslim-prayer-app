@@ -13,8 +13,8 @@ try {
   console.log('Background fetch service not available:', (err && (err as any).message) || err);
 }
 import { locationValidationService } from '../services/locationValidationService';
-import { prayerNotificationService, NotificationSettings } from '../services/prayerNotificationService';
 import { useSettings } from './SettingsContext';
+import { prayerNotificationService } from '../services/prayerNotificationService';
 
 interface PrayerTimesContextType {
   prayerTimes: PrayerTimes | null;
@@ -47,56 +47,35 @@ export const PrayerTimesProvider = ({ children }: PrayerTimesProviderProps) => {
   const [location, setLocation] = useState<string>('Unknown Location');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Notifications removed: keep placeholder state for compatibility
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [effectiveMethod, setEffectiveMethod] = useState<string | null>(null);
   const { settings } = useSettings();
 
-  const getNotificationSettings = (): NotificationSettings => ({
+  const getNotificationSettings = () => ({
     enabled: settings.notifications.enabled,
     adhan: settings.notifications.adhan,
     athanSound: settings.notifications.athanSound,
     vibrate: settings.notifications.vibrate,
     prePrayer: settings.notifications.prePrayer,
     prePrayerTime: settings.notifications.prePrayerTime,
+  timeFormat: settings.appearance.timeFormat,
   });
 
   const setupNotifications = async (times: PrayerTimes, loc: string) => {
     try {
       const notificationSettings = getNotificationSettings();
-      
-      if (!notificationSettings.enabled) {
-        setNotificationsEnabled(false);
-        return;
-      }
-
-      const permissionGranted = await prayerNotificationService.setupNotifications();
-      // Wait for NotificationContext to finish startup cleanup to avoid racing where
-      // cleanup cancels schedules while we are scheduling them. This polls AsyncStorage
-      // for a short period (max 5s) for the 'app:notificationStartupDone' flag.
-      try {
-        const start = Date.now();
-        while (Date.now() - start < 5000) {
-          const v = await AsyncStorage.getItem('app:notificationStartupDone');
-          if (v === '1') break;
-          // small delay
-          await new Promise(res => setTimeout(res, 250));
-        }
-      } catch (e) {
-        // ignore
-      }
-      if (permissionGranted) {
-        // Use daily scheduling pattern for better reliability
+      const ok = await prayerNotificationService.setupNotifications();
+      if (ok) {
         await prayerNotificationService.scheduleDailyNotifications(times, loc, notificationSettings);
         setNotificationsEnabled(true);
-        console.log('Prayer notifications set up successfully with adhan sound:', notificationSettings.athanSound);
       } else {
         setNotificationsEnabled(false);
-        console.warn('Notification permissions not granted');
       }
-    } catch (error) {
-      console.error('Error setting up notifications:', error);
+    } catch (err) {
       setNotificationsEnabled(false);
+      console.warn('Error setting up notifications:', err);
     }
   };
 
@@ -161,7 +140,6 @@ export const PrayerTimesProvider = ({ children }: PrayerTimesProviderProps) => {
 
       setPrayerTimes(response.prayerTimes);
       setLocation(response.location);
-      // store the effective method returned by the API (helps when user selected 'auto')
       setEffectiveMethod(response.method || settings.prayer.calculationMethod);
 
       // Prefetch other common methods in background (non-blocking)
@@ -184,15 +162,16 @@ export const PrayerTimesProvider = ({ children }: PrayerTimesProviderProps) => {
           console.warn('Background prefetch error:', err);
         }
       })();
-      
-      // Only set up notifications on initial load, not on refresh
-      if (isInitialLoad) {
-        if (settings.notifications.enabled) {
-          await setupNotifications(response.prayerTimes, response.location);
-        }
+
+      // Schedule notifications after loading prayer times
+      if (settings.notifications.enabled) {
+        await setupNotifications(response.prayerTimes, response.location);
+      }
+
+      if (isInitialLoad && settings.onboarding?.completed) {
         setIsInitialLoad(false);
       }
-      
+
       console.log('Prayer times loaded successfully for:', response.location);
     } catch (error) {
       console.error('Error loading prayer times:', error);
@@ -228,51 +207,28 @@ export const PrayerTimesProvider = ({ children }: PrayerTimesProviderProps) => {
   };
 
   const toggleNotifications = async () => {
-    try {
-      if (!prayerTimes) return;
-
-      const notificationSettings = getNotificationSettings();
-
-      if (notificationsEnabled) {
-        await prayerNotificationService.cancelAllNotifications();
-        setNotificationsEnabled(false);
-        console.log('Prayer notifications disabled');
-      } else {
-        if (notificationSettings.enabled) {
-          await setupNotifications(prayerTimes, location);
-          console.log('Prayer notifications enabled with settings:', notificationSettings);
-        } else {
-          console.log('Notifications are disabled in settings');
-        }
-      }
-    } catch (error) {
-      console.error('Error toggling notifications:', error);
+    // Toggle notifications on/off and reschedule if needed
+    if (!prayerTimes || !location) return;
+    if (settings.notifications.enabled) {
+      await setupNotifications(prayerTimes, location);
+    } else {
+      await prayerNotificationService.cancelAllNotifications();
+      setNotificationsEnabled(false);
     }
   };
 
   // Only re-setup notifications if the canonical signature changes
   const lastNotifSignatureRef = useRef<string | null>(null);
   useEffect(() => {
+    // Reschedule notifications if relevant settings change
     if (prayerTimes && location && !isInitialLoad) {
-      // Canonicalize location and times (must match logic in prayerNotificationService)
-      const canonicalLocation = (typeof location === 'string' && location.length < 40) ? location : 'Unknown';
-      const canonicalTime = (t: string) => {
-        if (!t) return '00:00';
-        const parts = t.split(':');
-        return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
-      };
-      const notifSignature = `${canonicalLocation}|${settings.notifications.enabled}|${settings.notifications.adhan}|${settings.notifications.vibrate}|${settings.notifications.prePrayer}|${settings.notifications.prePrayerTime}|${canonicalTime(prayerTimes.Fajr)}|${canonicalTime(prayerTimes.Dhuhr)}|${canonicalTime(prayerTimes.Asr)}|${canonicalTime(prayerTimes.Maghrib)}|${canonicalTime(prayerTimes.Isha)}`;
-      if (notifSignature !== lastNotifSignatureRef.current) {
-        lastNotifSignatureRef.current = notifSignature;
-        console.log('Notification settings changed - updating notifications (signature changed)');
+      if (settings.notifications.enabled) {
         setupNotifications(prayerTimes, location);
       } else {
-        console.log('Notification settings changed - no update needed (signature unchanged)');
+        prayerNotificationService.cancelAllNotifications();
+        setNotificationsEnabled(false);
       }
     }
-    // Note: athanSound changes are excluded because they don't require rescheduling,
-    // just updating the sound file used when notifications fire
-    // The new logic in prayerNotificationService will handle granular updates
   }, [settings.notifications.enabled, settings.notifications.adhan, settings.notifications.vibrate, settings.notifications.prePrayer, settings.notifications.prePrayerTime, location, prayerTimes, isInitialLoad]);
 
   // Load prayer times only after onboarding is completed (to avoid prompting

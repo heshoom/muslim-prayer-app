@@ -50,6 +50,8 @@ export async function getPrayerTimesForDate(
 // Fallback to direct Aladhan API since backend requires authentication
 const ALADHAN_API_URL = "https://api.aladhan.com/v1";
 
+// (previously had in-flight deduplication here)
+
 // Function to get city name from coordinates using reverse geocoding
 const getCityFromCoordinates = async (
   latitude: number,
@@ -71,7 +73,7 @@ const getCityFromCoordinates = async (
     }
 
     const data = await response.json();
-    console.log("🗺️  Geocoding response:", data.address);
+  // console.log("🗺️  Geocoding response:", data.address);
 
     // Extract location components
     const address = data.address || {};
@@ -94,7 +96,7 @@ const getCityFromCoordinates = async (
       locationString = "Unknown Location";
     }
 
-    console.log(`🌍 Location resolved: "${locationString}"`);
+  // console.log(`🌍 Location resolved: "${locationString}"`);
     return locationString;
   } catch (error) {
     console.warn("Could not get city name, using coordinates:", error);
@@ -231,59 +233,59 @@ const getRecommendedMethodForCountry = (country: string): string => {
     "alaska",
   ];
 
-  console.log(
-    `🗺️  Country detection: "${country}" normalized to "${normalized}"`
-  );
+  // console.log(
+  //   `🗺️  Country detection: "${country}" normalized to "${normalized}"
+  // );
 
   // Iran and Saudi Arabia explicit mappings
   if (normalized === "iran") {
-    console.log("✅ Detected Iran → Using Tehran method");
+  // console.log("✅ Detected Iran → Using Tehran method");
     return "tehran";
   }
   if (normalized === "saudi arabia" || normalized === "saudi") {
-    console.log("✅ Detected Saudi Arabia → Using Makkah method");
+  // console.log("✅ Detected Saudi Arabia → Using Makkah method");
     return "makkah";
   }
 
   if (NORTH_AMERICA.includes(normalized)) {
-    console.log("✅ Detected North America → Using ISNA method");
+  // console.log("✅ Detected North America → Using ISNA method");
     return "isna";
   }
   if (EUROPE.includes(normalized)) {
-    console.log("✅ Detected Europe → Using MWL method");
+  // console.log("✅ Detected Europe → Using MWL method");
     return "mwl";
   }
   if (SOUTH_ASIA.includes(normalized)) {
-    console.log("✅ Detected South Asia → Using Karachi method");
+  // console.log("✅ Detected South Asia → Using Karachi method");
     return "karachi";
   }
   if (MIDDLE_EAST.includes(normalized)) {
-    console.log("✅ Detected Middle East → Using Makkah method");
+  // console.log("✅ Detected Middle East → Using Makkah method");
     return "makkah";
   }
   if (AFRICA.includes(normalized)) {
-    console.log("✅ Detected Africa → Using Egypt method");
+  // console.log("✅ Detected Africa → Using Egypt method");
     return "egypt";
   }
   if (HIGH_LATITUDE.includes(normalized)) {
-    console.log("✅ Detected High Latitude → Using MWL method");
+  // console.log("✅ Detected High Latitude → Using MWL method");
     return "mwl";
   }
 
   // Fallbacks for common names
   if (normalized === "united kingdom" || normalized === "uk") {
-    console.log("✅ Detected UK → Using MWL method");
+  // console.log("✅ Detected UK → Using MWL method");
     return "mwl";
   }
   if (normalized === "singapore") {
-    console.log("✅ Detected Singapore → Using Singapore method");
+  // console.log("✅ Detected Singapore → Using Singapore method");
     return "singapore";
   }
 
   // Default to MWL if unknown
-  console.log(
-    `⚠️  Unknown country "${normalized}" → Using MWL method as fallback`
-  );
+  // console.log(
+  //   `⚠️  Unknown country "${normalized}" → Using MWL method as fallback`
+  // );
   return "mwl";
 };
 
@@ -294,13 +296,13 @@ export const fetchPrayerTimes = async (
   madhab: "shafi" | "hanafi" = "shafi"
 ): Promise<PrayerTimesResponse> => {
   try {
-    console.log("Fetching prayer times for coordinates:", {
-      latitude,
-      longitude,
-    });
+  // console.log("Fetching prayer times for coordinates:", {
+  //   latitude,
+  //   longitude,
+  // });
     // Get city name and country from coordinates
     const cityName = await getCityFromCoordinates(latitude, longitude);
-    console.log("Location resolved to:", cityName);
+  // console.log("Location resolved to:", cityName);
 
     // Try to extract country from cityName string
     let country = "Unknown";
@@ -309,23 +311,23 @@ export const fetchPrayerTimes = async (
       country = parts[parts.length - 1];
     }
 
-    console.log(`🌍 Location breakdown: "${cityName}" → Country: "${country}"`);
+  // console.log(`🌍 Location breakdown: "${cityName}" → Country: "${country}"`);
 
     let methodToUse = calculationMethod;
     if (calculationMethod === "auto") {
       methodToUse = getRecommendedMethodForCountry(country);
-      console.log(
-        `🕌 Auto calculation method: "${country}" → "${methodToUse}"`
-      );
+  // console.log(
+  //   `🕌 Auto calculation method: "${country}" → "${methodToUse}"
+  // );
     } else {
-      console.log(`🕌 Manual calculation method: "${calculationMethod}"`);
+  // console.log(`🕌 Manual calculation method: "${calculationMethod}"`);
     }
     const methodNum = getCalculationMethodNumber(methodToUse);
     // school: 0 = Shafi (default), 1 = Hanafi
     const school = madhab === "hanafi" ? 1 : 0;
     // Call Aladhan API with selected method and madhab (school) for Asr calculation
     const url = `${ALADHAN_API_URL}/timings?latitude=${latitude}&longitude=${longitude}&method=${methodNum}&school=${school}`;
-    console.log("Making request to:", url);
+  // console.log("Making request to:", url);
 
     const response = await fetch(url, {
       method: "GET",
@@ -336,14 +338,14 @@ export const fetchPrayerTimes = async (
       redirect: "follow",
     });
 
-    console.log("Response status:", response.status);
+  // console.log("Response status:", response.status);
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("API Response:", data);
+  // console.log("API Response:", data);
 
     if (data.code !== 200) {
       throw new Error(data.data || "Failed to fetch prayer times");
@@ -373,13 +375,13 @@ export const fetchPrayerTimes = async (
       method: meta.method.name || methodToUse,
     };
 
-    console.log(
-      "Successfully fetched prayer times for:",
-      transformedResponse.location
-    );
+  // console.log(
+  //   "Successfully fetched prayer times for:",
+  //   transformedResponse.location
+  // );
     return transformedResponse;
   } catch (error) {
-    console.error("Error fetching prayer times:", error);
+    // console.error("Error fetching prayer times:", error);
     throw error;
   }
 };

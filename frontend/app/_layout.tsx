@@ -5,11 +5,12 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useState, useEffect } from 'react';
+import { ensureAndroidPrayerChannel } from '@/src/services/prayerNotificationService';
 
 import { SettingsProvider, useSettings } from '@/src/contexts/SettingsContext';
-import { NotificationProvider } from '@/src/contexts/NotificationContext';
 import { PrayerTimesProvider } from '@/src/contexts/PrayerTimesContext';
-import { ensureAndroidPrayerChannel } from '@/src/services/prayerNotificationService';
+import { NotificationProvider } from '@/src/contexts/NotificationContext';
+
 
 function RootLayoutNav() {
   const { isDarkMode, settings } = useSettings() as any;
@@ -17,8 +18,8 @@ function RootLayoutNav() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  // Ensure Android notification channel is created at app startup
   useEffect(() => {
+    // Ensure Android notification channel is created at app startup
     ensureAndroidPrayerChannel();
   }, []);
 
@@ -44,11 +45,11 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <SettingsProvider>
-      <NotificationProvider>
-        <PrayerTimesProvider>
+      <PrayerTimesProvider>
+        <NotificationProvider>
           <RootLayoutNav />
-        </PrayerTimesProvider>
-      </NotificationProvider>
+        </NotificationProvider>
+      </PrayerTimesProvider>
     </SettingsProvider>
   );
 }

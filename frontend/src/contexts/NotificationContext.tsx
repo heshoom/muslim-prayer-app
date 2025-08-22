@@ -4,13 +4,15 @@ import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { useSettings } from './SettingsContext';
+import { usePrayerTimes } from './PrayerTimesContext';
 import { athanAudioService } from '../services/athanAudioService';
+import { prayerNotificationService } from '../services/prayerNotificationService';
 
 // Configure notifications
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
-    shouldPlaySound: false, // We'll handle custom sounds manually
+    shouldPlaySound: true, // Always play sound for notifications
     shouldSetBadge: false,
     shouldShowBanner: true,
     shouldShowList: true,
@@ -42,6 +44,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { settings } = useSettings();
+  const { prayerTimes } = usePrayerTimes();
   const notificationListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
   // Record app start to ignore any legacy/stale deliveries right at boot
@@ -160,11 +163,45 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       return;
     }
 
-    // Handle prayer time notifications with custom athan sounds
-    if (data?.type === 'prayer-time' && settings.notifications.adhan) {
-      await athanAudioService.playAthanSound(settings.notifications.athanSound);
+    // If this is the daily reschedule trigger, attempt to reschedule now
+    if (data?.type === 'daily-reschedule') {
+      try {
+        if (!prayerTimes) {
+          console.log('Daily-reschedule received but no prayerTimes available yet');
+        } else {
+          const locationStr = settings.location?.city ? `${settings.location.city}` : 'Unknown';
+          await prayerNotificationService.rescheduleDailyIfNeeded(prayerTimes, locationStr, settings.notifications);
+        }
+      } catch (err) {
+        console.warn('Error handling daily-reschedule trigger:', err);
+      }
+      return;
+    }
+
+    // Handle prayer time notifications with custom athan sounds.
+    // Prefer the athan information embedded in the notification payload
+    // (this is set at schedule time). Fall back to the current settings
+    // if the payload doesn't include athan data.
+    if (data?.type === 'prayer-time') {
+      const athanEnabled = (typeof data?.athanEnabled !== 'undefined') ? data?.athanEnabled : settings.notifications.adhan;
+      const athanToPlay = data?.athanSound || settings.notifications.athanSound;
+      const nativeSound = notification.request?.content?.sound;
+      if (!athanEnabled) {
+        console.log('Athan disabled for this prayer notification, skipping playback');
+      } else if (nativeSound) {
+        // A native notification sound is present in the payload (e.g. bundled .aiff).
+        // The OS will play that sound; avoid duplicating audio by not playing JS athan here.
+        console.log('Native notification sound present, skipping JS athan playback to avoid double audio', { nativeSound });
+      } else {
+        await athanAudioService.playAthanSound(athanToPlay);
+      }
     } else if (data?.type === 'test-athan') {
-      await athanAudioService.playAthanSound(data.athanType || settings.notifications.athanSound);
+      const nativeSound = notification.request?.content?.sound;
+      if (nativeSound) {
+        console.log('Native test notification sound present, skipping JS athan playback', { nativeSound });
+      } else {
+        await athanAudioService.playAthanSound(data.athanType || settings.notifications.athanSound);
+      }
     }
   };
 
@@ -226,154 +263,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const schedulePrayerNotifications = async (prayerTimes: any) => {
+    // Delegate scheduling to the centralized service to avoid duplicate logic
     if (!settings.notifications.enabled) return;
 
-    // Cancel existing notifications first
-    await Notifications.cancelAllScheduledNotificationsAsync();
-
-    const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
-    const today = new Date();
-    const now = new Date();
-
-    for (const prayer of prayers) {
-      const prayerTime = prayerTimes[prayer];
-      if (!prayerTime) continue;
-
-      const [hours, minutes] = prayerTime.split(':').map(Number);
-      const prayerDate = new Date(today);
-      prayerDate.setHours(hours, minutes, 0, 0);
-
-      const hasPassedToday = prayerDate.getTime() <= now.getTime();
-
-      // If prayer time has passed today, schedule for tomorrow
-      if (hasPassedToday) {
-        prayerDate.setDate(prayerDate.getDate() + 1);
-        console.log(`${prayer} has passed today, scheduling for tomorrow: ${prayerDate.toLocaleString()}`);
-      } else {
-        console.log(`${prayer} is upcoming today, scheduling for: ${prayerDate.toLocaleString()}`);
-      }
-
-      // Choose trigger type based on whether prayer has passed
-      let mainTrigger: Notifications.NotificationTriggerInput;
-      if (hasPassedToday) {
-        // Use repeating trigger for prayers that have passed
-        mainTrigger = {
-          type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-          hour: hours,
-          minute: minutes,
-          repeats: true,
-        };
-      } else {
-        // Use one-time trigger for today, then schedule repeating for future
-        mainTrigger = {
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
-          date: prayerDate,
-        };
-        
-        // Also schedule repeating notification for future days
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: `🕌 ${prayer} Prayer Time`,
-            body: `It's time for ${prayer} prayer. May Allah accept your prayers.`,
-            sound: true,
-            vibrate: settings.notifications.vibrate ? [0, 250, 250, 250] : undefined,
-            data: {
-              prayer: prayer,
-              type: 'prayer-time',
-              athanType: settings.notifications.athanSound,
-              fullAthan: `${prayer.toLowerCase()}_full.m4a`,
-              isRepeating: true,
-            }
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-            hour: hours,
-            minute: minutes,
-            repeats: true,
-          },
-        });
-      }
-
-      // Schedule main prayer notification
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: `🕌 ${prayer} Prayer Time`,
-          body: `It's time for ${prayer} prayer. May Allah accept your prayers.`,
-          sound: true, // Use default system sound, custom athan handled by listener
-          vibrate: settings.notifications.vibrate ? [0, 250, 250, 250] : undefined,
-      data: {
-        prayer: prayer,
-        type: 'prayer-time',
-        athanType: settings.notifications.athanSound,
-        // include a full athan filename so the app can play it when tapped
-        fullAthan: `${prayer.toLowerCase()}_full.m4a`,
-        isRepeating: hasPassedToday,
-          }
-        },
-        trigger: mainTrigger,
-      });
-
-      // Schedule pre-prayer reminder if enabled
-      if (settings.notifications.prePrayer) {
-        const reminderDate = new Date(prayerDate);
-        reminderDate.setMinutes(reminderDate.getMinutes() - settings.notifications.prePrayerTime);
-
-        // Check if reminder time has also passed
-        const reminderHasPassed = reminderDate.getTime() <= now.getTime();
-        
-        let reminderTrigger: Notifications.NotificationTriggerInput;
-        if (reminderHasPassed) {
-          // Reminder has passed - use repeating trigger for tomorrow
-          reminderTrigger = {
-            type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-            hour: reminderDate.getHours(),
-            minute: reminderDate.getMinutes(),
-            repeats: true,
-          };
-        } else {
-          // Reminder hasn't passed - use one-time trigger for today
-          reminderTrigger = {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: reminderDate,
-          };
-          
-          // Also schedule repeating reminder for future days
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: `🔔 ${prayer} Prayer Reminder`,
-              body: `${prayer} prayer is in ${settings.notifications.prePrayerTime} minutes. Prepare for prayer.`,
-              sound: true,
-              vibrate: settings.notifications.vibrate ? [0, 150, 150, 150] : undefined,
-              data: {
-                prayer: prayer,
-                type: 'pre-prayer-reminder',
-                isRepeating: true,
-              }
-            },
-            trigger: {
-              type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-              hour: reminderDate.getHours(),
-              minute: reminderDate.getMinutes(),
-              repeats: true,
-            },
-          });
-        }
-
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: `🔔 ${prayer} Prayer Reminder`,
-            body: `${prayer} prayer is in ${settings.notifications.prePrayerTime} minutes. Prepare for prayer.`,
-            sound: true, // Default system sound for reminders
-            vibrate: settings.notifications.vibrate ? [0, 150, 150, 150] : undefined,
-            data: {
-              prayer: prayer,
-              type: 'pre-prayer-reminder',
-              isRepeating: reminderHasPassed,
-            }
-          },
-          trigger: reminderTrigger,
-        });
-      }
+    const location = settings.location?.city ? `${settings.location.city}` : 'Unknown';
+    try {
+      await prayerNotificationService.scheduleDailyNotifications(prayerTimes, location, settings.notifications);
+    } catch (err) {
+      console.error('Error delegating scheduleDailyNotifications:', err);
     }
   };
 
@@ -419,7 +316,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
-  // Schedules a local notification in ~10 seconds that uses the bundled iOS aiff
+  // Schedules a local notification in ~15 seconds that uses the bundled iOS aiff
   // This verifies that the OS can find and play the custom notification sound.
   const testIosNotificationSound = async (athanType?: string) => {
     try {
@@ -446,7 +343,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       };
       const soundName = iosMap[selected] || 'default';
 
-      const in10 = new Date(Date.now() + 10 * 1000);
+    const in15 = new Date(Date.now() + 15 * 1000);
       await Notifications.scheduleNotificationAsync({
         content: {
           title: 'iOS Custom Sound Test',
@@ -456,12 +353,12 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           data: { type: 'test-athan', athanType: selected },
         },
         trigger: Platform.select<any>({
-          ios: { date: in10 },
-          android: { seconds: 10 },
-          default: { date: in10 },
+      ios: { date: in15 },
+      android: { seconds: 15 },
+      default: { date: in15 },
         }),
       });
-      console.log('Scheduled iOS custom sound test in 10 seconds');
+    console.log('Scheduled iOS custom sound test in 15 seconds');
     } catch (err) {
       console.error('Error scheduling iOS custom sound test:', err);
     }

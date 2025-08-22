@@ -1,3 +1,31 @@
+// Instantly fire a notification (immediate delivery)
+const handleInstantNotification = async () => {
+  try {
+    console.log('[DEBUG] InstantNotification: Button pressed');
+    const perms = await Notifications.requestPermissionsAsync();
+    console.log('[DEBUG] InstantNotification: Permission status', perms.status);
+    if (perms.status !== 'granted') {
+      Alert.alert('Permission denied', 'Please allow notifications');
+      console.log('[DEBUG] InstantNotification: Permission denied');
+      return;
+    }
+    console.log('[DEBUG] InstantNotification: Scheduling notification for immediate delivery');
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Instant Notification',
+        body: 'This notification was fired instantly.',
+        sound: true,
+        vibrate: [0, 500, 250, 500],
+      },
+      trigger: null, // Immediate delivery
+    });
+    console.log('[DEBUG] InstantNotification: Notification scheduled');
+    Alert.alert('Fired', 'An instant notification was sent.');
+  } catch (error) {
+    console.error('[DEBUG] InstantNotification: Failed to fire instant notification:', error);
+    Alert.alert('Error', 'Failed to fire instant notification.');
+  }
+};
 import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
@@ -18,30 +46,84 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FontAwesome5 } from "@expo/vector-icons";
 import * as Location from 'expo-location';
 import { useSettings } from "@/src/contexts/SettingsContext";
-import { useNotifications } from "@/src/contexts/NotificationContext";
 import { usePrayerTimes } from "@/src/contexts/PrayerTimesContext";
+import { useNotifications } from "@/src/contexts/NotificationContext";
 import { lightTheme, darkTheme } from "@/src/constants/theme";
 import { CustomPicker } from "@/src/components/shared/CustomPicker";
 import FacebookStyleTransition from "@/src/components/shared/FacebookStyleTransition";
 import { useTranslation } from "@/src/i18n";
 import { clearPrayerTimesCache } from '@/src/services/prayerTimesCache';
-import { NotificationTestButton } from '@/src/components/debug/NotificationTestButton';
+import { scheduleNotificationAt } from '@/src/utils/manualNotification';
+import * as Notifications from 'expo-notifications';
+
+// Fire Test Notification button handler
+const handleFireTestNotification = async () => {
+  try {
+    console.log('[DEBUG] FireTestNotification: Button pressed');
+    const perms = await Notifications.requestPermissionsAsync();
+    console.log('[DEBUG] FireTestNotification: Permission status', perms.status);
+    if (perms.status !== 'granted') {
+      Alert.alert('Permission denied', 'Please allow notifications');
+      console.log('[DEBUG] FireTestNotification: Permission denied');
+      return;
+    }
+    console.log('[DEBUG] FireTestNotification: Scheduling notification for 2s in the future');
+    const id = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Scheduled Test Notification',
+        body: 'This is a test notification from Islamic Pro.',
+        sound: true,
+        vibrate: [0, 500, 250, 500],
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: new Date(Date.now() + 5000), // 5 seconds from now
+        repeats: false,
+      },
+    });
+    console.log('[DEBUG] FireTestNotification: Notification scheduled, id=', id);
+    try {
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      console.log('[DEBUG] FireTestNotification: All scheduled notifications', scheduled);
+    } catch (e) {
+      console.warn('[DEBUG] FireTestNotification: Could not list scheduled notifications', e);
+    }
+    Alert.alert('Scheduled', 'A test notification will fire in 2 seconds.');
+  } catch (error) {
+    console.error('[DEBUG] FireTestNotification: Failed to schedule test notification:', error);
+    Alert.alert('Error', 'Failed to schedule test notification.');
+  }
+};
 
 const Settings = () => {
   const { settings, updateSettings, isDarkMode } = useSettings();
-  const { testIosNotificationSound } = useNotifications();
   const { clearCache } = usePrayerTimes();
+  const { testIosNotificationSound } = useNotifications();
   const theme = isDarkMode ? darkTheme : lightTheme;
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useTranslation();
 
   const [showLocationTutorial, setShowLocationTutorial] = useState(false);
   const [locationPermissionStatus, setLocationPermissionStatus] = useState(null);
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+  const [scheduledNotifications, setScheduledNotifications] = useState([]);
 
   // Check location permission status when component mounts
   useEffect(() => {
     checkLocationPermission();
   }, []);
+const handleDumpScheduledNotifications = async () => {
+  try {
+    console.log('[DEBUG] DumpScheduled: Button pressed');
+    const list = await Notifications.getAllScheduledNotificationsAsync();
+    console.log('[DEBUG] DumpScheduled: fetched', list);
+    setScheduledNotifications(list || []);
+    setShowNotificationsModal(true);
+  } catch (error) {
+    console.error('[DEBUG] DumpScheduled: Failed to fetch scheduled notifications', error);
+    Alert.alert('Error', 'Failed to load scheduled notifications. See console for details.');
+  }
+};
 
   // Listen for app state changes to refresh permission status
   useEffect(() => {
@@ -140,6 +222,31 @@ const Settings = () => {
               Alert.alert(t('success') || 'Success', t('cacheCleared') || 'Cache cleared successfully!');
             } catch (error) {
               Alert.alert(t('error') || 'Error', t('failedToClearCache') || 'Failed to clear cache');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // DEBUG: Reset onboarding for testing (remove in production)
+  const handleResetOnboarding = () => {
+    Alert.alert(
+      '🔄 Reset Onboarding (Debug)',
+      'This will reset the onboarding flow and restart the app. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+              await AsyncStorage.multiRemove(['userSettings', 'app:lastBuildId']);
+              Alert.alert('✅ Success', 'Onboarding reset! Please reload the app to see the welcome screen.');
+            } catch (error) {
+              console.error('Error resetting onboarding:', error);
+              Alert.alert('❌ Error', 'Failed to reset onboarding');
             }
           },
         },
@@ -283,14 +390,12 @@ const Settings = () => {
                           ]}
                           onPress={async () => {
                             try {
+                              console.log('[DEBUG] iOSTestNotification: Button pressed');
                               await testIosNotificationSound(settings.notifications.athanSound);
-                              Alert.alert(
-                                'iOS Notification Test Scheduled',
-                                'Lock your device; a notification with the bundled aiff sound will play in ~10 seconds.',
-                                [{ text: 'OK' }]
-                              );
-                            } catch (e) {
-                              console.error('Error scheduling iOS sound test:', e);
+                              Alert.alert('Scheduled', 'iOS notification scheduled in ~10 seconds for sound test.');
+                            } catch (err) {
+                              console.error('[DEBUG] iOSTestNotification: Failed to schedule iOS test:', err);
+                              Alert.alert('Error', 'Failed to schedule iOS notification test.');
                             }
                           }}
                         >
@@ -329,14 +434,13 @@ const Settings = () => {
                   </View>
                 </View>
 
+                {/* Pre-prayer reminders */}
                 <View style={[styles.settingItem, styles.switchItem]}>
                   <View style={styles.settingHeader}>
                     <View style={styles.settingTextContainer}>
-                      <Text style={styles.settingTitle}>
-                        {t("prePrayerReminder")}
-                      </Text>
+                      <Text style={styles.settingTitle}>Pre-prayer Reminders</Text>
                       <Text style={styles.settingDescription}>
-                        Get notified before prayer time
+                        Receive a reminder a few minutes before each prayer
                       </Text>
                     </View>
                     <Switch
@@ -350,33 +454,30 @@ const Settings = () => {
                       }
                     />
                   </View>
-                  {settings.notifications.prePrayer && (
-                    <View style={[styles.settingItem, styles.pickerItem]}>
-                      <Text style={styles.settingTitle}>Reminder Time</Text>
-                      <Text style={styles.settingDescription}>
-                        How early to be notified
-                      </Text>
-                      <CustomPicker
-                        selectedValue={settings.notifications.prePrayerTime}
-                        onValueChange={(value) =>
-                          updateSettings(
-                            "notifications",
-                            "prePrayerTime",
-                            value
-                          )
-                        }
-                        items={[
-                          { label: `5 ${t("minutesBefore")}`, value: 5 },
-                          { label: `10 ${t("minutesBefore")}`, value: 10 },
-                          { label: `15 ${t("minutesBefore")}`, value: 15 },
-                          { label: `30 ${t("minutesBefore")}`, value: 30 },
-                        ]}
-                        title="Select Reminder Time"
-                        theme={theme}
-                      />
-                    </View>
-                  )}
                 </View>
+
+                {settings.notifications.prePrayer && (
+                  <View style={[styles.settingItem, styles.pickerItem]}>
+                    <Text style={styles.settingTitle}>Reminder time before prayer</Text>
+                    <Text style={styles.settingDescription}>
+                      How many minutes before prayer should the reminder fire?
+                    </Text>
+                    <CustomPicker
+                      selectedValue={settings.notifications.prePrayerTime}
+                      onValueChange={(value) =>
+                        updateSettings("notifications", "prePrayerTime", value)
+                      }
+                      items={[
+                        { label: '5 minutes', value: 5 },
+                        { label: '10 minutes', value: 10 },
+                        { label: '15 minutes', value: 15 },
+                        { label: '30 minutes', value: 30 },
+                      ]}
+                      title="Reminder offset"
+                      theme={theme}
+                    />
+                  </View>
+                )}
               </>
             )}
           </View>
@@ -673,9 +774,25 @@ const Settings = () => {
               </View>
             </TouchableOpacity>
 
-            <View style={styles.settingItem}>
-              <NotificationTestButton />
-            </View>
+            {/* DEBUG: Reset Onboarding Button - Remove in production
+            <TouchableOpacity
+              style={[styles.settingItem, styles.linkItem]}
+              onPress={handleResetOnboarding}
+            >
+              <View style={styles.settingHeader}>
+                <View style={styles.settingTextContainer}>
+                  <Text style={[styles.settingTitle, { color: '#e74c3c' }]}>🔄 Reset Onboarding (Debug)</Text>
+                  <Text style={styles.settingDescription}>
+                    Reset app to show welcome screen again
+                  </Text>
+                </View>
+                <FontAwesome5 
+                  name="redo" 
+                  size={16} 
+                  color="#e74c3c" 
+                />
+              </View>
+            </TouchableOpacity> */}
 
             <View style={[styles.settingItem, styles.infoItem]}>
               <View style={styles.settingTextContainer}>
@@ -686,6 +803,8 @@ const Settings = () => {
               </View>
             </View>
           </View>
+
+          {/* Push notification debug tools removed in this build */}
 
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
             <Text style={styles.saveButtonText}>{t("saveChanges")}</Text>
@@ -804,7 +923,38 @@ const Settings = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+      </SafeAreaView>
+      {/* Scheduled Notifications Modal */}
+      <Modal
+        visible={showNotificationsModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowNotificationsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxWidth: 600 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text.primary }]}>Scheduled Notifications</Text>
+            </View>
+            <ScrollView style={{ maxHeight: 400, marginBottom: 12 }}>
+              {scheduledNotifications.length === 0 && (
+                <Text style={{ color: theme.text.secondary }}>No scheduled notifications found.</Text>
+              )}
+              {scheduledNotifications.map((n, idx) => (
+                <View key={n.identifier || idx} style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.border }}>
+                  <Text style={{ fontWeight: '600' }}>{n.content?.title || 'Untitled'}</Text>
+                  <Text style={{ color: theme.text.secondary }}>{n.content?.body}</Text>
+                  <Text style={{ color: theme.text.secondary, fontSize: 12 }}>{JSON.stringify(n.trigger || n.content?.data || {})}</Text>
+                  <Text style={{ color: theme.text.secondary, fontSize: 12 }}>ID: {n.identifier}</Text>
+                </View>
+              ))}
+            </ScrollView>
+            <TouchableOpacity style={[styles.modalButton, { backgroundColor: theme.primary }]} onPress={() => setShowNotificationsModal(false)}>
+              <Text style={{ color: '#fff', fontWeight: '600' }}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </FacebookStyleTransition>
   );
 };

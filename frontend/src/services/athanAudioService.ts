@@ -75,10 +75,10 @@ class AthanAudioService {
       console.log(`Testing athan sound: ${athanType}`);
       await this.playAthanSound(athanType);
       
-      // For testing, stop after 10 seconds
+      // For testing, stop after 15 seconds
       setTimeout(async () => {
         await this.stopCurrentSound();
-      }, 10000);
+      }, 15000);
     } catch (error) {
       console.error('Error testing athan sound:', error);
     }

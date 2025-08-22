@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Platform, Alert, View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
-import { useNotifications } from '@/src/contexts/NotificationContext';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { usePrayerTimes } from '@/src/contexts/PrayerTimesContext';
@@ -17,6 +18,7 @@ export default function Welcome() {
   const [locGranted, setLocGranted] = useState<boolean | null>(null);
   const [notifGranted, setNotifGranted] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
+  const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
   const { refreshPrayerTimes } = usePrayerTimes();
 
   useEffect(() => {
@@ -76,28 +78,48 @@ export default function Welcome() {
     }
   };
 
-  const notifCtx = useNotifications();
-
   const requestNotifications = async () => {
     try {
       setBusy(true);
-      console.log('Requesting notification permission...');
-      await notifCtx.requestPermissionsIfNeeded();
-      const { status } = await Notifications.getPermissionsAsync();
-      const granted = status === 'granted';
-      setNotifGranted(granted);
-      
-      if (!granted) {
-        Alert.alert(
-          t('notificationsDisabled') || 'Notifications not enabled',
-          t('enableNotificationsHint') || 'You can enable notifications later in Settings.'
-        );
-      } else {
-        console.log('Notification permission granted');
+      // Request permission and obtain Expo push token
+      if (!Device.isDevice) {
+        Alert.alert('Physical device required', 'Push notifications require a physical device.');
+        setBusy(false);
+        return;
+      }
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync({
+          ios: { allowAlert: true, allowBadge: true, allowSound: true },
+        });
+        finalStatus = status;
+      }
+      if (finalStatus !== 'granted') {
+        Alert.alert('Permission denied', 'Notification permission was not granted. You can enable it later in Settings.');
+        setNotifGranted(false);
+        setBusy(false);
+        return;
+      }
+      // resolve projectId from Constants
+      const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+      console.log('Resolved projectId for push registration:', projectId);
+      if (!projectId) {
+        Alert.alert('Configuration error', 'Project ID not found. Cannot register for push notifications.');
+        setBusy(false);
+        return;
+      }
+      try {
+        const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+        console.log('Obtained Expo push token:', token);
+        setExpoPushToken(token);
+        setNotifGranted(true);
+      } catch (err) {
+        console.warn('Failed to obtain push token:', err);
+        Alert.alert('Error', 'Failed to obtain push token.');
       }
     } catch (error) {
-      console.error('Error requesting notification permission:', error);
-      Alert.alert('Error', 'There was an error requesting notification permission. Please try again.');
+      console.error('Error handling notification request:', error);
     } finally {
       setBusy(false);
     }
@@ -136,17 +158,11 @@ export default function Welcome() {
         console.warn('Error loading prayer times during onboarding:', e);
       }
 
-      // Mark onboarding as completed
-      updateSettings('onboarding' as any, 'completed', true);
-
-      // Schedule notifications if permissions were granted
-      if (notifGranted) {
-        try {
-          await notifCtx.requestPermissionsIfNeeded();
-        } catch (e) {
-          console.warn('Error setting up notifications after onboarding:', e);
-        }
-      }
+  // Mark onboarding as completed. Notification setup will run from the
+  // PrayerTimesContext after onboarding is marked completed. Avoid
+  // requesting notification permission here to prevent prompting before
+  // the user explicitly opts in via the notifications card.
+  updateSettings('onboarding' as any, 'completed', true);
 
       console.log('Onboarding completed, navigating to home');
       router.replace('/(tabs)');

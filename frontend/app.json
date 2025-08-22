@@ -13,10 +13,13 @@
   "bundleIdentifier": "com.heshoom.islamicpro",
   "buildNumber": "10",
       "icon": "./assets/images/icon.png",
-      "infoPlist": {
+    "infoPlist": {
   "ITSAppUsesNonExemptEncryption": false,
-  "UIBackgroundModes": ["fetch", "remote-notification"]
-      },
+  "UIBackgroundModes": ["fetch", "remote-notification"],
+  "NSLocationWhenInUseUsageDescription": "This app uses your location to show nearby prayer times.",
+  "NSLocationAlwaysUsageDescription": "This app needs access to your location to provide accurate reminders even in the background.",
+  "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs location access to function properly in the background and foreground."
+  },
       "entitlements": {
         "com.apple.developer.usernotifications.time-sensitive": true
       }

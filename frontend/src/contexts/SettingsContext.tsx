@@ -46,7 +46,7 @@ const defaultSettings: SettingsType = {
   notifications: {
     enabled: true,
     adhan: true,
-    athanSound: "makkah",
+  athanSound: "madinah",
     vibrate: true,
     prePrayer: false,
     prePrayerTime: 15,

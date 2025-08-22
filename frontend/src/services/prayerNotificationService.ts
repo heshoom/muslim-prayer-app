@@ -4,6 +4,82 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PrayerTimes } from './prayerTimesService';
 import { athanAudioService } from './athanAudioService';
 
+/**
+ * Notification system overview
+ * ----------------------------
+ * This service centralizes all scheduling, cancellation and rescheduling logic
+ * for prayer-time notifications. Key behaviours and flow:
+ *
+ * 1) Initialization / permissions
+ *    - Call `setupNotifications()` to request OS notification permissions.
+ *    - On Android we ensure a dedicated channel via `ensureAndroidPrayerChannel()`
+ *      (high importance / heads-up, bypass DND where possible).
+ *
+ * 2) Daily scheduling (primary entrypoint)
+ *    - `scheduleDailyNotifications(prayerTimes, location, settings)` is the
+ *      main routine used to schedule notifications for the current day.
+ *    - It implements a "clean slate" approach:
+ *        a) Cancels all existing scheduled notifications.
+ *        b) Computes a schedule signature (date + location + settings + times)
+ *           and persists it under 'prayerNotifications:lastScheduleSignature'.
+ *           If the signature matches the stored value for today, the call is
+ *           a no-op (prevents duplicate scheduling during settings churn).
+ *        c) Parses the five canonical prayer times and converts them to
+ *           Date objects for today.
+ *        d) Filters only upcoming times (future relative to now) and
+ *           schedules those using `schedulePrayerNotificationWithFutureGuard()`.
+ *    - The above guarantees we never re-schedule past-times for today and
+ *      avoids backlog/double-delivery issues when settings change.
+ *
+ * 3) Per-prayer scheduling details
+ *    - `schedulePrayerNotificationWithFutureGuard()` performs validation and
+ *      only schedules a one-time notification for today if the time is still
+ *      in the future.
+ *    - `schedulePrayerNotification()` is the lower-level helper that can
+ *      schedule either a one-time date trigger (for today) or a repeating
+ *      calendar trigger (for future days). Behavior:
+ *        - If the time has already passed today, a repeating calendar trigger
+ *          is created (repeats daily starting tomorrow).
+ *        - If the time is upcoming today, a one-time trigger is scheduled for
+ *          today AND a separate repeating calendar notification is also
+ *          scheduled for future days (so daily delivery continues).
+ *    - Notification payload `data` contains metadata (prayerName, prayerTime,
+ *      scheduledAt, scheduleSignature, isRepeating, type='prayer-time') which
+ *      allows targeted cancellation and handling in `NotificationContext`.
+ *
+ * 4) Cancellation / targeted cleanup
+ *    - Several helpers exist: `cancelAllNotifications()`,
+ *      `cancelNotificationsByDate()`, `cancelNotificationsBySignature()`,
+ *      and `cancelNotificationsByType()` to remove stale or undesired
+ *      scheduled entries.
+ *
+ * 5) Daily reschedule guard
+ *    - `rescheduleDailyIfNeeded(prayerTimes, location, settings)` is a
+ *      lightweight guard that checks AsyncStorage key `app:lastScheduledDay`.
+ *      If a new day is detected, it calls `scheduleDailyNotifications()` to
+ *      refresh schedules. This method is intended to be invoked from an
+ *      app-start hook or background task (no automatic OS job is relied on
+ *      in this trimmed build).
+ *
+ * 6) Audio handling
+ *    - The service sets `sound` and vibration hints on scheduled notifications
+ *      but central audio playback (full athan playback) is handled by the
+ *      app-level `NotificationContext` using `athanAudioService` to avoid
+ *      double playback and keep notification handlers consolidated.
+ *
+ * Persistence keys of interest:
+ *    - 'prayerNotifications:lastScheduleSignature' : last schedule signature
+ *      for today (prevents duplicate schedules)
+ *    - 'app:lastScheduledDay' : ISO date string of last day the app scheduled
+ *      notifications (used by daily rescheduler guard)
+ *
+ * Notes / rationale:
+ *  - We prefer a clean-cancel-and-reschedule pattern to avoid duplicate
+ *    notifications when settings change or the user re-runs the scheduler.
+ *  - Pre-prayer reminders and debug helpers were intentionally disabled in
+ *    this build; the core five-prayer scheduling remains active.
+ */
+
 // Ensure Android notification channel is created at startup
 export async function ensureAndroidPrayerChannel(): Promise<void> {
   if (Platform.OS !== 'android') return;
@@ -33,6 +109,7 @@ export interface NotificationSettings {
   vibrate: boolean;
   prePrayer: boolean;
   prePrayerTime: number;
+  timeFormat?: string; // '12h' or '24h'
 }
 
 // Note: The global notification handler is configured in NotificationContext.
@@ -56,8 +133,7 @@ export interface PrayerNotificationService {
     settings: NotificationSettings
   ) => Promise<void>;
   cancelAllNotifications: () => Promise<void>;
-  getScheduledNotificationsSummary: () => Promise<string>;
-  testNotification: () => Promise<void>;
+  // Debug helpers removed in this build
 }
 
 class PrayerNotificationServiceImpl implements PrayerNotificationService {
@@ -159,6 +235,21 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
       console.log('Cancelled all existing notifications for clean daily reschedule');
 
       const canonicalLocation = (typeof location === 'string' && location.length < 40) ? location : 'Unknown';
+      // Build a schedule signature so we can avoid redundant reschedules during
+      // settings churn (e.g. toggling pre-prayer). This prevents duplicate
+      // scheduling that could lead to immediate/backlog deliveries.
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const signature = `${todayKey}|${canonicalLocation}|${settings.enabled}|${settings.adhan}|${settings.athanSound}|${settings.vibrate}|${prayerTimes.Fajr}|${prayerTimes.Dhuhr}|${prayerTimes.Asr}|${prayerTimes.Maghrib}|${prayerTimes.Isha}|pre:${settings.prePrayer}|preMin:${settings.prePrayerTime}`;
+      const SIG_KEY = 'prayerNotifications:lastScheduleSignature';
+      try {
+        const prev = await AsyncStorage.getItem(SIG_KEY);
+        if (prev === signature) {
+          console.log('Prayer notifications already scheduled for today with same signature; skipping reschedule.');
+          return;
+        }
+      } catch (e) {
+        // ignore storage errors and continue scheduling
+      }
       const prayers = [
         { name: 'Fajr', time: prayerTimes.Fajr },
         { name: 'Dhuhr', time: prayerTimes.Dhuhr },
@@ -167,32 +258,124 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
         { name: 'Isha', time: prayerTimes.Isha },
       ];
 
-      // Schedule both prayer notifications and pre-prayer reminders with future date guards
-      for (const prayer of prayers) {
-        // Schedule the main prayer notification
-        await this.schedulePrayerNotificationWithFutureGuard(
-          prayer.name, 
-          prayer.time, 
-          canonicalLocation, 
-          settings
-        );
+      // Convert to Date objects for today and filter only those still in the future
+      const now = new Date();
+      const today = new Date();
+      const parsedPrayers = prayers.map(p => {
+        const clean = (p.time || '').toString().replace(/[^0-9:]/g, '').trim();
+        const parts = (clean || '').split(':').map(Number);
+        const hr = Number.isFinite(parts[0]) ? parts[0] : NaN;
+        const mn = Number.isFinite(parts[1]) ? parts[1] : 0;
+        const dt = new Date(today);
+        if (Number.isFinite(hr)) dt.setHours(hr, mn, 0, 0);
+        return { ...p, date: dt };
+      });
 
-        // Schedule pre-prayer reminder if enabled
-        if (settings.prePrayer && settings.prePrayerTime > 0) {
-          await this.schedulePrePrayerReminderWithFutureGuard(
-            prayer.name, 
-            prayer.time, 
-            canonicalLocation, 
-            settings
+      // Schedule all five canonical prayers. For prayers that haven't passed
+      // today we'll schedule a one-time notification for today and a repeating
+      // notification for future days. For prayers that have already passed
+      // today we'll schedule a repeating notification starting tomorrow.
+      // Using the lower-level schedulePrayerNotification keeps this behaviour
+      // consistent and avoids skipping any prayer entirely.
+      for (const p of parsedPrayers) {
+        try {
+          await this.schedulePrayerNotification(
+            p.name,
+            p.time,
+            canonicalLocation,
+            new Date(),
+            settings,
+            signature
           );
+        } catch (innerErr) {
+          console.error(`Failed to schedule prayer ${p.name}:`, innerErr);
         }
       }
 
+      // Schedule pre-prayer reminders if enabled
+      if (settings.prePrayer) {
+        for (const p of parsedPrayers) {
+          try {
+            await this.schedulePrePrayerReminderWithFutureGuard(
+              p.name,
+              p.time,
+              canonicalLocation,
+              settings.prePrayerTime,
+              settings
+            );
+          } catch (innerErr) {
+            console.error(`Failed to schedule pre-prayer reminder for ${p.name}:`, innerErr);
+          }
+        }
+      }
+
+      // Persist signature so repeated calls with identical state do nothing
+      try {
+        await AsyncStorage.setItem(SIG_KEY, signature);
+        // Also mark the last scheduled day to prevent reschedules within the same day
+        await AsyncStorage.setItem('app:lastScheduledDay', todayKey);
+      } catch (e) {
+        // best-effort
+      }
       console.log('Daily prayer notifications and reminders scheduled successfully');
+      // Also schedule a daily reschedule job so the app can refresh schedules
+      // at a consistent time each day. This schedules a repeating notification
+      // with type 'daily-reschedule' that the app listens for and responds to
+      // by re-fetching/rescheduling prayer notifications. Best-effort only.
+      try {
+        await this.scheduleDailyRescheduleJob();
+      } catch (e) {
+        // best-effort
+        console.warn('Failed to schedule daily reschedule job:', e);
+      }
     } catch (error) {
       console.error('Error scheduling daily prayer notifications:', error);
     }
   }
+
+  // Schedule a lightweight repeating notification used to trigger a daily
+  // reschedule action. NotificationContext listens for data.type === 'daily-reschedule'
+  // and runs the reschedule routine. We avoid scheduling duplicates using AsyncStorage.
+  private async scheduleDailyRescheduleJob(): Promise<void> {
+    try {
+      const KEY = 'prayerNotifications:dailyRescheduleScheduled';
+      const already = await AsyncStorage.getItem(KEY);
+      if (already === '1') return;
+
+      // Schedule at 00:05 local time (small grace after midnight)
+      const now = new Date();
+      const next = new Date(now);
+      next.setHours(0, 5, 0, 0);
+      if (next.getTime() <= now.getTime()) next.setDate(next.getDate() + 1);
+      const hour = next.getHours();
+      const minute = next.getMinutes();
+
+      const trigger = Platform.select({
+        ios: ({ hour, minute, repeats: true } as any),
+        android: ({ hour, minute, repeats: true, channelId: 'prayer-times' } as any),
+        default: ({ hour, minute, repeats: true } as any),
+      }) as any;
+
+      const id = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Daily reschedule',
+          body: 'Refreshing daily prayer notification schedules',
+          data: { type: 'daily-reschedule' },
+        },
+        trigger,
+      });
+
+      await AsyncStorage.setItem(KEY, '1');
+      console.log('Scheduled daily reschedule job, ID:', id, 'trigger:', { hour, minute });
+    } catch (error) {
+      console.warn('Error scheduling daily reschedule job:', error);
+    }
+  }
+
+  // scheduleDailyRescheduleJob removed — debug scheduling disabled
+  // async scheduleDailyRescheduleJob(): Promise<void> {
+  //   // removed
+  // }
   async stopCurrentSound(): Promise<void> {
     try {
       await athanAudioService.stopCurrentSound();
@@ -249,10 +432,12 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
 
       const now = new Date();
       
-      // SIMPLE LOGIC: Only schedule if prayer time is in the future
-      if (notificationDate <= now) {
-        console.log(`${prayerName} has already passed today, skipping notification`);
-        return; // Don't schedule anything for past prayers
+      // SIMPLE LOGIC: Only schedule if prayer time is in the future.
+      // Use a small grace window to avoid scheduling times that are effectively now
+      const GRACE_MS = 2000; // 2 seconds
+      if (notificationDate.getTime() <= now.getTime() + GRACE_MS) {
+        console.log(`${prayerName} has already passed (or within grace window) today, skipping notification`);
+        return; // Don't schedule anything for past/near-immediate prayers
       }
 
       console.log(`${prayerName} is upcoming today, scheduling for: ${notificationDate.toLocaleString()}`);
@@ -266,12 +451,19 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
         }
       }
 
-      // Schedule the notification
+      // Schedule the notification using a TIME_INTERVAL trigger (seconds from now)
+      const seconds = Math.max(1, Math.ceil((notificationDate.getTime() - now.getTime()) / 1000));
+      const trigger: any = {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds,
+        repeats: false,
+      };
+
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title: `${prayerName} Prayer Time`,
-          body: settings.adhan 
-            ? `It's time for ${prayerName} prayer in ${location}. 🕌` 
+          body: settings.adhan
+            ? `It's time for ${prayerName} prayer in ${location}. 🕌`
             : `It's time for ${prayerName} prayer in ${location}`,
           sound: soundUri,
           vibrate: settings.vibrate ? [0, 500, 250, 500] : undefined,
@@ -287,14 +479,92 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
             scheduledAt: notificationDate.getTime(),
           },
         },
-        trigger: {
-          date: notificationDate,
-        } as any,
+        trigger,
       });
 
-      console.log(`Scheduled ${prayerName} notification for ${notificationDate.toLocaleString()}, ID: ${notificationId}`);
+      console.log(`Scheduled ${prayerName} notification for ${notificationDate.toLocaleString()} (in ${seconds}s), ID: ${notificationId}`);
     } catch (error) {
       console.error(`Error scheduling ${prayerName} notification:`, error);
+    }
+  }
+
+  private async schedulePrePrayerReminderWithFutureGuard(
+    prayerName: string,
+    prayerTime: string,
+    location: string,
+    minutesBefore: number,
+    settings: NotificationSettings
+  ): Promise<void> {
+    try {
+  // Sanitize time string
+  const clean = (prayerTime || '').toString().replace(/[^\d:]/g, '').trim();
+      const parts = clean.split(':');
+      const hours = Number(parts[0]);
+      const minutes = Number(parts[1]);
+
+      const isValid = Number.isFinite(hours) && Number.isFinite(minutes);
+      if (!isValid) {
+        console.warn(`Skipping pre-prayer for ${prayerName}: invalid time string "${prayerTime}"`);
+        return;
+      }
+
+      const notificationDate = new Date();
+      notificationDate.setHours(hours, minutes, 0, 0);
+      notificationDate.setMinutes(notificationDate.getMinutes() - Number(minutesBefore));
+
+      const now = new Date();
+      const GRACE_MS = 2000; // 2 seconds
+      if (notificationDate.getTime() <= now.getTime() + GRACE_MS) {
+        console.log(`Pre-prayer reminder for ${prayerName} would be in the past or within grace window, skipping`);
+        return;
+      }
+
+      const contentTitle = `Reminder: ${prayerName} in ${minutesBefore} min`;
+      // Format displayed time according to settings.timeFormat if provided
+      let displayTime = prayerTime;
+      try {
+        const dt = new Date();
+        dt.setHours(hours, minutes, 0, 0);
+        if (settings.timeFormat === '12h') {
+          // use locale time with AM/PM
+          displayTime = dt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+        } else {
+          // default to 24h
+          displayTime = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+      } catch (e) {
+        // fallback to raw prayerTime string
+        displayTime = prayerTime;
+      }
+      const contentBody = `Upcoming ${prayerName} prayer in ${minutesBefore} minutes at ${displayTime}`;
+
+      const seconds = Math.max(1, Math.ceil((notificationDate.getTime() - now.getTime()) / 1000));
+      const trigger: any = {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds,
+        repeats: false,
+      };
+
+      const id = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: contentTitle,
+          body: contentBody,
+          sound: false,
+          vibrate: settings.vibrate ? [0, 250, 250] : undefined,
+          data: {
+            type: 'pre-prayer',
+            prayerName,
+            prayerTime,
+            minutesBefore,
+            location,
+          },
+        },
+        trigger,
+      });
+
+      console.log(`Scheduled pre-prayer reminder for ${prayerName} at ${notificationDate.toLocaleString()}, ID: ${id}`);
+    } catch (error) {
+      console.error(`Error scheduling pre-prayer reminder for ${prayerName}:`, error);
     }
   }
 
@@ -325,7 +595,8 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
       notificationDate.setHours(hours, minutes, 0, 0);
 
       const now = new Date();
-      const hasPassedToday = notificationDate.getTime() <= now.getTime();
+  const GRACE_MS = 2000; // 2 seconds
+  const hasPassedToday = notificationDate.getTime() <= now.getTime() + GRACE_MS;
       
       // If prayer time has passed today, schedule for tomorrow
       if (hasPassedToday) {
@@ -348,336 +619,50 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
 
       const scheduledAt = notificationDate.getTime();
 
-      // For prayer times that haven't passed today, use a one-time trigger for today
-      // and schedule a separate repeating notification for future days
-      let trigger: Notifications.NotificationTriggerInput;
-      
-      if (hasPassedToday) {
-        // Prayer has passed today - use repeating calendar trigger starting tomorrow
-        trigger = Platform.select({
-          ios: ({
-            hour: hours,
-            minute: minutes,
-            repeats: true,
-          } as any),
-          android: ({
-            hour: hours,
-            minute: minutes,
-            repeats: true,
-            channelId: 'prayer-times',
-          } as any),
-          default: ({
-            hour: hours,
-            minute: minutes,
-            repeats: true,
-          } as any),
-        }) as any;
-      } else {
-        // Prayer hasn't passed today - use one-time trigger for today
-        trigger = {
-          date: notificationDate,
-        } as any;
-        
-        // Also schedule a repeating notification for future days
-        const repeatTrigger = Platform.select({
-          ios: ({
-            hour: hours,
-            minute: minutes,
-            repeats: true,
-          } as any),
-          android: ({
-            hour: hours,
-            minute: minutes,
-            repeats: true,
-            channelId: 'prayer-times',
-          } as any),
-          default: ({
-            hour: hours,
-            minute: minutes,
-            repeats: true,
-          } as any),
-        }) as any;
-
-        // Schedule the repeating notification with a different ID
-        const repeatNotificationId = await Notifications.scheduleNotificationAsync({
-          content: {
-            title: `${prayerName} Prayer Time`,
-            body: settings.adhan 
-              ? `It's time for ${prayerName} prayer in ${location}. 🕌` 
-              : `It's time for ${prayerName} prayer in ${location}`,
-            sound: soundUri,
-            vibrate: settings.vibrate ? [0, 500, 250, 500] : undefined,
-            interruptionLevel: Platform.OS === 'ios' ? 'timeSensitive' : undefined,
-            priority: Platform.OS === 'android' ? Notifications.AndroidNotificationPriority.MAX : undefined,
-            data: {
-              prayerName,
-              prayerTime,
-              location,
-              type: 'prayer-time',
-              athanEnabled: settings.adhan,
-              athanSound: settings.athanSound,
-              scheduledAt,
-              scheduleSignature,
-              isRepeating: true,
-            },
-          },
-          trigger: repeatTrigger,
-        });
-        
-        console.log(`Scheduled repeating ${prayerName} notification for future days, ID: ${repeatNotificationId}`);
-      }
+      // Use a TIME_INTERVAL one-time trigger for today's/tomorrow's notification.
+      const seconds = Math.max(1, Math.ceil((notificationDate.getTime() - now.getTime()) / 1000));
+      const triggerTimeInterval: any = {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds,
+        repeats: false,
+      };
 
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title: `${prayerName} Prayer Time`,
-          body: settings.adhan 
-            ? `It's time for ${prayerName} prayer in ${location}. \ud83d\udd4c` 
+          body: settings.adhan
+            ? `It's time for ${prayerName} prayer in ${location}. \ud83d\udd4c`
             : `It's time for ${prayerName} prayer in ${location}`,
           sound: soundUri,
           vibrate: settings.vibrate ? [0, 500, 250, 500] : undefined,
-          // iOS: ensure immediate delivery (requires time-sensitive entitlement enabled)
           interruptionLevel: Platform.OS === 'ios' ? 'timeSensitive' : undefined,
-          // Android: highest priority for heads-up
           priority: Platform.OS === 'android' ? Notifications.AndroidNotificationPriority.MAX : undefined,
           data: {
             prayerName,
             prayerTime,
             location,
-            // Align with NotificationContext to centralize audio handling
             type: 'prayer-time',
             athanEnabled: settings.adhan,
             athanSound: settings.athanSound,
             scheduledAt,
             scheduleSignature,
-            isRepeating: hasPassedToday,
+            isRepeating: false,
           },
         },
-        trigger,
+        trigger: triggerTimeInterval,
       });
 
-      if (hasPassedToday) {
-        console.log(`Scheduled ${prayerName} repeating notification starting tomorrow, ID: ${notificationId}, Sound: ${soundUri}`);
-      } else {
-        console.log(`Scheduled ${prayerName} notification for today at ${notificationDate.toLocaleString()}, ID: ${notificationId}, Sound: ${soundUri}`);
-      }
+      console.log(`Scheduled ${prayerName} notification for ${notificationDate.toLocaleString()} (in ${seconds}s), ID: ${notificationId}, Sound: ${soundUri}`);
     } catch (error) {
       console.error(`Error scheduling ${prayerName} notification:`, error);
     }
   }
 
-  private async schedulePrePrayerReminderWithFutureGuard(
-    prayerName: string,
-    prayerTime: string,
-    location: string,
-    settings: NotificationSettings
-  ): Promise<void> {
-    try {
-      // Sanitize time string (handles values like "05:13 (EDT)" or "05:13:00")
-      const clean = (prayerTime || '').toString().replace(/[^\d:]/g, '').trim();
-      const parts = clean.split(':');
-      const hours = Number(parts[0]);
-      const minutes = Number(parts[1]);
+  // schedulePrePrayerReminderWithFutureGuard removed — pre-prayer reminders disabled in this build
+  // private async schedulePrePrayerReminderWithFutureGuard(...) { /* removed */ }
 
-      // Validate parsed values
-      const isValid = Number.isFinite(hours) && Number.isFinite(minutes) && hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
-      if (!isValid) {
-        console.warn(`Skipping pre-prayer reminder for ${prayerName}: invalid time string "${prayerTime}" -> parsed "${clean}"`);
-        return;
-      }
-
-      // Calculate reminder time (prayer time minus pre-prayer minutes)
-      const prayerDate = new Date();
-      prayerDate.setHours(hours, minutes, 0, 0);
-      
-      const reminderDate = new Date(prayerDate.getTime() - (settings.prePrayerTime * 60 * 1000));
-      const now = new Date();
-
-      // SIMPLE LOGIC: Only schedule if reminder time is in the future
-      if (reminderDate <= now) {
-        console.log(`${prayerName} reminder has already passed today, skipping notification`);
-        return; // Don't schedule anything for past reminders
-      }
-
-      console.log(`${prayerName} reminder is upcoming today, scheduling for: ${reminderDate.toLocaleString()}`);
-
-      // Schedule the reminder notification
-      const notificationId = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: `🔔 ${prayerName} Prayer Reminder`,
-          body: `${prayerName} prayer is in ${settings.prePrayerTime} minutes. Prepare for prayer.`,
-          sound: true,
-          vibrate: settings.vibrate ? [0, 150, 150, 150] : undefined,
-          interruptionLevel: Platform.OS === 'ios' ? 'timeSensitive' : undefined,
-          priority: Platform.OS === 'android' ? Notifications.AndroidNotificationPriority.HIGH : undefined,
-          data: {
-            prayerName,
-            prayerTime,
-            location,
-            type: 'pre-prayer-reminder',
-            prePrayerTime: settings.prePrayerTime,
-            scheduledAt: reminderDate.getTime(),
-          },
-        },
-        trigger: {
-          date: reminderDate,
-        } as any,
-      });
-
-      console.log(`Scheduled ${prayerName} reminder notification for ${reminderDate.toLocaleString()}, ID: ${notificationId}`);
-    } catch (error) {
-      console.error(`Error scheduling ${prayerName} reminder notification:`, error);
-    }
-  }
-
-  private async schedulePrePrayerReminder(
-    prayerName: string,
-    prayerTime: string,
-    location: string,
-    date: Date,
-    settings: NotificationSettings,
-    scheduleSignature?: string
-  ): Promise<void> {
-    try {
-      // Sanitize time string (handles values like "05:13 (EDT)" or "05:13:00")
-      const clean = (prayerTime || '').toString().replace(/[^\d:]/g, '').trim();
-      const parts = clean.split(':');
-      const hours = Number(parts[0]);
-      const minutes = Number(parts[1]);
-
-      // Validate parsed values
-      const isValid = Number.isFinite(hours) && Number.isFinite(minutes) && hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
-      if (!isValid) {
-        console.warn(`Skipping pre-prayer reminder for ${prayerName}: invalid time string "${prayerTime}" -> parsed "${clean}"`);
-        return;
-      }
-
-      // Calculate reminder time
-      const reminderDate = new Date(date);
-      reminderDate.setHours(hours, minutes, 0, 0);
-      reminderDate.setMinutes(reminderDate.getMinutes() - settings.prePrayerTime);
-
-      const now = new Date();
-      const hasPassedToday = reminderDate.getTime() <= now.getTime();
-      
-      // If reminder time has passed today, schedule for tomorrow
-      if (hasPassedToday) {
-        reminderDate.setDate(reminderDate.getDate() + 1);
-        console.log(`${prayerName} reminder has passed today, scheduling for tomorrow: ${reminderDate.toLocaleString()}`);
-      } else {
-        console.log(`${prayerName} reminder is upcoming today, scheduling for: ${reminderDate.toLocaleString()}`);
-      }
-
-      const scheduledAt = reminderDate.getTime();
-
-      // For reminders that haven't passed today, use a one-time trigger for today
-      // and schedule a separate repeating notification for future days
-      let trigger: Notifications.NotificationTriggerInput;
-      
-      if (hasPassedToday) {
-        // Reminder has passed today - use repeating calendar trigger starting tomorrow
-        trigger = Platform.select({
-          ios: ({
-            hour: reminderDate.getHours(),
-            minute: reminderDate.getMinutes(),
-            repeats: true,
-          } as any),
-          android: ({
-            hour: reminderDate.getHours(),
-            minute: reminderDate.getMinutes(),
-            repeats: true,
-            channelId: 'prayer-times',
-          } as any),
-          default: ({
-            hour: reminderDate.getHours(),
-            minute: reminderDate.getMinutes(),
-            repeats: true,
-          } as any),
-        }) as any;
-      } else {
-        // Reminder hasn't passed today - use one-time trigger for today
-        trigger = {
-          date: reminderDate,
-        } as any;
-        
-        // Also schedule a repeating notification for future days
-        const repeatTrigger = Platform.select({
-          ios: ({
-            hour: reminderDate.getHours(),
-            minute: reminderDate.getMinutes(),
-            repeats: true,
-          } as any),
-          android: ({
-            hour: reminderDate.getHours(),
-            minute: reminderDate.getMinutes(),
-            repeats: true,
-            channelId: 'prayer-times',
-          } as any),
-          default: ({
-            hour: reminderDate.getHours(),
-            minute: reminderDate.getMinutes(),
-            repeats: true,
-          } as any),
-        }) as any;
-
-        // Schedule the repeating notification with a different ID
-        const repeatNotificationId = await Notifications.scheduleNotificationAsync({
-          content: {
-            title: `🔔 ${prayerName} Prayer Reminder`,
-            body: `${prayerName} prayer is in ${settings.prePrayerTime} minutes. Prepare for prayer.`,
-            sound: true,
-            vibrate: settings.vibrate ? [0, 150, 150, 150] : undefined,
-            interruptionLevel: Platform.OS === 'ios' ? 'timeSensitive' : undefined,
-            priority: Platform.OS === 'android' ? Notifications.AndroidNotificationPriority.HIGH : undefined,
-            data: {
-              prayerName,
-              prayerTime,
-              location,
-              type: 'pre-prayer-reminder',
-              prePrayerTime: settings.prePrayerTime,
-              scheduledAt,
-              scheduleSignature,
-              isRepeating: true,
-            },
-          },
-          trigger: repeatTrigger,
-        });
-        
-        console.log(`Scheduled repeating ${prayerName} reminder for future days, ID: ${repeatNotificationId}`);
-      }
-
-      const notificationId = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: `🔔 ${prayerName} Prayer Reminder`,
-          body: `${prayerName} prayer is in ${settings.prePrayerTime} minutes. Prepare for prayer.`,
-          sound: true,
-          vibrate: settings.vibrate ? [0, 150, 150, 150] : undefined,
-          // iOS: ensure immediate delivery
-          interruptionLevel: Platform.OS === 'ios' ? 'timeSensitive' : undefined,
-          // Android: high priority for heads-up
-          priority: Platform.OS === 'android' ? Notifications.AndroidNotificationPriority.HIGH : undefined,
-          data: {
-            prayerName,
-            prayerTime,
-            location,
-            type: 'pre-prayer-reminder',
-            prePrayerTime: settings.prePrayerTime,
-            scheduledAt,
-            scheduleSignature,
-            isRepeating: hasPassedToday,
-          },
-        },
-        trigger,
-      });
-
-      if (hasPassedToday) {
-        console.log(`Scheduled ${prayerName} reminder repeating notification starting tomorrow, ID: ${notificationId}`);
-      } else {
-        console.log(`Scheduled ${prayerName} reminder notification for today at ${reminderDate.toLocaleString()}, ID: ${notificationId}`);
-      }
-    } catch (error) {
-      console.error(`Error scheduling ${prayerName} reminder notification:`, error);
-    }
-  }
+  // schedulePrePrayerReminder removed — pre-prayer reminders disabled in this build
+  // private async schedulePrePrayerReminder(...) { /* removed */ }
 
   async cancelAllNotifications(): Promise<void> {
     try {
@@ -708,84 +693,12 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
     }
   }
 
-  async getScheduledNotificationsSummary(): Promise<string> {
-    try {
-      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-      
-      const prayerNotifications = scheduled.filter((n: any) => n.content?.data?.type === 'prayer-time');
-      const reminderNotifications = scheduled.filter((n: any) => n.content?.data?.type === 'pre-prayer-reminder');
-      
-      const summary = [
-        `📊 Notification Summary:`,
-        `🕌 Prayer Time Notifications: ${prayerNotifications.length}`,
-        `🔔 Pre-Prayer Reminders: ${reminderNotifications.length}`,
-        `📋 Total Scheduled: ${scheduled.length}`,
-        ``
-      ];
-
-      if (prayerNotifications.length > 0) {
-        summary.push(`Prayer Times:`);
-        prayerNotifications.forEach((n: any) => {
-          const data = n.content?.data;
-          const trigger = (n as any).trigger;
-          const timeStr = trigger?.date ? new Date(trigger.date).toLocaleString() : 
-                         trigger?.hour !== undefined ? `${trigger.hour}:${String(trigger.minute).padStart(2, '0')} daily` : 'Unknown';
-          summary.push(`  • ${data?.prayerName}: ${timeStr}`);
-        });
-        summary.push(``);
-      }
-
-      if (reminderNotifications.length > 0) {
-        summary.push(`Reminders:`);
-        reminderNotifications.forEach((n: any) => {
-          const data = n.content?.data;
-          const trigger = (n as any).trigger;
-          const timeStr = trigger?.date ? new Date(trigger.date).toLocaleString() : 
-                         trigger?.hour !== undefined ? `${trigger.hour}:${String(trigger.minute).padStart(2, '0')} daily` : 'Unknown';
-          summary.push(`  • ${data?.prayerName} (${data?.prePrayerTime}min before): ${timeStr}`);
-        });
-      }
-
-      return summary.join('\n');
-    } catch (error) {
-      console.error('Error getting notifications summary:', error);
-      return 'Error retrieving notification summary';
-    }
-  }
+  // getScheduledNotificationsSummary removed — debug summary disabled
+  // async getScheduledNotificationsSummary() { /* removed */ }
 
   // Test method to schedule a notification for 10 seconds from now
-  async testNotification(): Promise<void> {
-    try {
-      const testTime = new Date();
-      testTime.setSeconds(testTime.getSeconds() + 10);
-      
-      // SIMPLE LOGIC: Ensure test time is in the future
-      const now = new Date();
-      if (testTime <= now) {
-        testTime.setSeconds(now.getSeconds() + 10);
-      }
-      
-      const notificationId = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: '🧪 Test Notification',
-          body: 'This is a test notification to verify the system is working.',
-          sound: 'default',
-          vibrate: [0, 500, 250, 500],
-          data: {
-            type: 'test',
-            scheduledAt: Date.now(),
-          },
-        },
-        trigger: {
-          date: testTime,
-        } as any,
-      });
-      
-      console.log(`Test notification scheduled for ${testTime.toLocaleString()}, ID: ${notificationId}`);
-    } catch (error) {
-      console.error('Error scheduling test notification:', error);
-    }
-  }
+  // testNotification removed — debug test scheduling disabled
+  // async testNotification() { /* removed */ }
 
   // Method to handle daily rescheduling at midnight (called from background tasks or app launch)
   async rescheduleDailyIfNeeded(
@@ -816,3 +729,7 @@ export const getNotificationPermissionStatus = async (): Promise<string> => {
   const settings = await Notifications.getPermissionsAsync();
   return settings.status;
 };
+
+// Example test usage removed: use the exported `schedulePrayerNotification(...)`
+// helper above (it supports both one-time date triggers and calendar repeats).
+
