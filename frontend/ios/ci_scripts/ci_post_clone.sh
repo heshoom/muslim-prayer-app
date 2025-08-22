@@ -73,6 +73,30 @@ if [ ! -f "Podfile" ]; then
     exit 1
 fi
 
+# Ensure Node.js is available because the Podfile invokes `node` to locate
+# autolinking scripts (e.g. `node --print "require.resolve('expo/package.json')"`).
+if ! command -v node >/dev/null 2>&1; then
+    echo "Node.js not found in PATH. Attempting to install via Homebrew..."
+    if command -v brew >/dev/null 2>&1; then
+        brew install node || {
+            echo "Homebrew failed to install node. Please make sure CI image provides Node or add a setup step (e.g. actions/setup-node)." >&2
+            exit 1
+        }
+    else
+        echo "Homebrew not found. Please ensure Node.js is installed in the CI environment or add a setup step to install Node (e.g. actions/setup-node)." >&2
+        exit 1
+    fi
+fi
+
+# Install JS dependencies in the frontend so node can resolve packages referenced by the Podfile
+if [ -f "$REPO_ROOT/frontend/package.json" ]; then
+    echo "Installing JavaScript dependencies in $REPO_ROOT/frontend ..."
+    (cd "$REPO_ROOT/frontend" && npm ci) || {
+        echo "npm ci failed. Ensure network access and a valid package-lock.json or run npm install manually." >&2
+        exit 1
+    }
+fi
+
 # 4️⃣ Install pods (retry in case of network issues)
 MAX_RETRIES=3
 COUNTER=1
