@@ -8,21 +8,48 @@ echo "Current working directory: $(pwd)"
 echo "Contents of current directory:"
 ls -la
 
-# Find the iOS directory - it might be in different locations
-IOS_DIR=""
-if [ -d "frontend/ios" ]; then
-    IOS_DIR="frontend/ios"
-elif [ -d "ios" ]; then
-    IOS_DIR="ios"
-elif [ -d "../frontend/ios" ]; then
-    IOS_DIR="../frontend/ios"
+# Resolve repository root robustly and find the iOS directory (Podfile-based)
+# This makes the script work regardless of the current working directory.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Prefer to use git to determine repo root when available
+if git rev-parse --show-toplevel >/dev/null 2>&1; then
+    REPO_ROOT="$(git rev-parse --show-toplevel)"
 else
-    echo "Error: iOS directory not found. Searched in:"
-    echo "  - frontend/ios"
-    echo "  - ios"
-    echo "  - ../frontend/ios"
-    echo "Current directory structure:"
-    find . -name "*.xcodeproj" -o -name "Podfile" 2>/dev/null || true
+    # Fallback: assume script sits under .../frontend/ios/ci_scripts
+    REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+fi
+
+IOS_DIR=""
+# Candidate locations relative to repo root (prefer ones containing a Podfile)
+candidates=(
+    "$REPO_ROOT/frontend/ios"
+    "$REPO_ROOT/ios"
+    "$REPO_ROOT/frontend"
+    "$REPO_ROOT"
+)
+
+for p in "${candidates[@]}"; do
+    if [ -d "$p" ] && [ -f "$p/Podfile" ]; then
+        IOS_DIR="$p"
+        break
+    fi
+done
+
+# Last-resort: shallow search for Podfile up to 3 levels deep
+if [ -z "$IOS_DIR" ]; then
+    found=$(find "$REPO_ROOT" -maxdepth 3 -type f -name Podfile 2>/dev/null | head -n 1 || true)
+    if [ -n "$found" ]; then
+        IOS_DIR="$(dirname "$found")"
+    fi
+fi
+
+if [ -z "$IOS_DIR" ]; then
+    echo "Error: iOS directory not found. Searched under REPO_ROOT: $REPO_ROOT"
+    echo "Searched candidates:"; printf '%s
+' "${candidates[@]}"
+    echo "Current directory structure (shallow):"
+    find "$REPO_ROOT" -maxdepth 3 -name "*.xcodeproj" -o -name "Podfile" 2>/dev/null || true
     exit 1
 fi
 
