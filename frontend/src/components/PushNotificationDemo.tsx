@@ -4,6 +4,7 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { usePrayerTimes } from '@/src/contexts/PrayerTimesContext';
+import { useTranslation } from '@/src/i18n';
 import { prayerNotificationService } from '@/src/services/prayerNotificationService';
 
 
@@ -88,6 +89,7 @@ async function registerForPushNotificationsAsync() {
 }
 
 export default function PushNotificationDemo() {
+  const { t } = useTranslation();
   const [expoPushToken, setExpoPushToken] = useState('');
   const [notification, setNotification] = useState<Notifications.Notification | undefined>(
     undefined
@@ -119,32 +121,32 @@ export default function PushNotificationDemo() {
 
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'space-around' }}>
-      <Text>Your Expo push token: {expoPushToken}</Text>
+      <Text>{t('pushTokenLabel') || 'Your Expo push token:'} {expoPushToken}</Text>
       <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <Text>Title: {notification && notification.request.content.title} </Text>
-        <Text>Body: {notification && notification.request.content.body}</Text>
-        <Text>Data: {notification && JSON.stringify(notification.request.content.data)}</Text>
+        <Text>{t('notificationTitleLabel') || 'Title:'} {notification && notification.request.content.title} </Text>
+        <Text>{t('notificationBodyLabel') || 'Body:'} {notification && notification.request.content.body}</Text>
+        <Text>{t('notificationDataLabel') || 'Data:'} {notification && JSON.stringify(notification.request.content.data)}</Text>
       </View>
       <Button
-        title="Press to Send Notification"
+        title={t('pressToSendNotification') || 'Press to Send Notification'}
         onPress={async () => {
           await sendPushNotification(expoPushToken);
         }}
       />
       <View style={{ height: 12 }} />
       <Button
-        title="Register for Push (device token)"
+        title={t('registerForPush') || 'Register for Push (device token)'}
         onPress={async () => {
           const token = await registerForPushNotificationsAsync();
           if (token) {
             setExpoPushToken(token);
-            Alert.alert('Push token', token);
+            Alert.alert(t('pushToken') || 'Push token', token);
           }
         }}
       />
       <View style={{ height: 8 }} />
       <Button
-        title="Schedule Prayer Notifications Now"
+        title={t('schedulePrayerNow') || 'Schedule Prayer Notifications Now'}
         onPress={async () => {
           try {
             // Use context helper if present (not present in some debug render flows).
@@ -153,56 +155,70 @@ export default function PushNotificationDemo() {
                 // If notification context is available elsewhere it will handle scheduling.
                 // Here we call the service directly to be safe in debug flows.
                 await prayerNotificationService.scheduleDailyNotifications(prayerTimes, 'DebugLocation', { enabled: true, adhan: true, athanSound: 'default', vibrate: true, prePrayer: true, prePrayerTime: 10 });
-                Alert.alert('Scheduled', 'Prayer notifications scheduled');
+                Alert.alert(t('scheduled') || 'Scheduled', t('prayerNotificationsScheduled') || 'Prayer notifications scheduled');
               } catch (err) {
                 console.error(err);
                 Alert.alert('Error', String(err));
               }
             } else {
-              Alert.alert('No prayer times', 'Unable to find prayer times in context');
+              Alert.alert(t('noPrayerTimes') || 'No prayer times', t('noPrayerTimesDesc') || 'Unable to find prayer times in context');
             }
           } catch (err) {
             console.error(err);
-            Alert.alert('Error', String(err));
+            Alert.alert(t('error') || 'Error', String(err));
           }
         }}
       />
       <View style={{ height: 8 }} />
       <Button
-        title="Test Local Notification (10s)"
+        title={t('testLocalNotification10s') || 'Test Local Notification (10s)'}
         onPress={async () => {
           try {
-            await prayerNotificationService.testNotification();
-            Alert.alert('Test', 'Test notification scheduled');
+            // service debug helper may not exist in trimmed build
+            if (prayerNotificationService && (prayerNotificationService as any).testNotification) {
+              await (prayerNotificationService as any).testNotification();
+              Alert.alert(t('test') || 'Test', t('testNotificationScheduled') || 'Test notification scheduled');
+            } else {
+              // fallback: use manual schedule helper
+              const { scheduleNotificationAt } = await import('@/src/utils/manualNotification');
+              const tDate = new Date(Date.now() + 10000);
+              await scheduleNotificationAt(tDate, t('quickTest') || 'Quick Test', t('firesIn10s') || 'Fires in 10s', { sound: true, vibrate: true });
+              Alert.alert(t('test') || 'Test', t('testNotificationScheduled') || 'Test notification scheduled');
+            }
           } catch (err) {
             console.error(err);
-            Alert.alert('Error', String(err));
+            Alert.alert(t('error') || 'Error', String(err));
           }
         }}
       />
       <View style={{ height: 8 }} />
       <Button
-        title="Get Scheduled Notifications Summary"
+        title={t('getScheduledNotificationsSummary') || 'Get Scheduled Notifications Summary'}
         onPress={async () => {
           try {
-            const summary = await prayerNotificationService.getScheduledNotificationsSummary();
-            Alert.alert('Summary', summary);
+            if (prayerNotificationService && (prayerNotificationService as any).getScheduledNotificationsSummary) {
+              const summary = await (prayerNotificationService as any).getScheduledNotificationsSummary();
+              Alert.alert(t('summary') || 'Summary', summary);
+            } else {
+              const scheduled = await (await import('expo-notifications')).getAllScheduledNotificationsAsync();
+              Alert.alert(t('summary') || 'Summary', JSON.stringify(scheduled, null, 2).slice(0, 1000));
+            }
           } catch (err) {
             console.error(err);
-            Alert.alert('Error', String(err));
+            Alert.alert(t('error') || 'Error', String(err));
           }
         }}
       />
       <View style={{ height: 8 }} />
       <Button
-        title="Cancel All Scheduled Notifications"
+        title={t('cancelAllScheduled') || 'Cancel All Scheduled Notifications'}
         onPress={async () => {
           try {
             await prayerNotificationService.cancelAllNotifications();
-            Alert.alert('Cancelled', 'All scheduled notifications cancelled');
+            Alert.alert(t('cancelled') || 'Cancelled', t('allScheduledCancelled') || 'All scheduled notifications cancelled');
           } catch (err) {
             console.error(err);
-            Alert.alert('Error', String(err));
+            Alert.alert(t('error') || 'Error', String(err));
           }
         }}
       />

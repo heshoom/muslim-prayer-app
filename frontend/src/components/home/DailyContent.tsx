@@ -6,11 +6,13 @@ import { quranApi } from '../../services/quranApi';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
 import { useTranslation } from '@/src/i18n';
+import { getHadithOfTheDay } from '@/src/services/hadithService';
 
 export const DailyContent = () => {
   const [verse, setVerse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hadith, setHadith] = useState<any>(null);
 
   const { isDarkMode, settings } = useSettings();
   const theme = isDarkMode ? darkTheme : lightTheme;
@@ -30,6 +32,13 @@ export const DailyContent = () => {
     };
 
     fetchVerse();
+    // load hadith of the day synchronously
+    try {
+      const h = getHadithOfTheDay(new Date(), settings.appearance.language);
+      setHadith(h);
+    } catch (e) {
+      console.error('Failed to load hadith of the day', e);
+    }
   }, [settings.appearance.language]);
 
   if (loading) {
@@ -68,10 +77,19 @@ export const DailyContent = () => {
       
       <View style={[styles.hadithContainer, { borderTopColor: theme.border }]}>
         <ThemedText style={[styles.sectionTitle, { color: theme.primary }]}>{t('hadithOfTheDay')}</ThemedText>
-        <ThemedText style={[styles.hadithText, { color: theme.text.primary }]}>
-          &ldquo;{t('defaultHadithText')}&rdquo;
-        </ThemedText>
-        <ThemedText style={[styles.verseReference, { color: theme.text.secondary }]}>{t('defaultHadithSource')}</ThemedText>
+        {hadith ? (
+          <>
+            <ThemedText style={[styles.hadithText, { color: theme.text.primary }]}>“{hadith.arabic}”</ThemedText>
+            {hadith.localizedText && (
+              <ThemedText style={[styles.hadithText, { color: theme.text.primary }]}>{hadith.localizedText}</ThemedText>
+            )}
+            {hadith.reference && (
+              <ThemedText style={[styles.verseReference, { color: theme.text.secondary }]}>{hadith.reference}</ThemedText>
+            )}
+          </>
+        ) : (
+          <ThemedText style={[styles.hadithText, { color: theme.text.primary }]}>&ldquo;{t('defaultHadithText')}&rdquo;</ThemedText>
+        )}
       </View>
     </ThemedView>
   );

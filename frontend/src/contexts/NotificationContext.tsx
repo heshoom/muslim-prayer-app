@@ -4,6 +4,7 @@ import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { useSettings } from './SettingsContext';
+import { useTranslation } from '@/src/i18n';
 import { usePrayerTimes } from './PrayerTimesContext';
 import { athanAudioService } from '../services/athanAudioService';
 import { prayerNotificationService } from '../services/prayerNotificationService';
@@ -44,6 +45,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { settings } = useSettings();
+  const { t } = useTranslation();
   const { prayerTimes } = usePrayerTimes();
   const notificationListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
@@ -298,8 +300,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Also send a test notification (without custom sound to avoid errors)
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: '🎵 Athan Sound Test',
-          body: `Testing ${getAthanDisplayName(athanType)}`,
+          title: t('athanSoundTestTitle') || '🎵 Athan Sound Test',
+          body: (t('athanSoundTestBody') || 'Testing') + ` ${getAthanDisplayName(athanType)}`,
           sound: true, // Use default system sound for notification
           vibrate: settings.notifications.vibrate ? [0, 250, 250, 250] : undefined,
           data: {
@@ -346,8 +348,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const in15 = new Date(Date.now() + 15 * 1000);
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: 'iOS Custom Sound Test',
-          body: `Playing ${selected} (${soundName}) via notification payload`,
+          title: t('iosCustomSoundTestTitle') || 'iOS Custom Sound Test',
+          body: (t('iosCustomSoundTestBody') || 'Playing') + ` ${selected} (${soundName}) via notification payload`,
           sound: Platform.OS === 'ios' ? soundName : true,
           interruptionLevel: Platform.OS === 'ios' ? 'timeSensitive' : undefined,
           data: { type: 'test-athan', athanType: selected },

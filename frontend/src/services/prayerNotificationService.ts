@@ -3,6 +3,24 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PrayerTimes } from './prayerTimesService';
 import { athanAudioService } from './athanAudioService';
+import { translations } from '@/src/i18n/translations';
+
+// Lightweight helper for services to read English translations (services run
+// outside React hooks). We purposely read from `en` here and only use this
+// to centralize visible strings so they can be moved into the translations
+// file for later localization.
+const tEn = (key: string): string => {
+  const keys = key.split('.');
+  let value: any = translations.en as any;
+  for (const k of keys) {
+    if (value && typeof value === 'object' && k in value) {
+      value = value[k];
+    } else {
+      return key;
+    }
+  }
+  return typeof value === 'string' ? value : key;
+};
 
 /**
  * Notification system overview
@@ -84,9 +102,9 @@ import { athanAudioService } from './athanAudioService';
 export async function ensureAndroidPrayerChannel(): Promise<void> {
   if (Platform.OS !== 'android') return;
 
-  try {
+    try {
     await Notifications.setNotificationChannelAsync('prayer-times', {
-      name: 'Prayer Times',
+      name: tEn('prayerTimes') || 'Prayer Times',
       importance: Notifications.AndroidImportance.HIGH, // heads-up notifications
       vibrationPattern: [0, 500, 250, 500],
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
@@ -96,7 +114,7 @@ export async function ensureAndroidPrayerChannel(): Promise<void> {
         usage: Notifications.AndroidAudioUsage.ALARM,
       },
     });
-    console.log('Android prayer-times notification channel created/updated');
+  console.log(tEn('prayerTimes') + ' notification channel created/updated');
   } catch (error) {
     console.error('Error creating Android notification channel:', error);
   }
@@ -358,8 +376,8 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
 
       const id = await Notifications.scheduleNotificationAsync({
         content: {
-          title: 'Daily reschedule',
-          body: 'Refreshing daily prayer notification schedules',
+          title: tEn('dailyReschedule') || 'Daily reschedule',
+          body: tEn('dailyRescheduleBody') || 'Refreshing daily prayer notification schedules',
           data: { type: 'daily-reschedule' },
         },
         trigger,
@@ -461,10 +479,10 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
 
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
-          title: `${prayerName} Prayer Time`,
+          title: `${prayerName} ${tEn('prayerTime') || 'Prayer Time'}`,
           body: settings.adhan
-            ? `It's time for ${prayerName} prayer in ${location}. 🕌`
-            : `It's time for ${prayerName} prayer in ${location}`,
+            ? `${tEn('itsTimeFor') || "It's time for"} ${prayerName} ${tEn('inLocation') || 'in'} ${location}. ${tEn('mosqueEmoji') || '🕌'}`
+            : `${tEn('itsTimeFor') || "It's time for"} ${prayerName} ${tEn('inLocation') || 'in'} ${location}`,
           sound: soundUri,
           vibrate: settings.vibrate ? [0, 500, 250, 500] : undefined,
           interruptionLevel: Platform.OS === 'ios' ? 'timeSensitive' : undefined,
@@ -629,10 +647,10 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
 
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
-          title: `${prayerName} Prayer Time`,
+          title: `${prayerName} ${tEn('prayerTime') || 'Prayer Time'}`,
           body: settings.adhan
-            ? `It's time for ${prayerName} prayer in ${location}. \ud83d\udd4c`
-            : `It's time for ${prayerName} prayer in ${location}`,
+            ? `${tEn('itsTimeFor') || "It's time for"} ${prayerName} ${tEn('inLocation') || 'in'} ${location} ${tEn('mosqueEmoji') || ''}`
+            : `${tEn('itsTimeFor') || "It's time for"} ${prayerName} ${tEn('inLocation') || 'in'} ${location}`,
           sound: soundUri,
           vibrate: settings.vibrate ? [0, 500, 250, 500] : undefined,
           interruptionLevel: Platform.OS === 'ios' ? 'timeSensitive' : undefined,

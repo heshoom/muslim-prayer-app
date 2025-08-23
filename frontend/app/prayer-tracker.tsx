@@ -49,7 +49,7 @@ export default function PrayerTrackerScreen() {
         setTracking(JSON.parse(stored));
       }
     } catch (error) {
-      console.error('Error loading prayer tracking:', error);
+  console.error(t('failedToLoadPrayerTracking') || 'Error loading prayer tracking:', error);
     }
   };
 
@@ -58,7 +58,7 @@ export default function PrayerTrackerScreen() {
       await AsyncStorage.setItem('prayerTracking', JSON.stringify(newTracking));
       setTracking(newTracking);
     } catch (error) {
-      console.error('Error saving prayer tracking:', error);
+  console.error(t('failedToSavePrayerTracking') || 'Error saving prayer tracking:', error);
     }
   };
 
@@ -125,9 +125,9 @@ export default function PrayerTrackerScreen() {
         <ThemedText style={[styles.date, { color: theme.text.secondary }]}>
           {new Date(selectedDate).toLocaleDateString()}
         </ThemedText>
-        <View style={[styles.statsContainer, { backgroundColor: theme.primary }]}>
+          <View style={[styles.statsContainer, { backgroundColor: theme.primary }]}>
           <ThemedText style={[styles.statsText, { color: 'white' }]}>
-            {stats.completed}/{stats.total} Completed
+            {`${stats.completed}/${stats.total} ${t('prayersCompleted')}`}
           </ThemedText>
         </View>
       </ThemedView>
@@ -166,16 +166,16 @@ export default function PrayerTrackerScreen() {
 
       <ThemedView style={[styles.instructionsContainer, { backgroundColor: theme.surface }]}>
         <ThemedText style={[styles.instructionsTitle, { color: theme.text.primary }]}>
-          How to use:
+          {t('howToUse')}
         </ThemedText>
         <ThemedText style={[styles.instructionsText, { color: theme.text.secondary }]}>
-          • Tap once to mark as completed ✓
+          {t('tapOnceComplete')}
         </ThemedText>
         <ThemedText style={[styles.instructionsText, { color: theme.text.secondary }]}>
-          • Tap twice to mark as missed ✗
+          {t('tapTwiceMissed')}
         </ThemedText>
         <ThemedText style={[styles.instructionsText, { color: theme.text.secondary }]}>
-          • Tap third time to reset ○
+          {t('tapThirdReset')}
         </ThemedText>
       </ThemedView>
     </SafeAreaView>

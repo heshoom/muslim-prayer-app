@@ -72,7 +72,7 @@ export default function Welcome() {
       }
     } catch (error) {
       console.error('Error requesting location permission:', error);
-      Alert.alert('Error', 'There was an error requesting location permission. Please try again.');
+      Alert.alert(t('error') || 'Error', t('failedToRequestLocationPermission') || 'There was an error requesting location permission. Please try again.');
     } finally {
       setBusy(false);
     }
@@ -83,7 +83,7 @@ export default function Welcome() {
       setBusy(true);
       // Request permission and obtain Expo push token
       if (!Device.isDevice) {
-        Alert.alert('Physical device required', 'Push notifications require a physical device.');
+        Alert.alert(t('physicalDeviceRequired') || 'Physical device required', t('physicalDeviceRequiredDesc') || 'Push notifications require a physical device.');
         setBusy(false);
         return;
       }
@@ -96,7 +96,7 @@ export default function Welcome() {
         finalStatus = status;
       }
       if (finalStatus !== 'granted') {
-        Alert.alert('Permission denied', 'Notification permission was not granted. You can enable it later in Settings.');
+        Alert.alert(t('permissionDenied') || 'Permission denied', t('notificationPermissionNotGranted') || 'Notification permission was not granted. You can enable it later in Settings.');
         setNotifGranted(false);
         setBusy(false);
         return;
@@ -105,7 +105,7 @@ export default function Welcome() {
       const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
       console.log('Resolved projectId for push registration:', projectId);
       if (!projectId) {
-        Alert.alert('Configuration error', 'Project ID not found. Cannot register for push notifications.');
+        Alert.alert(t('configurationError') || 'Configuration error', t('projectIdNotFound') || 'Project ID not found. Cannot register for push notifications.');
         setBusy(false);
         return;
       }
@@ -115,8 +115,8 @@ export default function Welcome() {
         setExpoPushToken(token);
         setNotifGranted(true);
       } catch (err) {
-        console.warn('Failed to obtain push token:', err);
-        Alert.alert('Error', 'Failed to obtain push token.');
+  console.warn('Failed to obtain push token:', err);
+  Alert.alert(t('error') || 'Error', t('failedToObtainPushToken') || 'Failed to obtain push token.');
       }
     } catch (error) {
       console.error('Error handling notification request:', error);
@@ -169,7 +169,7 @@ export default function Welcome() {
       
     } catch (error) {
       console.error('Error completing onboarding:', error);
-      Alert.alert('Error', 'There was an error completing setup. Please try again.');
+  Alert.alert(t('error') || 'Error', t('errorCompletingSetup') || 'There was an error completing setup. Please try again.');
     } finally {
       setBusy(false);
     }
@@ -186,9 +186,9 @@ export default function Welcome() {
       </View>
 
   <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
-        <Text style={[styles.cardTitle, { color: theme.text.primary }]}>Allow Location</Text>
-        <Text style={[styles.cardDesc, { color: theme.text.secondary }]}>
-          We use your location to calculate precise prayer times for your area.
+        <Text style={[styles.cardTitle, { color: theme.text.primary }]}>{t('allowLocation') || 'Allow Location'}</Text>
+        <Text style={[styles.cardDesc, { color: theme.text.secondary }]}> 
+          {t('allowLocationDesc') || 'We use your location to calculate precise prayer times for your area.'}
         </Text>
         <TouchableOpacity 
           disabled={busy} 
@@ -202,15 +202,15 @@ export default function Welcome() {
           onPress={requestLocation}
         >
           <Text style={[styles.buttonText, { color: theme.text.inverse }]}>
-    {busy && locGranted === null ? 'Requesting...' : locGranted ? '✓ Granted' : 'Continue'}
+          {busy && locGranted === null ? t('requesting') || 'Requesting...' : locGranted ? t('granted') || '✓ Granted' : t('continue') || 'Continue'}
           </Text>
         </TouchableOpacity>
       </View>
 
       <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
-        <Text style={[styles.cardTitle, { color: theme.text.primary }]}>Enable Notifications</Text>
-        <Text style={[styles.cardDesc, { color: theme.text.secondary }]}>
-          Get notified at prayer times so you never miss a prayer.
+        <Text style={[styles.cardTitle, { color: theme.text.primary }]}>{t('enableNotifications') || 'Enable Notifications'}</Text>
+        <Text style={[styles.cardDesc, { color: theme.text.secondary }]}> 
+          {t('enableNotificationsDesc') || 'Get notified at prayer times so you never miss a prayer.'}
         </Text>
         <TouchableOpacity 
           disabled={busy} 
@@ -224,7 +224,7 @@ export default function Welcome() {
           onPress={requestNotifications}
         >
           <Text style={[styles.buttonText, { color: theme.text.inverse }]}>
-            {busy && notifGranted === null ? 'Requesting...' : notifGranted ? '✓ Granted' : 'Continue'}
+            {busy && notifGranted === null ? t('requesting') || 'Requesting...' : notifGranted ? t('granted') || '✓ Granted' : t('continue') || 'Continue'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -240,8 +240,8 @@ export default function Welcome() {
         ]} 
         onPress={finish}
       >
-        <Text style={[styles.buttonText, { color: theme.text.inverse }]}>
-          {busy ? 'Setting up...' : 'Next'}
+        <Text style={[styles.buttonText, { color: theme.text.inverse }]}> 
+          {busy ? t('settingUp') || 'Setting up...' : t('next') || 'Next'}
         </Text>
       </TouchableOpacity>
       

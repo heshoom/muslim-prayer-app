@@ -5,25 +5,25 @@ const handleInstantNotification = async () => {
     const perms = await Notifications.requestPermissionsAsync();
     console.log('[DEBUG] InstantNotification: Permission status', perms.status);
     if (perms.status !== 'granted') {
-      Alert.alert('Permission denied', 'Please allow notifications');
+      Alert.alert(t('permissionDenied') || 'Permission denied', t('allowNotifications') || 'Please allow notifications');
       console.log('[DEBUG] InstantNotification: Permission denied');
       return;
     }
     console.log('[DEBUG] InstantNotification: Scheduling notification for immediate delivery');
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: 'Instant Notification',
-        body: 'This notification was fired instantly.',
+        title: t('instantNotificationTitle') || 'Instant Notification',
+        body: t('instantNotificationBody') || 'This notification was fired instantly.',
         sound: true,
         vibrate: [0, 500, 250, 500],
       },
       trigger: null, // Immediate delivery
     });
     console.log('[DEBUG] InstantNotification: Notification scheduled');
-    Alert.alert('Fired', 'An instant notification was sent.');
+  Alert.alert(t('fired') || 'Fired', t('instantNotificationSent') || 'An instant notification was sent.');
   } catch (error) {
-    console.error('[DEBUG] InstantNotification: Failed to fire instant notification:', error);
-    Alert.alert('Error', 'Failed to fire instant notification.');
+  console.error('[DEBUG] InstantNotification: Failed to fire instant notification:', error);
+  Alert.alert(t('error') || 'Error', t('failedToFireInstantNotification') || 'Failed to fire instant notification.');
   }
 };
 import React, { useState, useEffect } from "react";
@@ -63,11 +63,11 @@ const handleFireTestNotification = async () => {
     const perms = await Notifications.requestPermissionsAsync();
     console.log('[DEBUG] FireTestNotification: Permission status', perms.status);
     if (perms.status !== 'granted') {
-      Alert.alert('Permission denied', 'Please allow notifications');
+      Alert.alert(t('permissionDenied') || 'Permission denied', t('allowNotifications') || 'Please allow notifications');
       console.log('[DEBUG] FireTestNotification: Permission denied');
       return;
     }
-    console.log('[DEBUG] FireTestNotification: Scheduling notification for 2s in the future');
+  console.log('[DEBUG] FireTestNotification: Scheduling notification for 2s in the future');
     const id = await Notifications.scheduleNotificationAsync({
       content: {
         title: 'Scheduled Test Notification',
@@ -88,10 +88,10 @@ const handleFireTestNotification = async () => {
     } catch (e) {
       console.warn('[DEBUG] FireTestNotification: Could not list scheduled notifications', e);
     }
-    Alert.alert('Scheduled', 'A test notification will fire in 2 seconds.');
+  Alert.alert(t('scheduled') || 'Scheduled', t('testNotificationScheduled') || 'A test notification will fire in 2 seconds.');
   } catch (error) {
     console.error('[DEBUG] FireTestNotification: Failed to schedule test notification:', error);
-    Alert.alert('Error', 'Failed to schedule test notification.');
+  Alert.alert(t('error') || 'Error', t('failedToScheduleTestNotification') || 'Failed to schedule test notification.');
   }
 };
 
@@ -119,9 +119,9 @@ const handleDumpScheduledNotifications = async () => {
     console.log('[DEBUG] DumpScheduled: fetched', list);
     setScheduledNotifications(list || []);
     setShowNotificationsModal(true);
-  } catch (error) {
+    } catch (error) {
     console.error('[DEBUG] DumpScheduled: Failed to fetch scheduled notifications', error);
-    Alert.alert('Error', 'Failed to load scheduled notifications. See console for details.');
+    Alert.alert(t('error') || 'Error', t('failedToLoadScheduledNotifications') || 'Failed to load scheduled notifications. See console for details.');
   }
 };
 
@@ -180,7 +180,7 @@ const handleDumpScheduledNotifications = async () => {
         }
       } catch (error) {
         console.error('Error requesting location permission:', error);
-        Alert.alert('Error', 'Unable to check location permissions. Please try again.');
+        Alert.alert(t('error') || 'Error', t('unableToCheckLocationPermissions') || 'Unable to check location permissions. Please try again.');
       }
     } else {
       // User wants to disable GPS
@@ -239,14 +239,14 @@ const handleDumpScheduledNotifications = async () => {
         {
           text: 'Reset',
           style: 'destructive',
-          onPress: async () => {
+              onPress: async () => {
             try {
               const AsyncStorage = require('@react-native-async-storage/async-storage').default;
               await AsyncStorage.multiRemove(['userSettings', 'app:lastBuildId']);
-              Alert.alert('✅ Success', 'Onboarding reset! Please reload the app to see the welcome screen.');
+              Alert.alert(t('success') || 'Success', t('onboardingResetReload') || 'Onboarding reset! Please reload the app to see the welcome screen.');
             } catch (error) {
               console.error('Error resetting onboarding:', error);
-              Alert.alert('❌ Error', 'Failed to reset onboarding');
+              Alert.alert(t('error') || 'Error', t('failedToResetOnboarding') || 'Failed to reset onboarding');
             }
           },
         },
@@ -306,12 +306,8 @@ const handleDumpScheduledNotifications = async () => {
                 <View style={[styles.settingItem, styles.switchItem]}>
                   <View style={styles.settingHeader}>
                     <View style={styles.settingTextContainer}>
-                      <Text style={styles.settingTitle}>
-                        Prayer Time Notifications
-                      </Text>
-                      <Text style={styles.settingDescription}>
-                        Get notifications for all prayer times
-                      </Text>
+                      <Text style={styles.settingTitle}>{t('prayerTimeNotifications')}</Text>
+                      <Text style={styles.settingDescription}>{t('receivePrayerAlerts')}</Text>
                     </View>
                     <Switch
                       value={settings.notifications.enabled}
@@ -331,10 +327,8 @@ const handleDumpScheduledNotifications = async () => {
                 <View style={[styles.settingItem, styles.switchItem]}>
                   <View style={styles.settingHeader}>
                     <View style={styles.settingTextContainer}>
-                      <Text style={styles.settingTitle}>{t("adhanSound")}</Text>
-                      <Text style={styles.settingDescription}>
-                        {t("playAdhanAtPrayerTimes")}
-                      </Text>
+                      <Text style={styles.settingTitle}>{t('adhanSound')}</Text>
+                      <Text style={styles.settingDescription}>{t('playAdhanAtPrayerTimes')}</Text>
                     </View>
                     <Switch
                       value={settings.notifications.adhan}
@@ -349,10 +343,8 @@ const handleDumpScheduledNotifications = async () => {
                   </View>
                   {settings.notifications.adhan && (
                     <View style={[styles.settingItem, styles.pickerItem]}>
-                      <Text style={styles.settingTitle}>Athan Sound</Text>
-                      <Text style={styles.settingDescription}>
-                        Choose your preferred athan recitation
-                      </Text>
+                      <Text style={styles.settingTitle}>{t('adhanSound')}</Text>
+                      <Text style={styles.settingDescription}>{t('chooseAthanRecitation')}</Text>
                       <CustomPicker
                         selectedValue={settings.notifications.athanSound}
                         onValueChange={(value) =>
@@ -375,10 +367,10 @@ const handleDumpScheduledNotifications = async () => {
                             label: "Turkey (Hafez Mustafa Ozcan)",
                             value: "turkey",
                           },
-                          { label: "Nasir Al-Qatami", value: "nasiralqatami" },
-                          { label: "Default System Sound", value: "default" },
+                          { label: t('nasirAlQatami') || 'Nasir Al-Qatami', value: "nasiralqatami" },
+                          { label: t('defaultSystemSound') || 'Default System Sound', value: "default" },
                         ]}
-                        title="Select Athan Sound"
+                        title={t('selectAthanSound')}
                         theme={theme}
                       />
                       
@@ -405,7 +397,7 @@ const handleDumpScheduledNotifications = async () => {
                               { color: theme.text.inverse },
                             ]}
                           >
-                            Test iOS Notification Sound
+                            {t('testIosNotificationSound')}
                           </Text>
                         </TouchableOpacity>
                       )}
@@ -438,10 +430,8 @@ const handleDumpScheduledNotifications = async () => {
                 <View style={[styles.settingItem, styles.switchItem]}>
                   <View style={styles.settingHeader}>
                     <View style={styles.settingTextContainer}>
-                      <Text style={styles.settingTitle}>Pre-prayer Reminders</Text>
-                      <Text style={styles.settingDescription}>
-                        Receive a reminder a few minutes before each prayer
-                      </Text>
+                      <Text style={styles.settingTitle}>{t('prePrayerReminder')}</Text>
+                      <Text style={styles.settingDescription}>{t('prePrayerReminderDesc')}</Text>
                     </View>
                     <Switch
                       value={settings.notifications.prePrayer}
@@ -458,10 +448,8 @@ const handleDumpScheduledNotifications = async () => {
 
                 {settings.notifications.prePrayer && (
                   <View style={[styles.settingItem, styles.pickerItem]}>
-                    <Text style={styles.settingTitle}>Reminder time before prayer</Text>
-                    <Text style={styles.settingDescription}>
-                      How many minutes before prayer should the reminder fire?
-                    </Text>
+                    <Text style={styles.settingTitle}>{t('reminderTimeBeforePrayer')}</Text>
+                    <Text style={styles.settingDescription}>{t('reminderBeforeDescription')}</Text>
                     <CustomPicker
                       selectedValue={settings.notifications.prePrayerTime}
                       onValueChange={(value) =>
@@ -473,7 +461,7 @@ const handleDumpScheduledNotifications = async () => {
                         { label: '15 minutes', value: 15 },
                         { label: '30 minutes', value: 30 },
                       ]}
-                      title="Reminder offset"
+                      title={t('reminderOffset')}
                       theme={theme}
                     />
                   </View>
@@ -632,7 +620,7 @@ const handleDumpScheduledNotifications = async () => {
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>{t("useGPSLocation")}</Text>
                   <Text style={styles.settingDescription}>
-                    Get precise prayer times for your exact location
+                    {t('getPrecisePrayerTimes')}
                   </Text>
                   {locationPermissionStatus === 'denied' && settings.location.useGPS && (
                     <Text style={[styles.permissionWarning, { color: '#e74c3c' }]}>
@@ -663,9 +651,9 @@ const handleDumpScheduledNotifications = async () => {
             {!settings.location.useGPS && (
               <View style={[styles.settingItem, styles.pickerItem]}>
                 <Text style={styles.settingTitle}>{t("city")}</Text>
-                <Text style={styles.settingDescription}>
-                  Select your city for prayer times
-                </Text>
+                  <Text style={styles.settingDescription}>
+                    {t('selectYourCityForPrayerTimes')}
+                  </Text>
                 <CustomPicker
                   selectedValue={settings.location.city}
                   onValueChange={(value) =>
@@ -684,7 +672,7 @@ const handleDumpScheduledNotifications = async () => {
                     { label: "Kuala Lumpur", value: "Kuala Lumpur" },
                     { label: "Dhaka", value: "Dhaka" },
                   ]}
-                  title="Select City"
+                  title={t('selectCity') || 'Select City'}
                   theme={theme}
                 />
               </View>
@@ -725,7 +713,7 @@ const handleDumpScheduledNotifications = async () => {
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>{t("privacyPolicy")}</Text>
                   <Text style={styles.settingDescription}>
-                    Read our privacy policy
+                    {t('readPrivacyPolicy')}
                   </Text>
                 </View>
                 <FontAwesome5 
@@ -744,7 +732,7 @@ const handleDumpScheduledNotifications = async () => {
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>{t("termsOfService")}</Text>
                   <Text style={styles.settingDescription}>
-                    Read our terms of service
+                    {t('readTermsOfService')}
                   </Text>
                 </View>
                 <FontAwesome5 
@@ -761,10 +749,8 @@ const handleDumpScheduledNotifications = async () => {
             >
               <View style={styles.settingHeader}>
                 <View style={styles.settingTextContainer}>
-                  <Text style={styles.settingTitle}>Clear Cache</Text>
-                  <Text style={styles.settingDescription}>
-                    Clear cached prayer times and refresh data
-                  </Text>
+                  <Text style={styles.settingTitle}>{t('clearCache')}</Text>
+                  <Text style={styles.settingDescription}>{t('clearCacheDesc')}</Text>
                 </View>
                 <FontAwesome5 
                   name="trash" 
@@ -798,7 +784,7 @@ const handleDumpScheduledNotifications = async () => {
               <View style={styles.settingTextContainer}>
                 <Text style={styles.settingTitle}>{t("appVersion")}</Text>
                 <Text style={styles.settingDescription}>
-                  Islamic Pro v1.0.0
+                  {t('appVersionText') || 'Islamic Pro v1.0.0'}
                 </Text>
               </View>
             </View>
@@ -823,26 +809,26 @@ const handleDumpScheduledNotifications = async () => {
           <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
             <View style={styles.modalHeader}>
               <FontAwesome5 name="map-marker-alt" size={24} color="#2980b9" />
-              <Text style={[styles.modalTitle, { color: theme.text.primary }]}>
-                Enable Location Access
+              <Text style={[styles.modalTitle, { color: theme.text.primary }] }>
+                {t('enableLocationAccess')}
               </Text>
             </View>
             
-            <Text style={[styles.modalDescription, { color: theme.text.secondary }]}>
-              To provide accurate prayer times for your location, please enable location access in your device settings.
+            <Text style={[styles.modalDescription, { color: theme.text.secondary }] }>
+              {t('enableLocationDescription')}
             </Text>
 
             <View style={styles.stepsContainer}>
-              <Text style={[styles.stepsTitle, { color: theme.text.primary }]}>
-                Follow these steps:
+              <Text style={[styles.stepsTitle, { color: theme.text.primary }] }>
+                {t('followTheseSteps')}
               </Text>
               
               <View style={styles.step}>
                 <View style={[styles.stepNumber, { backgroundColor: '#2980b9' }]}>
                   <Text style={styles.stepNumberText}>1</Text>
                 </View>
-                <Text style={[styles.stepText, { color: theme.text.secondary }]}>
-                  Go to your device's Settings app
+                <Text style={[styles.stepText, { color: theme.text.secondary }] }>
+                  {t('step1')}
                 </Text>
               </View>
 
@@ -850,8 +836,8 @@ const handleDumpScheduledNotifications = async () => {
                 <View style={[styles.stepNumber, { backgroundColor: '#2980b9' }]}>
                   <Text style={styles.stepNumberText}>2</Text>
                 </View>
-                <Text style={[styles.stepText, { color: theme.text.secondary }]}>
-                  Scroll down and find "Islamic Pro" in the apps list
+                <Text style={[styles.stepText, { color: theme.text.secondary }] }>
+                  {t('step2')}
                 </Text>
               </View>
 
@@ -859,8 +845,8 @@ const handleDumpScheduledNotifications = async () => {
                 <View style={[styles.stepNumber, { backgroundColor: '#2980b9' }]}>
                   <Text style={styles.stepNumberText}>3</Text>
                 </View>
-                <Text style={[styles.stepText, { color: theme.text.secondary }]}>
-                  Tap on "Location" and select "While Using App" or "Ask Next Time"
+                <Text style={[styles.stepText, { color: theme.text.secondary }] }>
+                  {t('step3')}
                 </Text>
               </View>
 
@@ -868,8 +854,8 @@ const handleDumpScheduledNotifications = async () => {
                 <View style={[styles.stepNumber, { backgroundColor: '#2980b9' }]}>
                   <Text style={styles.stepNumberText}>4</Text>
                 </View>
-                <Text style={[styles.stepText, { color: theme.text.secondary }]}>
-                  Return to Islamic Pro and toggle GPS location again
+                <Text style={[styles.stepText, { color: theme.text.secondary }] }>
+                  {t('step4')}
                 </Text>
               </View>
             </View>
@@ -883,8 +869,8 @@ const handleDumpScheduledNotifications = async () => {
                 }}
               >
                 <FontAwesome5 name="cog" size={16} color="#fff" />
-                <Text style={[styles.modalButtonText, { color: '#fff' }]}>
-                  Open Settings
+                <Text style={[styles.modalButtonText, { color: '#fff' }] }>
+                  {t('openSettings')}
                 </Text>
               </TouchableOpacity>
               
@@ -895,31 +881,31 @@ const handleDumpScheduledNotifications = async () => {
                   if (locationPermissionStatus === 'granted') {
                     setShowLocationTutorial(false);
                     updateSettings("location", "useGPS", true);
-                    Alert.alert('Success!', 'Location access enabled successfully.');
+                    Alert.alert(t('success') || 'Success', t('locationEnabled') || 'Location access enabled successfully.');
                   } else {
-                    Alert.alert('Still Denied', 'Please enable location access in Settings first.');
+                    Alert.alert(t('stillDenied') || 'Still Denied', t('enableLocationInSettings') || 'Please enable location access in Settings first.');
                   }
                 }}
               >
                 <FontAwesome5 name="sync-alt" size={16} color="#fff" />
-                <Text style={[styles.modalButtonText, { color: '#fff' }]}>
-                  Try Again
+                <Text style={[styles.modalButtonText, { color: '#fff' }] }>
+                  {t('tryAgain')}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              style={[styles.laterButtonFull, { backgroundColor: theme.border, marginTop: 12 }]}
-              onPress={() => {
-                setShowLocationTutorial(false);
-                // Turn off GPS toggle since permission is denied
-                updateSettings("location", "useGPS", false);
-              }}
-            >
-              <Text style={[styles.modalButtonText, { color: theme.text.secondary }]}>
-                Maybe Later
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.laterButtonFull, { backgroundColor: theme.border, marginTop: 12 }]}
+                onPress={() => {
+                  setShowLocationTutorial(false);
+                  // Turn off GPS toggle since permission is denied
+                  updateSettings("location", "useGPS", false);
+                }}
+              >
+                <Text style={[styles.modalButtonText, { color: theme.text.secondary }] }>
+                  {t('maybeLater')}
+                </Text>
+              </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -934,11 +920,11 @@ const handleDumpScheduledNotifications = async () => {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { maxWidth: 600 }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: theme.text.primary }]}>Scheduled Notifications</Text>
+              <Text style={[styles.modalTitle, { color: theme.text.primary }]}>{t('scheduledNotifications')}</Text>
             </View>
             <ScrollView style={{ maxHeight: 400, marginBottom: 12 }}>
               {scheduledNotifications.length === 0 && (
-                <Text style={{ color: theme.text.secondary }}>No scheduled notifications found.</Text>
+                <Text style={{ color: theme.text.secondary }}>{t('noScheduledNotifications')}</Text>
               )}
               {scheduledNotifications.map((n, idx) => (
                 <View key={n.identifier || idx} style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.border }}>

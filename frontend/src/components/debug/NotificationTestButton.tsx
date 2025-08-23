@@ -1,32 +1,47 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { prayerNotificationService } from '../../services/prayerNotificationService';
+import { useTranslation } from '@/src/i18n';
 
 export const NotificationTestButton: React.FC = () => {
+  const { t } = useTranslation();
   const testNotification = async () => {
     try {
-      await prayerNotificationService.testNotification();
-      Alert.alert('Success', 'Test notification scheduled for 10 seconds from now');
+      if ((prayerNotificationService as any).testNotification) {
+        await (prayerNotificationService as any).testNotification();
+      } else {
+        const { scheduleNotificationAt } = await import('@/src/utils/manualNotification');
+        const tDate = new Date(Date.now() + 10000);
+        await scheduleNotificationAt(tDate, t('quickTest') || 'Quick Test', t('firesIn10s') || 'Fires in 10s', { sound: true, vibrate: true });
+      }
+      Alert.alert(t('success') || 'Success', t('testNotificationScheduled') || 'Test notification scheduled for 10 seconds from now');
     } catch (error) {
-      Alert.alert('Error', `Failed to schedule test notification: ${error}`);
+      Alert.alert(t('error') || 'Error', `${t('failedToScheduleTestNotification') || 'Failed to schedule test notification'}: ${error}`);
     }
   };
 
   const getNotificationSummary = async () => {
+    const { t } = useTranslation();
     try {
-      const summary = await prayerNotificationService.getScheduledNotificationsSummary();
-      Alert.alert('Notification Summary', summary);
+      if ((prayerNotificationService as any).getScheduledNotificationsSummary) {
+        const summary = await (prayerNotificationService as any).getScheduledNotificationsSummary();
+        Alert.alert(t('notificationSummary') || 'Notification Summary', summary);
+      } else {
+        const scheduled = await (await import('expo-notifications')).getAllScheduledNotificationsAsync();
+        Alert.alert(t('notificationSummary') || 'Notification Summary', JSON.stringify(scheduled, null, 2).slice(0, 1000));
+      }
     } catch (error) {
-      Alert.alert('Error', `Failed to get notification summary: ${error}`);
+      Alert.alert(t('error') || 'Error', `${t('failedToGetNotificationSummary') || 'Failed to get notification summary'}: ${error}`);
     }
   };
 
   const cancelAllNotifications = async () => {
+    const { t } = useTranslation();
     try {
       await prayerNotificationService.cancelAllNotifications();
-      Alert.alert('Success', 'All notifications cancelled');
+      Alert.alert(t('success') || 'Success', t('allNotificationsCancelled') || 'All notifications cancelled');
     } catch (error) {
-      Alert.alert('Error', `Failed to cancel notifications: ${error}`);
+      Alert.alert(t('error') || 'Error', `${t('failedToCancelNotifications') || 'Failed to cancel notifications'}: ${error}`);
     }
   };
 
