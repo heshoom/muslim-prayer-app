@@ -9,6 +9,7 @@ import {
   Dimensions,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSettings } from '@/src/contexts/SettingsContext';
@@ -16,6 +17,9 @@ import { useTranslation } from '@/src/i18n';
 import { lightTheme, darkTheme } from '@/src/constants/theme';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
+import { CustomPicker } from '@/src/components/shared/CustomPicker';
+import { fetchPrayerTimes } from '../src/services/prayerTimesService';
+import { PrayerTimesResponse } from '../src/types/prayerTimes';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -111,7 +115,10 @@ export default function Welcome() {
   const [manualMode, setManualMode] = useState<boolean>(false);
   const [selectedCity, setSelectedCity] = useState<{ city: string; country: string } | null>(null);
   const [didAutoDetect, setDidAutoDetect] = useState<boolean>(false);
-  
+  const [prayerTimes, setPrayerTimes] = useState<PrayerTimesResponse | null>(null);
+  const [loadingPrayerTimes, setLoadingPrayerTimes] = useState<boolean>(true);
+  const [errorPrayerTimes, setErrorPrayerTimes] = useState<string | null>(null);
+
   const theme = isDarkMode ? darkTheme : lightTheme;
 
   // Animation helper
@@ -124,6 +131,91 @@ export default function Welcome() {
     setStep(newStep);
   };
 
+  // Fetch prayer times for the finish step
+  const fetchPrayerTimesForFinish = async () => {
+    console.log('fetchPrayerTimesForFinish called');
+    
+    // Don't fetch if location permissions aren't granted
+    if (!locationGranted) {
+      console.log('Location permissions not granted, skipping prayer times fetch');
+      return;
+    }
+    
+    try {
+      setLoadingPrayerTimes(true);
+      setErrorPrayerTimes(null);
+      
+      console.log('Getting location permission...');
+      // Get location permission and current location
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        throw new Error('Location permission denied');
+      }
+      
+      console.log('Getting current location...');
+      const locationResult = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = locationResult.coords;
+      
+      console.log('Location obtained:', { latitude, longitude });
+      console.log('Selected method:', selectedMethod, 'Selected madhab:', selectedMadhhab);
+      
+      // Fetch prayer times using selected method and madhab
+      const response = await fetchPrayerTimes(
+        latitude,
+        longitude,
+        selectedMethod,
+        selectedMadhhab
+      );
+      
+      console.log('Prayer times response:', response);
+      setPrayerTimes(response);
+    } catch (error) {
+      console.error('Error fetching prayer times:', error);
+      setErrorPrayerTimes(error instanceof Error ? error.message : 'Failed to fetch prayer times');
+    } finally {
+      setLoadingPrayerTimes(false);
+    }
+  };
+
+  // Calculate next prayer from real prayer times
+  const getNextPrayerFromRealData = () => {
+    console.log('getNextPrayerFromRealData called, prayerTimes:', prayerTimes);
+    
+    if (!prayerTimes) {
+      console.log('No prayer times available, using fallback');
+      return { name: 'Fajr', time: '5:30' }; // Fallback
+    }
+    
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    
+    const prayers = [
+      { name: 'Fajr', time: prayerTimes.prayerTimes.Fajr },
+      { name: 'Dhuhr', time: prayerTimes.prayerTimes.Dhuhr },
+      { name: 'Asr', time: prayerTimes.prayerTimes.Asr },
+      { name: 'Maghrib', time: prayerTimes.prayerTimes.Maghrib },
+      { name: 'Isha', time: prayerTimes.prayerTimes.Isha },
+    ];
+    
+    console.log('Available prayers:', prayers);
+    console.log('Current time:', currentTime);
+    
+    // Find the next prayer
+    for (const prayer of prayers) {
+      const [hours, minutes] = prayer.time.split(':').map(Number);
+      const prayerTime = hours * 60 + minutes;
+      
+      if (prayerTime > currentTime) {
+        console.log('Next prayer found:', prayer);
+        return { name: prayer.name, time: prayer.time };
+      }
+    }
+    
+    // If all prayers for today have passed, return Fajr for tomorrow
+    console.log('All prayers passed, returning Fajr for tomorrow');
+    return { name: 'Fajr', time: prayerTimes.prayerTimes.Fajr };
+  };
+
   useEffect(() => {
     // Auto-select device language on mount if not set
     if (!settings?.appearance?.language) {
@@ -134,6 +226,20 @@ export default function Welcome() {
       }
     }
   }, []);
+
+  // Fetch prayer times when reaching the finish step
+  useEffect(() => {
+    if (step === STEPS.FINISH && !prayerTimes && !loadingPrayerTimes) {
+      fetchPrayerTimesForFinish();
+    }
+  }, [step, prayerTimes, loadingPrayerTimes]);
+
+  // Also trigger prayer times fetch when step changes to FINISH, but only if location is granted
+  useEffect(() => {
+    if (step === STEPS.FINISH && locationGranted) {
+      fetchPrayerTimesForFinish();
+    }
+  }, [step, locationGranted]);
 
   // Step 1: Welcome Screen
   const renderWelcome = () => (
@@ -392,28 +498,18 @@ export default function Welcome() {
           {tf('calculationMethod', 'Prayer Calculation Method')}
         </Text>
 
-  {CALCULATION_METHODS.map((method) => (
-          <TouchableOpacity
-            key={method.key}
-            style={[
-              styles.methodCard,
-              {
-                backgroundColor: selectedMethod === method.key ? theme.primary : theme.surface,
-                borderColor: selectedMethod === method.key ? theme.primary : theme.border,
-              },
-            ]}
-            onPress={() => setSelectedMethod(method.key)}
-          >
-            <Text
-              style={[
-                styles.methodTitle,
-                { color: selectedMethod === method.key ? theme.text.inverse : theme.text.primary },
-              ]}
-            >
-              {tf(`calcMethod.${method.key}`, method.label)}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        <View style={styles.pickerContainer}>
+          <CustomPicker
+            selectedValue={selectedMethod}
+            onValueChange={(value) => setSelectedMethod(value)}
+            items={CALCULATION_METHODS.map(method => ({
+              label: tf(`calcMethod.${method.key}`, method.label),
+              value: method.key,
+            }))}
+            title={tf('selectCalculationMethod', 'Select Calculation Method')}
+            theme={theme}
+          />
+        </View>
 
         <Text style={[styles.sectionTitle, { color: theme.text.primary, marginTop: 24, marginBottom: 16 }]}>
           {tf('madhab', 'Madhhab (Asr Calculation)')}
@@ -729,18 +825,64 @@ export default function Welcome() {
   };
 
   // Step 7: Finish
-  const renderFinish = () => (
-    <View style={styles.stepContent}>
-      <View style={styles.content}>
-      <View style={styles.successContainer}>
-        <Text style={styles.successIcon}>🎉</Text>
-        <Text style={[styles.title, { color: theme.primary, marginBottom: 8 }]}>
-          {tf('allSet', "You're all set!")}
-        </Text>
-        <Text style={[styles.description, { color: theme.text.secondary, marginBottom: 32 }]}>
-          {tf('nextPrayerAt', 'Your next prayer is Maghrib at 7:15 PM')}
-        </Text>
-      </View>
+  const renderFinish = () => {
+    const nextPrayer = getNextPrayerFromRealData();
+    const timeFormat = settings?.appearance?.timeFormat || '12h';
+    
+    // Format time based on user's preference
+    const formatTime = (time: string) => {
+      const [hours, minutes] = time.split(':').map(Number);
+      if (timeFormat === '12h') {
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+        return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
+      } else {
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      }
+    };
+    
+    return (
+      <View style={styles.stepContent}>
+        <View style={styles.content}>
+        <View style={styles.successContainer}>
+          <Text style={styles.successIcon}>🎉</Text>
+          <Text style={[styles.title, { color: theme.primary, marginBottom: 8 }]}>
+            {tf('allSet', "You're all set!")}
+          </Text>
+          
+          {/* Only show prayer times if location permissions were granted */}
+          {locationGranted ? (
+            <>
+              {loadingPrayerTimes ? (
+                <Text style={[styles.description, { color: theme.text.secondary, marginBottom: 32 }]}>
+                  Loading prayer times...
+                </Text>
+              ) : errorPrayerTimes ? (
+                <View style={{ marginBottom: 32 }}>
+                  <Text style={[styles.description, { color: theme.text.secondary, marginBottom: 16 }]}>
+                    Your next prayer is {nextPrayer.name} at {formatTime(nextPrayer.time)}
+                  </Text>
+                  <TouchableOpacity 
+                    style={[styles.secondaryButton, { borderColor: theme.primary }]} 
+                    onPress={fetchPrayerTimesForFinish}
+                  >
+                    <Text style={[styles.secondaryButtonText, { color: theme.primary }]}>
+                      Retry Loading Prayer Times
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <Text style={[styles.description, { color: theme.text.secondary, marginBottom: 32 }]}>
+                  Your next prayer is {nextPrayer.name} at {formatTime(nextPrayer.time)}
+                </Text>
+              )}
+            </>
+          ) : (
+            <Text style={[styles.description, { color: theme.text.secondary, marginBottom: 32 }]}>
+              {tf('welcomeComplete', 'Welcome to Islamic Pro! You can enable location services later to get prayer times.')}
+            </Text>
+          )}
+        </View>
       
       <TouchableOpacity 
         style={[styles.primaryButton, { backgroundColor: theme.primary }]} 
@@ -752,7 +894,8 @@ export default function Welcome() {
       </TouchableOpacity>
       </View>
     </View>
-  );
+    );
+  };
 
   const handleFinish = async () => {
     // Save all settings
@@ -791,7 +934,7 @@ export default function Welcome() {
     renderNotifications(),
     renderAppearance(),
     renderTour(),
-    renderFinish(),
+    () => renderFinish(), // Make this a function so it's called each time
   ];
 
   return (
@@ -807,7 +950,7 @@ export default function Welcome() {
       >
         {screens.map((screen, index) => (
           <View key={index} style={{ width: SCREEN_WIDTH, flex: 1 }}>
-            {screen}
+            {typeof screen === 'function' ? screen() : screen}
           </View>
         ))}
       </Animated.View>
@@ -994,6 +1137,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12
   },
+  pickerContainer: {
+    marginBottom: 24
+  },
   madhhabOption: {
     flex: 1,
     padding: 16,
@@ -1082,5 +1228,16 @@ const styles = StyleSheet.create({
   successIcon: {
     fontSize: 64,
     marginBottom: 16
-  }
+  },
+  secondaryButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
