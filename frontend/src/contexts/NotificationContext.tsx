@@ -389,7 +389,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Map to the bundled iOS short aiff filenames
       const iosMap: Record<string, string> = {
         makkah: 'makkah_short.aiff',
-        madinah: 'madinah-03_short.aiff',
+        madinah: 'madinah.aiff',
         egypt: 'egypt_short.aiff',
         turkey: 'turkey_short.aiff',
         nasiralqatami: 'nasiralqatami_short.aiff',

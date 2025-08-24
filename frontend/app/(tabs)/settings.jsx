@@ -101,11 +101,7 @@ const Settings = () => {
     }
   };
 
-  const handleSave = () => {
-    Alert.alert(t("settingsSaved"), t("preferencesUpdated"), [
-      { text: t("ok") },
-    ]);
-  };
+
 
   const handleLanguageChange = (newLanguage) => {
     updateSettings("appearance", "language", newLanguage);
@@ -659,9 +655,7 @@ const Settings = () => {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>{t("saveChanges")}</Text>
-          </TouchableOpacity>
+
         </View>
       </ScrollView>
 

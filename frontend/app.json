@@ -13,6 +13,9 @@
   "bundleIdentifier": "com.heshoom.islamicpro",
   "buildNumber": "11",
       "icon": "./assets/images/icon.png",
+      "assets": [
+        "./assets/sounds/athan/"
+      ],
     "infoPlist": {
   "ITSAppUsesNonExemptEncryption": false,
   "UIBackgroundModes": ["fetch", "remote-notification"],

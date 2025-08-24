@@ -6,11 +6,16 @@
   "scripts": {
     "start": "cd backend && npm start",
     "build": "cd backend && npm install",
-    "install": "cd backend && npm install"
+    "install": "cd backend && npm install",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "date-fns-tz": "^3.2.0",
-    "expo-clipboard": "^7.1.5"
+    "expo-clipboard": "^7.1.5",
+    "expo": "~53.0.22",
+    "react": "19.0.0",
+    "react-native": "0.79.6"
   },
   "private": true
 }

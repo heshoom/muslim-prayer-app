@@ -10,6 +10,11 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		3E654699B3B8CD571914465F /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C93B1C01786C6BCB7F8A21A /* ExpoModulesProvider.swift */; };
+		566615C82E5B14FA00F54DF3 /* madinah.aiff in Resources */ = {isa = PBXBuildFile; fileRef = 566615C42E5B14FA00F54DF3 /* madinah.aiff */; };
+		566615C92E5B14FA00F54DF3 /* makkah_short.aiff in Resources */ = {isa = PBXBuildFile; fileRef = 566615C52E5B14FA00F54DF3 /* makkah_short.aiff */; };
+		566615CA2E5B14FA00F54DF3 /* egypt_short.aiff in Resources */ = {isa = PBXBuildFile; fileRef = 566615C32E5B14FA00F54DF3 /* egypt_short.aiff */; };
+		566615CB2E5B14FA00F54DF3 /* turkey_short.aiff in Resources */ = {isa = PBXBuildFile; fileRef = 566615C72E5B14FA00F54DF3 /* turkey_short.aiff */; };
+		566615CC2E5B14FA00F54DF3 /* nasiralqatami_short.aiff in Resources */ = {isa = PBXBuildFile; fileRef = 566615C62E5B14FA00F54DF3 /* nasiralqatami_short.aiff */; };
 		A93B9D480A4BBF022593518F /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 893405DAD64D39D6F9FADD76 /* PrivacyInfo.xcprivacy */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		CFD107E736B62CC10545F511 /* libPods-IslamicPro.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DAEDE5910FEAE001E859A45C /* libPods-IslamicPro.a */; };
@@ -20,7 +25,12 @@
 		13B07F961A680F5B00A75B9A /* IslamicPro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = IslamicPro.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = IslamicPro/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = IslamicPro/Info.plist; sourceTree = "<group>"; };
-		893405DAD64D39D6F9FADD76 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = IslamicPro/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		566615C32E5B14FA00F54DF3 /* egypt_short.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = egypt_short.aiff; sourceTree = "<group>"; };
+		566615C42E5B14FA00F54DF3 /* madinah.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = madinah.aiff; sourceTree = "<group>"; };
+		566615C52E5B14FA00F54DF3 /* makkah_short.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = makkah_short.aiff; sourceTree = "<group>"; };
+		566615C62E5B14FA00F54DF3 /* nasiralqatami_short.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = nasiralqatami_short.aiff; sourceTree = "<group>"; };
+		566615C72E5B14FA00F54DF3 /* turkey_short.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = turkey_short.aiff; sourceTree = "<group>"; };
+		893405DAD64D39D6F9FADD76 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = IslamicPro/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		9C93B1C01786C6BCB7F8A21A /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-IslamicPro/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = IslamicPro/SplashScreen.storyboard; sourceTree = "<group>"; };
 		B43361EB8A9A384133D05184 /* Pods-IslamicPro.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-IslamicPro.release.xcconfig"; path = "Target Support Files/Pods-IslamicPro/Pods-IslamicPro.release.xcconfig"; sourceTree = "<group>"; };
@@ -64,7 +74,6 @@
 				B539C2289E53ACA6140BDBDE /* Pods-IslamicPro.debug.xcconfig */,
 				B43361EB8A9A384133D05184 /* Pods-IslamicPro.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -109,6 +118,11 @@
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				23585929B3D71601FD564414 /* Pods */,
 				73F14AA64989AE908AAD95D9 /* ExpoModulesProviders */,
+				566615C32E5B14FA00F54DF3 /* egypt_short.aiff */,
+				566615C42E5B14FA00F54DF3 /* madinah.aiff */,
+				566615C52E5B14FA00F54DF3 /* makkah_short.aiff */,
+				566615C62E5B14FA00F54DF3 /* nasiralqatami_short.aiff */,
+				566615C72E5B14FA00F54DF3 /* turkey_short.aiff */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -195,6 +209,11 @@
 			files = (
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
+				566615C82E5B14FA00F54DF3 /* madinah.aiff in Resources */,
+				566615C92E5B14FA00F54DF3 /* makkah_short.aiff in Resources */,
+				566615CA2E5B14FA00F54DF3 /* egypt_short.aiff in Resources */,
+				566615CB2E5B14FA00F54DF3 /* turkey_short.aiff in Resources */,
+				566615CC2E5B14FA00F54DF3 /* nasiralqatami_short.aiff in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				A93B9D480A4BBF022593518F /* PrivacyInfo.xcprivacy in Resources */,
 			);
@@ -467,10 +486,7 @@
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -525,10 +541,7 @@
 				);
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
 				MTL_ENABLE_DEBUG_INFO = NO;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				USE_HERMES = true;

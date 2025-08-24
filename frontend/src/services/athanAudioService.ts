@@ -148,15 +148,15 @@ class AthanAudioService {
   private getAthanSoundFile(athanType: string) {
     switch (athanType) {
       case 'makkah':
-        return require('../../assets/sounds/athan/makkah.mp3');
+        return require('../../assets/sounds/athan/makkah_short.aiff');
       case 'madinah':
-        return require('../../assets/sounds/athan/madinah.mp3');
+        return require('../../assets/sounds/athan/madinah.aiff');
       case 'egypt':
-        return require('../../assets/sounds/athan/egypt.mp3');
+        return require('../../assets/sounds/athan/egypt_short.aiff');
       case 'turkey':
-        return require('../../assets/sounds/athan/turkey.mp3');
+        return require('../../assets/sounds/athan/turkey_short.aiff');
       case 'nasiralqatami':
-        return require('../../assets/sounds/athan/nasiralqatami.mp3');
+        return require('../../assets/sounds/athan/nasiralqatami_short.aiff');
       default:
         return null; // Use system sound
     }

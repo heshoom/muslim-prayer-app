@@ -775,9 +775,9 @@ export default function Welcome() {
       }
     }
     
-    // Land them on the Prayer Times screen
+    // Land them on the Home screen
     try {
-      router.replace('/(tabs)/prayer-times');
+      router.replace('/(tabs)');
     } catch {
       router.replace('/(tabs)');
     }

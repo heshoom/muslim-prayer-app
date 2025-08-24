@@ -1,3 +1,7 @@
 {
-  "expo": {}
+  "expo": {
+    "ios": {
+      "bundleIdentifier": "com.heshams.muslim-prayer-app"
+    }
+  }
 }
