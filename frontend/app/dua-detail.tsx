@@ -5,34 +5,40 @@ import { ThemedText } from '@/src/components/shared/ThemedText';
 import { ClipboardTextButton } from '@/src/components/shared/ClipboardTextButton';
 import { ThemedView } from '@/src/components/shared/ThemedView';
 import { useSettings } from '@/src/contexts/SettingsContext';
-import { DUA_SECTIONS } from '@/src/data/dua';
+import { darkTheme, lightTheme } from '../src/constants/theme';
+import { DUA_SECTIONS, DuaItem } from '../src/data/dua';
+import { useTranslation } from '@/src/i18n';
 
 export default function DuaDetailScreen() {
   const params = useLocalSearchParams();
   const duaId = params.id as string;
   const { settings } = useSettings();
+  const { t } = useTranslation();
+  const isDarkMode = settings?.appearance?.theme === 'dark' || false;
+  const theme = isDarkMode ? darkTheme : lightTheme;
   const language = settings?.appearance?.language || 'en';
 
   // Find the dua by id
   let dua = null;
   for (const section of DUA_SECTIONS) {
     for (const cat of section.categories) {
-      dua = cat.items.find((item) => item.id === duaId) || dua;
+      dua = cat.items.find((item: DuaItem) => item.id === duaId) || dua;
     }
   }
   if (!dua) {
-    return <ThemedView><ThemedText>Dua not found.</ThemedText></ThemedView>;
+    return <ThemedView><ThemedText>{t('duaNotFound')}</ThemedText></ThemedView>;
   }
 
-  // For future: support multiple translations by language
-  const translation = dua.translation; // TODO: use language if available
+  // Get localized transliteration and translation based on user's language
+  const transliteration = dua.transliteration?.[language as keyof typeof dua.transliteration] || dua.transliteration?.en || '';
+  const translation = dua.translation?.[language as keyof typeof dua.translation] || dua.translation?.en || '';
 
-  const fullText = [dua.arabic, dua.transliteration, translation].filter(Boolean).join('\n\n');
+  const fullText = [dua.arabic, transliteration, translation].filter(Boolean).join('\n\n');
 
   const onShare = async () => {
     try {
       await Share.share({
-        message: `${dua.title}\n\n${fullText}`,
+        message: `${t(dua.titleKey)}\n\n${fullText}`,
       });
     } catch {}
   };
@@ -40,11 +46,20 @@ export default function DuaDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <ThemedText style={styles.title}>{dua.title}</ThemedText>
+        <ThemedText style={styles.title}>{t(dua.titleKey)}</ThemedText>
         <View style={styles.actions}>
           <ClipboardTextButton text={fullText} />
-          <TouchableOpacity style={styles.shareButton} onPress={onShare}>
-            <ThemedText style={styles.shareText}>Share</ThemedText>
+          <TouchableOpacity
+            style={[
+              styles.shareButton,
+              {
+                backgroundColor: theme.primary,
+                borderColor: theme.primary,
+              },
+            ]}
+            onPress={onShare}
+          >
+            <ThemedText style={[styles.shareText, { color: theme.text.inverse }]}>{t('share')}</ThemedText>
           </TouchableOpacity>
         </View>
         {dua.arabic && (
@@ -52,7 +67,7 @@ export default function DuaDetailScreen() {
             {dua.arabic}
           </ThemedText>
         )}
-        {dua.transliteration && <ThemedText style={styles.transliteration}>{dua.transliteration}</ThemedText>}
+        {transliteration && <ThemedText style={styles.transliteration}>{transliteration}</ThemedText>}
         {translation && <ThemedText style={styles.translation}>{translation}</ThemedText>}
       </ScrollView>
     </ThemedView>
@@ -77,6 +92,12 @@ const styles = StyleSheet.create({
   transliteration: { fontSize: 16, fontStyle: 'italic', marginBottom: 12, color: '#666' },
   translation: { fontSize: 16, color: '#333' },
   actions: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  shareButton: { marginLeft: 12, paddingVertical: 6, paddingHorizontal: 16, borderRadius: 8, borderWidth: 1, borderColor: '#bbb', backgroundColor: '#f2f2f2' },
+  shareButton: {
+    marginLeft: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
   shareText: { fontSize: 14, fontWeight: '600' },
 });

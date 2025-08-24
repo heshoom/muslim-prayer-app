@@ -398,20 +398,20 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const soundName = iosMap[selected] || 'default';
 
       const in15 = new Date(Date.now() + 15 * 1000);
-      // Friendly notification body for users
+      // Friendly notification body for users - use translations
       const athanDisplayNames: Record<string, string> = {
-        makkah: 'Makkah Athan',
-        madinah: 'Madinah Athan',
-        egypt: 'Egypt Athan',
-        turkey: 'Turkey Athan',
-        nasiralqatami: 'Nasir Al Qatami Athan',
-        default: 'Athan',
+        makkah: t('makkahAthan'),
+        madinah: t('madinahAthan'),
+        egypt: t('egyptAthan'),
+        turkey: t('turkeyAthan'),
+        nasiralqatami: t('nasirAlQatamiAthan'),
+        default: t('athan'),
       };
-      const displayName = athanDisplayNames[selected] || 'Athan';
-      const friendlyBody = `This is a test notification for the ${displayName} sound. Please ensure your phone is not on silent.`;
+      const displayName = athanDisplayNames[selected] || t('athan');
+      const friendlyBody = t('testNotificationForSound', { sound: displayName });
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: t('iosCustomSoundTestTitle') || 'iOS Custom Sound Test',
+          title: t('testNotificationScheduled'),
           body: friendlyBody,
           sound: Platform.OS === 'ios' ? soundName : true,
           interruptionLevel: Platform.OS === 'ios' ? 'timeSensitive' : undefined,

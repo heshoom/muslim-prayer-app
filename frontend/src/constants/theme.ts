@@ -5,6 +5,8 @@ export const lightTheme = {
   secondary: '#27ae60',
   tint: '#2980b9',
   tabBarBackground: 'rgba(255, 255, 255, 0.9)',
+  tabIconDefault: '#7f8c8d', // Medium grey instead of dark grey for better icon visibility
+  tabIconSelected: '#2980b9',
   text: {
     primary: '#2c3e50',
     secondary: '#7f8c8d',
@@ -32,6 +34,8 @@ export const darkTheme = {
   primary: '#3498db',
   tint: '#3498db',
   tabBarBackground: 'rgba(30, 30, 30, 0.9)',
+  tabIconDefault: '#a0a0a0', // Light grey instead of pure white for better icon visibility
+  tabIconSelected: '#3498db',
   secondary: '#2ecc71',
   text: {
     primary: '#ffffff', // Pure white for primary text

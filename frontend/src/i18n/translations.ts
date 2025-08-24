@@ -53,6 +53,17 @@ export const translations = {
     maghrib: 'Maghrib',
     isha: 'Isha',
     
+    // Athan Names
+    makkahAthan: 'Makkah Athan',
+    madinahAthan: 'Madinah Athan',
+    egyptAthan: 'Egypt Athan',
+    turkeyAthan: 'Turkey Athan',
+    nasirAlQatamiAthan: 'Nasir Al Qatami Athan',
+    athan: 'Athan',
+    
+    // Test Notification
+    testNotificationForSound: 'This is a test notification for the {sound} sound. Please ensure your phone is not on silent.',
+    
     // Qibla & Mosques
     qiblaRequiresMobile: 'The Qibla compass requires a mobile device with motion sensors',
     locationPermissionDenied: 'Location permission was denied',
@@ -121,6 +132,43 @@ export const translations = {
   chooseAthanRecitation: 'Choose your preferred athan recitation',
   selectAthanSound: 'Select Athan Sound',
   testIosNotificationSound: 'Test iOS Notification Sound',
+  iosNotificationTestScheduled: 'A test iOS notification will play the Athan sound \n\nMake sure your iPhone is NOT on silent mode (ringer switch ON) to hear the sound.',
+  iosSilentModeWarning: 'To hear the Athan sound, your iPhone must NOT be on silent mode (ringer switch ON).',
+  
+  // Dua Page Translations
+  daily: 'Daily',
+  azkar: 'Azkar',
+  sleeping: 'Sleeping',
+  toilet: 'Toilet',
+  ablution: 'Ablution',
+  mosque: 'Mosque',
+  prayer: 'Prayer',
+  
+  // Dua Item Titles
+  whenYouWakeUp: 'When you wake up',
+  reciteThisAfterEverySalah: 'Recite this after every Salah',
+  beforeEnteringTheToilet: 'Before entering the toilet',
+  afterLeavingTheToilet: 'After leaving the toilet',
+  beforeStartingWudu: 'Before starting wudu',
+  afterCompletingWudu: 'After completing wudu',
+  uponEnteringTheMosque: 'Upon entering the mosque',
+  uponLeavingTheMosque: 'Upon leaving the mosque',
+  afterTheOpeningTakbir: 'After the opening takbir',
+  betweenTheTwoProstrations: 'Between the two prostrations',
+  uponEnteringTheHome: 'Upon entering the home',
+  uponLeavingTheHome: 'Upon leaving the home',
+  whenPuttingOnNewClothes: 'When putting on new clothes',
+  whenStartingAJourney: 'When starting a journey',
+  beforeEating: 'Before eating',
+  afterEating: 'After eating',
+  morningRemembrance: 'Morning remembrance',
+  eveningRemembrance: 'Evening remembrance',
+  sayyidulIstighfar: 'Sayyidul Istighfar',
+  
+  // Dua Detail Page
+  copy: 'Copy',
+  duaNotFound: 'Dua not found.',
+  
   prePrayerReminderDesc: 'Receive a reminder a few minutes before each prayer',
   reminderTimeBeforePrayer: 'Reminder time before prayer',
   reminderBeforeDescription: 'How many minutes before prayer should the reminder fire?',
@@ -253,6 +301,10 @@ export const translations = {
   requesting: 'Requesting...',
   granted: '\u2713 Granted',
   continue: 'Continue',
+  permissionsSetup: 'Let\'s set things up',
+  permissionsSetupDesc: 'We\'ll use these to provide accurate prayer times and timely reminders.',
+  locationAccessTitle: 'Location Access',
+  notificationsAccessTitle: 'Notifications',
   enableNotificationsDesc: 'Get notified at prayer times so you never miss a prayer.',
   settingUp: 'Setting up...',
   next: 'Next',
@@ -306,6 +358,35 @@ export const translations = {
   nasirAlQatami: 'Nasir Al-Qatami',
   defaultSystemSound: 'Default System Sound',
   selectCity: 'Select City',
+  // Onboarding: Location & Notifications
+  locationAndPrayerCalculation: 'Location & Prayer Calculation',
+  locationNeededForAccuracy: 'We need your location for accurate prayer times and Qibla direction',
+  prayerReminders: 'Prayer Reminders',
+  chooseReminderMethod: "Choose how you'd like to be reminded of prayer times",
+  notificationType: 'Notification Type',
+  whichPrayers: 'Which prayers?',
+  // Onboarding Welcome
+  assalamuAlaikum: 'Assalamu Alaikum 👋',
+  welcomeToIslamicPro: 'Welcome to Islamic Pro',
+  onboardingIntro: 'Your comprehensive Islamic companion for prayer times, Qibla direction, and daily spiritual guidance.',
+  getStarted: 'Get Started',
+    // Onboarding extras
+    setCityManually: 'Set City Manually',
+    useGPSInstead: 'Use GPS instead',
+    locationGranted: '✓ Location Access Granted',
+    // Calculation method and madhhab labels used in onboarding
+    calcMethod: {
+      auto: 'Auto (Recommended for Region)',
+      isna: 'ISNA (Islamic Society of North America)',
+      mwl: 'Muslim World League',
+      egypt: 'Egyptian General Authority',
+      makkah: 'Umm Al-Qura University (Saudi)',
+      karachi: 'University of Islamic Sciences, Karachi',
+    },
+    madhhab: {
+      shafi: 'Shafi',
+      hanafi: 'Hanafi',
+    },
     
     // Support
     support: 'Support',
@@ -315,6 +396,43 @@ export const translations = {
     appVersion: 'App Version',
   scheduledNotifications: 'Scheduled Notifications',
   noScheduledNotifications: 'No scheduled notifications found.',
+  autoDetectedLanguage: "We've auto-detected your device language",
+  enableLocationAccess: 'Enable Location Access',
+  adhanFullCall: 'Adhan (Full Call to Prayer)',
+  shortReminder: 'Short Reminder',
+  silentNotification: 'Silent Notification',
+  appearancePersonalization: 'Appearance & Personalization',
+  choosePreferredTheme: 'Choose your preferred theme',
+  lightMode: 'Light Mode',
+  cleanBrightInterface: 'Clean and bright interface',
+  darkMode: 'Dark Mode',
+  easyOnEyes: 'Easy on the eyes',
+  matchSystem: 'Match System',
+  followDeviceSetting: 'Follow device setting',
+  appTour: 'App Tour',
+  discoverFeatures: 'Discover what Islamic Pro can do for you',
+  of: 'of',
+  skipTour: 'Skip Tour',
+  finish: 'Finish',
+  allSet: "You're all set!",
+  nextPrayerAt: 'Your next prayer is Maghrib at 7:15 PM',
+  goToHome: 'Go to Home',
+  unableToAccessLocation: 'Unable to access location',
+    // App Tour cards
+    tour: {
+      prayerTimes: {
+        title: 'Prayer Times',
+        desc: 'Accurate prayer times based on your location and chosen calculation method',
+      },
+      qiblaCompass: {
+        title: 'Qibla Compass',
+        desc: 'Find the direction to Mecca from anywhere in the world',
+      },
+      dailyContent: {
+        title: 'Daily Quran & Hadith',
+        desc: 'Daily verses and sayings to strengthen your faith',
+      },
+    },
   },
   
   ar: {
@@ -369,6 +487,17 @@ export const translations = {
     maghrib: 'المغرب',
     isha: 'العشاء',
     
+    // Athan Names
+    makkahAthan: 'أذان مكة',
+    madinahAthan: 'أذان المدينة',
+    egyptAthan: 'أذان مصر',
+    turkeyAthan: 'أذان تركيا',
+    nasirAlQatamiAthan: 'أذان ناصر القطامي',
+    athan: 'أذان',
+    
+    // Test Notification
+    testNotificationForSound: 'هذا إشعار تجريبي لصوت {sound}. يرجى التأكد من أن هاتفك ليس في الوضع الصامت.',
+    
     // Qibla & Mosques
     qiblaRequiresMobile: 'بوصلة القبلة تتطلب جهازاً محمولاً مع حساسات الحركة',
     locationPermissionDenied: 'تم رفض إذن الموقع',
@@ -417,6 +546,43 @@ export const translations = {
   chooseAthanRecitation: 'اختر ترتيل الأذان المفضل لديك',
   selectAthanSound: 'اختر صوت الأذان',
   testIosNotificationSound: 'اختبار صوت إشعار iOS',
+  iosNotificationTestScheduled: 'سيتم تشغيل إشعار iOS تجريبي بصوت الأذان \n\nتأكد من أن iPhone الخاص بك ليس في الوضع الصامت (مفتاح الرنين ON) لسماع الصوت.',
+  iosSilentModeWarning: 'لسماع صوت الأذان، يجب ألا يكون iPhone الخاص بك في الوضع الصامت (مفتاح الرنين ON).',
+  
+  // Dua Page Translations
+  daily: 'يومي',
+  azkar: 'أذكار',
+  sleeping: 'النوم',
+  toilet: 'المرحاض',
+  ablution: 'الوضوء',
+  mosque: 'المسجد',
+  prayer: 'الصلاة',
+  
+  // Dua Item Titles
+  whenYouWakeUp: 'عند الاستيقاظ',
+  reciteThisAfterEverySalah: 'اقرأ هذا بعد كل صلاة',
+  beforeEnteringTheToilet: 'قبل دخول المرحاض',
+  afterLeavingTheToilet: 'بعد الخروج من المرحاض',
+  beforeStartingWudu: 'قبل بدء الوضوء',
+  afterCompletingWudu: 'بعد إكمال الوضوء',
+  uponEnteringTheMosque: 'عند دخول المسجد',
+  uponLeavingTheMosque: 'عند الخروج من المسجد',
+  afterTheOpeningTakbir: 'بعد التكبير الافتتاحي',
+  betweenTheTwoProstrations: 'بين السجدتين',
+  uponEnteringTheHome: 'عند دخول المنزل',
+  uponLeavingTheHome: 'عند الخروج من المنزل',
+  whenPuttingOnNewClothes: 'عند ارتداء ملابس جديدة',
+  whenStartingAJourney: 'عند بدء الرحلة',
+  beforeEating: 'قبل الأكل',
+  afterEating: 'بعد الأكل',
+  morningRemembrance: 'ذكر الصباح',
+  eveningRemembrance: 'ذكر المساء',
+  sayyidulIstighfar: 'سيد الاستغفار',
+  
+  // Dua Detail Page
+  copy: 'نسخ',
+  duaNotFound: 'لم يتم العثور على الدعاء.',
+  
   prePrayerReminderDesc: 'تلقي تذكير قبل كل صلاة بعدة دقائق',
   reminderTimeBeforePrayer: 'وقت التذكير قبل الصلاة',
   reminderBeforeDescription: 'كم عدد الدقائق قبل الصلاة يجب أن يعمل التذكير؟',
@@ -548,6 +714,13 @@ export const translations = {
   testNotificationScheduled: 'سيتم إطلاق إشعار اختبار بعد ثانيتين.',
   failedToScheduleTestNotification: 'فشل في جدولة إشعار الاختبار.',
   enableLocationAccess: 'تمكين وصول الموقع',
+  continue: 'متابعة',
+  next: 'التالي',
+  granted: '✓ مُنح',
+  permissionsSetup: 'لنعد الإعدادات',
+  permissionsSetupDesc: 'سنستخدم هذه الأذونات لتقديم أوقات صلاة دقيقة وتذكيرات في الوقت المناسب.',
+  locationAccessTitle: 'الوصول إلى الموقع',
+  notificationsAccessTitle: 'الإشعارات',
   enableLocationDescription: 'للحصول على أوقات صلاة دقيقة لموقعك، يرجى تمكين وصول الموقع في إعدادات جهازك.',
   followTheseSteps: 'اتبع هذه الخطوات:',
   step1: 'اذهب إلى تطبيق الإعدادات في جهازك',
@@ -573,6 +746,35 @@ export const translations = {
   nasirAlQatami: 'نصير القطامي',
   defaultSystemSound: 'صوت النظام الافتراضي',
   selectCity: 'اختر المدينة',
+  // Onboarding: Location & Notifications
+  locationAndPrayerCalculation: 'الموقع وطريقة حساب الصلاة',
+  locationNeededForAccuracy: 'نحتاج إلى موقعك للحصول على أوقات صلاة دقيقة واتجاه القبلة',
+  prayerReminders: 'تذكيرات الصلاة',
+  chooseReminderMethod: 'اختر كيفية تذكيرك بأوقات الصلاة',
+  notificationType: 'نوع الإشعار',
+  whichPrayers: 'أي الصلوات؟',
+  // Onboarding Welcome
+  assalamuAlaikum: 'السلام عليكم 👋',
+  welcomeToIslamicPro: 'مرحبًا بك في Islamic Pro',
+  onboardingIntro: 'رفيقك الإسلامي الشامل لأوقات الصلاة، واتجاه القبلة، والإرشاد الروحي اليومي.',
+  getStarted: 'ابدأ',
+    // Onboarding extras
+    setCityManually: 'تعيين المدينة يدويًا',
+    useGPSInstead: 'استخدام GPS بدلًا من ذلك',
+    locationGranted: '✓ تم منح إذن الموقع',
+    // Calculation method and madhhab labels used in onboarding
+    calcMethod: {
+      auto: 'تلقائي (موصى به للمنطقة)',
+      isna: 'الجمعية الإسلامية لأمريكا الشمالية',
+      mwl: 'رابطة العالم الإسلامي',
+      egypt: 'الهيئة المصرية العامة للمساحة',
+      makkah: 'جامعة أم القرى (السعودية)',
+      karachi: 'جامعة العلوم الإسلامية، كراتشي',
+    },
+    madhhab: {
+      shafi: 'الشافعي',
+      hanafi: 'الحنفي',
+    },
     
     // Support
     support: 'الدعم',
@@ -582,6 +784,42 @@ export const translations = {
     appVersion: 'إصدار التطبيق',
   scheduledNotifications: 'الإشعارات المجدولة',
   noScheduledNotifications: 'لم يتم العثور على إشعارات مجدولة.',
+  autoDetectedLanguage: 'لقد اكتشفنا لغة جهازك تلقائيًا',
+  adhanFullCall: 'الأذان (النداء الكامل للصلاة)',
+  shortReminder: 'تذكير قصير',
+  silentNotification: 'إشعار صامت',
+  appearancePersonalization: 'المظهر والتخصيص',
+  choosePreferredTheme: 'اختر السمة المفضلة',
+  lightMode: 'الوضع الفاتح',
+  cleanBrightInterface: 'واجهة نظيفة ومشرقة',
+  darkMode: 'الوضع الداكن',
+  easyOnEyes: 'مريح للعينين',
+  matchSystem: 'مطابقة النظام',
+  followDeviceSetting: 'اتبع إعدادات الجهاز',
+  appTour: 'جولة في التطبيق',
+  discoverFeatures: 'اكتشف ما يمكن أن يقدمه Islamic Pro لك',
+  of: 'من',
+  skipTour: 'تخطي الجولة',
+  finish: 'إنهاء',
+  allSet: 'تم الإعداد! ',
+  nextPrayerAt: 'صلاتك التالية هي المغرب الساعة 7:15 مساءً',
+  goToHome: 'اذهب إلى الرئيسية',
+  unableToAccessLocation: 'غير قادر على الوصول إلى الموقع',
+    // App Tour cards
+    tour: {
+      prayerTimes: {
+        title: 'أوقات الصلاة',
+        desc: 'أوقات صلاة دقيقة بناءً على موقعك وطريقة الحساب المختارة',
+      },
+      qiblaCompass: {
+        title: 'بوصلة القبلة',
+        desc: 'اعرف اتجاه القبلة من أي مكان في العالم',
+      },
+      dailyContent: {
+        title: 'القرآن والحديث اليومي',
+        desc: 'آيات وأقوال يومية تقوّي الإيمان',
+      },
+    },
   },
   
   ur: {
@@ -679,6 +917,17 @@ export const translations = {
     dhuhr: 'ظہر',
     asr: 'عصر',
     maghrib: 'مغرب',
+    
+    // Athan Names
+    makkahAthan: 'مکہ کا اذان',
+    madinahAthan: 'مدینہ کا اذان',
+    egyptAthan: 'مصر کا اذان',
+    turkeyAthan: 'ترکی کا اذان',
+    nasirAlQatamiAthan: 'ناصر القطامی کا اذان',
+    athan: 'اذان',
+    
+    // Test Notification
+    testNotificationForSound: 'یہ {sound} کی آواز کے لیے ایک تجرباتی نوٹیفیکیشن ہے۔ براہ کرم یقینی بنائیں کہ آپ کا فون خاموش موڈ میں نہیں ہے۔',
     isha: 'عشاء',
     
     // Qibla & Mosques
@@ -715,7 +964,44 @@ export const translations = {
     chooseAthanRecitation: 'اپنی پسندیدہ اذان انتخاب کریں',
     selectAthanSound: 'اذان کی آواز منتخب کریں',
     testIosNotificationSound: 'iOS نوٹیفیکیشن آواز ٹیسٹ کریں',
-    prePrayerReminderDesc: 'ہر نماز سے چند منٹ پہلے یاد دہانی وصول کریں',
+    iosNotificationTestScheduled: 'iOS ٹیسٹ نوٹیفیکیشن اذان کی آواز چلائے گا \n\nآواز سننے کے لیے یقینی بنائیں کہ آپ کا iPhone خاموش موڈ میں نہیں ہے (رنگر سوئچ ON)۔',
+      iosSilentModeWarning: 'اذان کی آواز سننے کے لیے، آپ کا iPhone خاموش موڈ میں نہیں ہونا چاہیے (رنگر سوئچ ON)۔',
+  
+  // Dua Page Translations
+  daily: 'روزانہ',
+  azkar: 'اذکار',
+  sleeping: 'سونے',
+  toilet: 'باتھ روم',
+  ablution: 'وضو',
+  mosque: 'مسجد',
+  prayer: 'نماز',
+  
+  // Dua Item Titles
+  whenYouWakeUp: 'جب آپ جاگیں',
+  reciteThisAfterEverySalah: 'ہر نماز کے بعد یہ پڑھیں',
+  beforeEnteringTheToilet: 'باتھ روم میں جانے سے پہلے',
+  afterLeavingTheToilet: 'باتھ روم سے نکلنے کے بعد',
+  beforeStartingWudu: 'وضو شروع کرنے سے پہلے',
+  afterCompletingWudu: 'وضو مکمل کرنے کے بعد',
+  uponEnteringTheMosque: 'مسجد میں داخل ہوتے وقت',
+  uponLeavingTheMosque: 'مسجد سے نکلتے وقت',
+  afterTheOpeningTakbir: 'افتتاحی تکبیر کے بعد',
+  betweenTheTwoProstrations: 'دو سجدوں کے درمیان',
+  uponEnteringTheHome: 'گھر میں داخل ہوتے وقت',
+  uponLeavingTheHome: 'گھر سے نکلتے وقت',
+  whenPuttingOnNewClothes: 'نئے کپڑے پہنتے وقت',
+  whenStartingAJourney: 'سفر شروع کرتے وقت',
+  beforeEating: 'کھانے سے پہلے',
+  afterEating: 'کھانے کے بعد',
+  morningRemembrance: 'صبح کا ذکر',
+  eveningRemembrance: 'شام کا ذکر',
+  sayyidulIstighfar: 'سید الاستغفار',
+  
+  // Dua Detail Page
+  copy: 'کاپی',
+  duaNotFound: 'دعا نہیں ملی۔',
+  
+  prePrayerReminderDesc: 'ہر نماز سے چند منٹ پہلے یاد دہانی وصول کریں',
     reminderTimeBeforePrayer: 'نماز سے پہلے یاد دہانی کا وقت',
     reminderBeforeDescription: 'نماز سے کتنے منٹ پہلے یاد دہانی ہونی چاہیے؟',
     reminderOffset: 'یاد دہانی کا وقفہ',
@@ -794,19 +1080,19 @@ export const translations = {
     validationError: 'شہر کے نام کی تصدیق میں خرابی',
     popularCities: 'مشہور شہر',
     searching: 'تلاش کر رہے ہیں...',
-    invalidLocation: 'غلط مقام',
-    // Cache / Settings actions
-    clearCache: 'کیش صاف کریں',
-    clearCacheDesc: 'یہ کیشڈ نماز کے اوقات اور متعلقہ ڈیٹا کو صاف کر دے گا۔ کیا آپ sure ہیں؟',
-    cacheCleared: 'کیش کامیابی کے ساتھ صاف کر دیا گیا!',
-    failedToClearCache: 'کیش صاف کرنے میں ناکام',
-    clearPrayerCache: 'نماز کیش صاف کریں',
-    clearPrayerCacheDesc: 'یہ آپ کے موجودہ مقام اور تاریخ کے لیے تمام کیشڈ نماز کے اوقات کو صاف کر دے گا۔ جاری رکھیں؟',
-    prayerCacheCleared: 'نماز کیش کامیابی کے ساتھ صاف کر دیا گیا',
-    failedToClearPrayerCache: 'نماز کیش صاف کرنے میں ناکام',
-    success: 'کامیابی',
-    error: 'خرابی',
-    clear: 'صاف کریں',
+    invalidLocation: 'موقع غير صالح',
+  // Cache / Settings actions
+  clearCache: 'کیش صاف کریں',
+  clearCacheDesc: 'یہ کیشڈ نماز کے اوقات اور متعلقہ ڈیٹا کو صاف کر دے گا۔ کیا آپ sure ہیں؟',
+  cacheCleared: 'کیش کامیابی کے ساتھ صاف کر دیا گیا!',
+  failedToClearCache: 'کیش صاف کرنے میں ناکام',
+  clearPrayerCache: 'نماز کیش صاف کریں',
+  clearPrayerCacheDesc: 'یہ آپ کے موجودہ مقام اور تاریخ کے لیے تمام کیشڈ نماز کے اوقات کو صاف کر دے گا۔ جاری رکھیں؟',
+  prayerCacheCleared: 'نماز کیش کامیابی کے ساتھ صاف کر دیا گیا',
+  failedToClearPrayerCache: 'نماز کیش صاف کرنے میں ناکام',
+  success: 'کامیابی',
+  error: 'خرابی',
+  clear: 'صاف کریں',
     
     // Time
     minutesBefore: 'منٹ پہلے',
@@ -841,6 +1127,13 @@ export const translations = {
   testNotificationScheduled: 'ایک ٹیسٹ نوٹیفیکیشن 2 سیکنڈ میں چلایا جائے گا۔',
   failedToScheduleTestNotification: 'ٹیسٹ نوٹیفکیشن شیڈول کرنے میں ناکام۔',
   enableLocationAccess: 'مقام تک رسائی فعال کریں',
+  continue: 'متابعة',
+  next: 'اگلا',
+  granted: '✓ منظور شدہ',
+  permissionsSetup: 'آئیے سیٹ اپ کریں',
+  permissionsSetupDesc: 'درست نماز کے اوقات اور بروقت یاد دہانیوں کے لیے ہم یہ اجازتیں استعمال کریں گے۔',
+  locationAccessTitle: 'لوکیشن تک رسائی',
+  notificationsAccessTitle: 'اطلاعات',
   enableLocationDescription: 'آپ کے مقام کے لیے درست نماز کے اوقات فراہم کرنے کے لیے، براہ کرم اپنے ڈیوائس کی ترتیبات میں مقام کی رسائی فعال کریں۔',
   followTheseSteps: 'ان ہدایات پر عمل کریں:',
   step1: 'اپنے ڈیوائس کے سیٹنگز ایپ میں جائیں',
@@ -866,6 +1159,35 @@ export const translations = {
   nasirAlQatami: 'نسیر القطامی',
   defaultSystemSound: 'ڈیفالٹ سسٹم ساؤنڈ',
   selectCity: 'شہر منتخب کریں',
+  // Onboarding: Location & Notifications
+  locationAndPrayerCalculation: 'مقام اور نماز کے حساب',
+  locationNeededForAccuracy: 'درست نماز کے اوقات اور قبلہ سمت کے لیے ہمیں آپ کے مقام کی ضرورت ہے',
+  prayerReminders: 'نماز کی یاد دہانیاں',
+  chooseReminderMethod: 'منتخب کریں کہ آپ کو نماز کے اوقات کی یاد دہانی کیسے ملے',
+  notificationType: 'اطلاع کی قسم',
+  whichPrayers: 'کون سی نمازیں؟',
+  // Onboarding Welcome
+  assalamuAlaikum: 'السلام علیکم 👋',
+  welcomeToIslamicPro: 'اسلامک پرو میں خوش آمدید',
+  onboardingIntro: 'نماز کے اوقات، قبلہ کی سمت، اور روز مرہ روحانی رہنمائی کے لیے آپ کا مکمل اسلامی ساتھی۔',
+  getStarted: 'شروع کریں',
+    // Onboarding extras
+    setCityManually: 'شہر دستی طور پر سیٹ کریں',
+    useGPSInstead: 'اس کے بجائے GPS استعمال کریں',
+    locationGranted: '✓ مقام کی اجازت دے دی گئی',
+    // Calculation method and madhhab labels used in onboarding
+    calcMethod: {
+      auto: 'خودکار (علاقے کے لیے تجویز کردہ)',
+      isna: 'اسلامک سوسائٹی آف نارتھ امریکہ',
+      mwl: 'رابطہ عالم اسلامی',
+      egypt: 'مصری جنرل اتھارٹی',
+      makkah: 'جامعہ ام القریٰ (سعودی)',
+      karachi: 'جامعہ علوم اسلامیہ، کراچی',
+    },
+    madhhab: {
+      shafi: 'شافعی',
+      hanafi: 'حنفی',
+    },
     
     // Support
     support: 'سپورٹ',
@@ -874,7 +1196,43 @@ export const translations = {
     termsOfService: 'خدمات کی شرائط',
     appVersion: 'ایپ ورژن',
   scheduledNotifications: 'شیڈول کردہ اطلاعات',
-  noScheduledNotifications: 'کوئی شیڈول کردہ اطلاع نہیں ملی۔',
+  noScheduledNotifications: 'لم يتم العثور على إشعارات مجدولة.',
+  autoDetectedLanguage: 'لقد اكتشفنا لغة جهازك تلقائيًا',
+  adhanFullCall: 'الأذان (النداء الكامل للصلاة)',
+  shortReminder: 'تذكير قصير',
+  silentNotification: 'إشعار صامت',
+  appearancePersonalization: 'المظهر والتخصيص',
+  choosePreferredTheme: 'اختر السمة المفضلة',
+  lightMode: 'الوضع الفاتح',
+  cleanBrightInterface: 'واجهة نظيفة ومشرقة',
+  darkMode: 'الوضع الداكن',
+  easyOnEyes: 'مريح للعينين',
+  matchSystem: 'مطابقة النظام',
+  followDeviceSetting: 'اتبع إعدادات الجهاز',
+  appTour: 'جولة في التطبيق',
+  discoverFeatures: 'اكتشف ما يمكن أن يقدمه Islamic Pro لك',
+  of: 'میں سے',
+  skipTour: 'تعارف چھوڑیں',
+  finish: 'مکمل',
+  allSet: 'سب تیار ہے!',
+  nextPrayerAt: 'آپ کی اگلی نماز مغرب 7:15 بجے ہے',
+  goToHome: 'ہوم پر جائیں',
+  unableToAccessLocation: 'مقام تک رسائی حاصل نہیں ہو سکی',
+    // App Tour cards
+    tour: {
+      prayerTimes: {
+        title: 'نماز کے اوقات',
+        desc: 'آپ کے مقام اور منتخب حساب کے طریقے کے مطابق درست نماز کے اوقات',
+      },
+      qiblaCompass: {
+        title: 'قبلہ کمپاس',
+        desc: 'دنیا میں کہیں سے بھی قبلہ کی سمت معلوم کریں',
+      },
+      dailyContent: {
+        title: 'روزانہ قرآن و حدیث',
+        desc: 'روزانہ آیات اور احادیث جو ایمان مضبوط کریں',
+      },
+    },
   },
   
   tr: {
@@ -974,6 +1332,17 @@ export const translations = {
     maghrib: 'Akşam',
     isha: 'Yatsı',
     
+    // Athan Names
+    makkahAthan: 'Mekke Ezanı',
+    madinahAthan: 'Medine Ezanı',
+    egyptAthan: 'Mısır Ezanı',
+    turkeyAthan: 'Türkiye Ezanı',
+    nasirAlQatamiAthan: 'Nasır Al Katami Ezanı',
+    athan: 'Ezan',
+    
+    // Test Notification
+    testNotificationForSound: 'Bu {sound} sesi için bir test bildirimidir. Lütfen telefonunuzun sessiz modda olmadığından emin olun.',
+    
     // Qibla & Mosques
     qiblaRequiresMobile: 'Kıble pusula hareket sensörleri olan mobil cihaz gerektirir',
     locationPermissionDenied: 'Konum izni reddedildi',
@@ -1008,7 +1377,44 @@ export const translations = {
     chooseAthanRecitation: 'Tercih ettiğiniz ezan kıraatını seçin',
     selectAthanSound: 'Ezan Sesini Seç',
     testIosNotificationSound: 'iOS Bildirim Sesini Test Et',
-    prePrayerReminderDesc: 'Her namazdan birkaç dakika önce bir hatırlatıcı alın',
+    iosNotificationTestScheduled: 'iOS test bildirimi ezan sesini çalacak \n\nSesi duymak için iPhone\'unuzun sessiz modda olmadığından emin olun (zil anahtarı AÇIK).',
+      iosSilentModeWarning: 'Ezan sesini duymak için iPhone\'unuz sessiz modda olmamalıdır (zil anahtarı AÇIK).',
+  
+  // Dua Page Translations
+  daily: 'Günlük',
+  azkar: 'Zikir',
+  sleeping: 'Uyku',
+  toilet: 'Tuvalet',
+  ablution: 'Abdest',
+  mosque: 'Cami',
+  prayer: 'Namaz',
+  
+  // Dua Item Titles
+  whenYouWakeUp: 'Uyandığınızda',
+  reciteThisAfterEverySalah: 'Her namazdan sonra bunu okuyun',
+  beforeEnteringTheToilet: 'Tuvalete girmeden önce',
+  afterLeavingTheToilet: 'Tuvaletten çıktıktan sonra',
+  beforeStartingWudu: 'Abdest almaya başlamadan önce',
+  afterCompletingWudu: 'Abdesti tamamladıktan sonra',
+  uponEnteringTheMosque: 'Camiye girerken',
+  uponLeavingTheMosque: 'Camiyi terk ederken',
+  afterTheOpeningTakbir: 'Açılış tekbirinden sonra',
+  betweenTheTwoProstrations: 'İki secde arasında',
+  uponEnteringTheHome: 'Eve girerken',
+  uponLeavingTheHome: 'Evden çıkarken',
+  whenPuttingOnNewClothes: 'Yeni kıyafet giyerken',
+  whenStartingAJourney: 'Yolculuğa başlarken',
+  beforeEating: 'Yemek yemeden önce',
+  afterEating: 'Yemek yedikten sonra',
+  morningRemembrance: 'Sabah zikri',
+  eveningRemembrance: 'Akşam zikri',
+  sayyidulIstighfar: 'Seyyidül İstiğfar',
+  
+  // Dua Detail Page
+  copy: 'Kopyala',
+  duaNotFound: 'Dua bulunamadı.',
+  
+  prePrayerReminderDesc: 'Her namazdan birkaç dakika önce bir hatırlatıcı alın',
     reminderTimeBeforePrayer: 'Namazdan önceki hatırlatma süresi',
     reminderBeforeDescription: 'Hatırlatıcının namazdan kaç dakika önce çalması gerekir?',
     reminderOffset: 'Hatırlatma aralığı',
@@ -1134,6 +1540,13 @@ export const translations = {
   testNotificationScheduled: 'Bir test bildirimi 2 saniye içinde tetiklenecek.',
   failedToScheduleTestNotification: 'Test bildirimi zamanlanamadı.',
   enableLocationAccess: 'Konum Erişimini Etkinleştir',
+  continue: 'Devam',
+  next: 'İleri',
+  granted: '✓ Verildi',
+  permissionsSetup: 'Hadi ayarlayalım',
+  permissionsSetupDesc: 'Doğru namaz vakitleri ve zamanında hatırlatmalar için bunları kullanacağız.',
+  locationAccessTitle: 'Konum Erişimi',
+  notificationsAccessTitle: 'Bildirimler',
   enableLocationDescription: 'Konumunuz için doğru namaz vakitleri sağlamak için lütfen cihaz ayarlarınızda konum erişimini etkinleştirin.',
   followTheseSteps: 'Bu adımları izleyin:',
   step1: 'Cihazınızın Ayarlar uygulamasına gidin',
@@ -1159,6 +1572,35 @@ export const translations = {
   nasirAlQatami: 'Nasir Al-Qatami',
   defaultSystemSound: 'Varsayılan Sistem Sesi',
   selectCity: 'Şehir Seç',
+  // Onboarding: Location & Notifications
+  locationAndPrayerCalculation: 'Konum ve Namaz Hesabı',
+  locationNeededForAccuracy: 'Doğru namaz vakitleri ve Kıble yönü için konumunuza ihtiyacımız var',
+  prayerReminders: 'Namaz Hatırlatmaları',
+  chooseReminderMethod: 'Namaz vakitlerinde nasıl hatırlatılmak istediğinizi seçin',
+  notificationType: 'Bildirim Türü',
+  whichPrayers: 'Hangi namazlar?',
+  // Onboarding Welcome
+  assalamuAlaikum: 'Esselamu Aleyküm 👋',
+  welcomeToIslamicPro: 'Islamic Pro\'ya Hoş Geldiniz',
+  onboardingIntro: 'Namaz vakitleri, Kıble yönü ve günlük manevi rehberlik için kapsamlı İslami yardımcınız.',
+  getStarted: 'Başlayın',
+    // Onboarding extras
+    setCityManually: 'Şehri Elle Ayarla',
+    useGPSInstead: 'Bunun yerine GPS kullan',
+    locationGranted: '✓ Konum erişimi verildi',
+    // Calculation method and madhhab labels used in onboarding
+    calcMethod: {
+      auto: 'Otomatik (Bölge için önerilen)',
+      isna: 'Kuzey Amerika İslam Cemiyeti',
+      mwl: 'Müslüman Dünya Ligi',
+      egypt: 'Mısır Genel Otoritesi',
+      makkah: "Ümmü'l-Kurâ Üniversitesi (Suudi)",
+      karachi: 'Karaçi İslami İlimler Üniversitesi',
+    },
+    madhhab: {
+      shafi: 'Şafi',
+      hanafi: 'Hanefi',
+    },
     
     // Support
     support: 'Destek',
@@ -1168,5 +1610,43 @@ export const translations = {
     appVersion: 'Uygulama Sürümü',
   scheduledNotifications: 'Zamanlanmış Bildirimler',
   noScheduledNotifications: 'Zamanlanmış bildirim bulunamadı.',
+  autoDetectedLanguage: 'Cihaz diliniz otomatik olarak tespit edildi',
+  adhanFullCall: 'Ezan (Namaza tam çağrı)',
+  shortReminder: 'Kısa Hatırlatma',
+  silentNotification: 'Sessiz Bildirim',
+  appearancePersonalization: 'Görünüm ve Kişiselleştirme',
+  choosePreferredTheme: 'Tercih ettiğiniz temayı seçin',
+  lightMode: 'Açık Mod',
+  cleanBrightInterface: 'Temiz ve parlak arayüz',
+  darkMode: 'Koyu Mod',
+  easyOnEyes: 'Gözler için rahat',
+  matchSystem: 'Sistemle Eşleştir',
+  followDeviceSetting: 'Cihaz ayarını takip et',
+  appTour: 'Uygulama Turu',
+  discoverFeatures: 'Islamic Pro\'nun sizin için neler yapabileceğini keşfedin',
+  of: ' / ',
+  skipTour: 'Turu Atla',
+  finish: 'Bitir',
+  allSet: 'Hazırsınız!',
+  nextPrayerAt: 'Sonraki namazınız Akşam 19:15',
+  goToHome: 'Ana sayfaya git',
+  unableToAccessLocation: 'Konuma erişilemiyor',
+    // App Tour cards
+    tour: {
+      prayerTimes: {
+        title: 'Namaz Vakitleri',
+        desc: 'Konumunuz ve seçtiğiniz hesaplama yöntemine göre doğru namaz vakitleri',
+      },
+      qiblaCompass: {
+        title: 'Kıble Pusulası',
+        desc: 'Dünyanın her yerinden Kâbe\'nin yönünü bulun',
+      },
+      dailyContent: {
+        title: 'Günlük Kur\'an ve Hadis',
+        desc: 'İmanı güçlendiren günlük ayetler ve hadisler',
+      },
+    },
   },
+  
+
 };

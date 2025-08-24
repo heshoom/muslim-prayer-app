@@ -81,12 +81,13 @@ import { ThemedText } from '@/src/components/shared/ThemedText';
 function TabButton({ route, idx, descriptors, onPress, theme }: { route: any; idx: number; descriptors: any; onPress: (route: any, idx: number) => void; theme: any; }) {
   const { options } = descriptors[route.key] || {};
   const label = options?.tabBarLabel ?? options?.title ?? route.name;
+  const isFocused = descriptors[route.key]?.navigation?.isFocused?.() ?? false;
 
   return (
     <TouchableOpacity style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }} onPress={() => onPress(route, idx)} activeOpacity={0.8}>
-      {options?.tabBarIcon ? options.tabBarIcon({ focused: false, color: '#666', size: 22 }) : null}
+      {options?.tabBarIcon ? options.tabBarIcon({ focused: isFocused, color: isFocused ? theme.tabIconSelected : theme.tabIconDefault, size: 22 }) : null}
       <View style={{ height: 1 }} />
-      <ThemedText style={{ fontSize: 11, color: theme.tabIconDefault, marginTop: 0 }}>{label}</ThemedText>
+      <ThemedText style={{ fontSize: 11, color: isFocused ? theme.tabIconSelected : theme.tabIconDefault, marginTop: 0 }}>{label}</ThemedText>
     </TouchableOpacity>
   );
 }
