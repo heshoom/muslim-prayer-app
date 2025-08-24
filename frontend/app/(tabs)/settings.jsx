@@ -653,7 +653,7 @@ const Settings = () => {
               <View style={styles.settingTextContainer}>
                 <Text style={styles.settingTitle}>{t("appVersion")}</Text>
                 <Text style={styles.settingDescription}>
-                  {'Islamic Pro v1.0.2'}
+                  {'Islamic Pro v1.0.3'}
                 </Text>
               </View>
             </View>
