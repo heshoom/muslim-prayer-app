@@ -141,6 +141,46 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     };
   }, []);
 
+  // Ensure the next day's notifications are scheduled at app launch (or when
+  // prayerTimes/settings become available). If we detect that the last
+  // scheduled day differs from today, clear existing scheduled notifications
+  // (to remove yesterday's) and schedule today's prayers.
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!prayerTimes || !settings) return;
+        const todayKey = new Date().toISOString().slice(0, 10);
+        const lastScheduledDay = await AsyncStorage.getItem('app:lastScheduledDay');
+        if (lastScheduledDay === todayKey) {
+          // Already scheduled for today
+          return;
+        }
+
+        console.log('Detected new day or no schedules for today - clearing and scheduling daily prayers');
+
+        // Clear any existing scheduled notifications (remove yesterday's)
+        try {
+          await Notifications.cancelAllScheduledNotificationsAsync();
+        } catch (e) {
+          console.warn('Failed to cancel scheduled notifications during daily reschedule startup:', e);
+        }
+
+        // Schedule today's prayers
+        const locationStr = settings.location?.city ? `${settings.location.city}` : 'Unknown';
+        try {
+          await prayerNotificationService.scheduleDailyNotifications(prayerTimes, locationStr, settings.notifications);
+          await AsyncStorage.setItem('app:lastScheduledDay', todayKey);
+          console.log('Scheduled daily prayer notifications at startup for', todayKey);
+        } catch (err) {
+          console.error('Error scheduling daily notifications at startup:', err);
+        }
+      } catch (e) {
+        console.warn('Error in startup daily reschedule check:', e);
+      }
+    })();
+  // Run this effect whenever prayerTimes or settings change
+  }, [prayerTimes, settings]);
+
   const handleNotificationReceived = async (notification: any) => {
     const { data } = notification.request.content;
     // If the notification has a scheduledAt timestamp, ignore it if it's
@@ -203,6 +243,18 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         console.log('Native test notification sound present, skipping JS athan playback', { nativeSound });
       } else {
         await athanAudioService.playAthanSound(data.athanType || settings.notifications.athanSound);
+      }
+    }
+
+    // Developer debug flow: debug notifications are scheduled by Settings as two one-shots
+    // (stage 1 at +2m and stage 2 at +4m). Keep handler lightweight here and avoid scheduling
+    // duplicates. Log receipt for debugging.
+    if (data?.type === 'debug-2min') {
+      try {
+        const stage = Number(data?.stage || 1);
+        console.log('Debug-2min notification received (no-op in handler), stage=', stage, 'data=', data);
+      } catch (err) {
+        console.warn('Error handling debug-2min notification:', err);
       }
     }
   };
@@ -345,22 +397,33 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       };
       const soundName = iosMap[selected] || 'default';
 
-    const in15 = new Date(Date.now() + 15 * 1000);
+      const in15 = new Date(Date.now() + 15 * 1000);
+      // Friendly notification body for users
+      const athanDisplayNames: Record<string, string> = {
+        makkah: 'Makkah Athan',
+        madinah: 'Madinah Athan',
+        egypt: 'Egypt Athan',
+        turkey: 'Turkey Athan',
+        nasiralqatami: 'Nasir Al Qatami Athan',
+        default: 'Athan',
+      };
+      const displayName = athanDisplayNames[selected] || 'Athan';
+      const friendlyBody = `This is a test notification for the ${displayName} sound. Please ensure your phone is not on silent.`;
       await Notifications.scheduleNotificationAsync({
         content: {
           title: t('iosCustomSoundTestTitle') || 'iOS Custom Sound Test',
-          body: (t('iosCustomSoundTestBody') || 'Playing') + ` ${selected} (${soundName}) via notification payload`,
+          body: friendlyBody,
           sound: Platform.OS === 'ios' ? soundName : true,
           interruptionLevel: Platform.OS === 'ios' ? 'timeSensitive' : undefined,
           data: { type: 'test-athan', athanType: selected },
         },
         trigger: Platform.select<any>({
-      ios: { date: in15 },
-      android: { seconds: 15 },
-      default: { date: in15 },
+          ios: { date: in15 },
+          android: { seconds: 15 },
+          default: { date: in15 },
         }),
       });
-    console.log('Scheduled iOS custom sound test in 15 seconds');
+      console.log('Scheduled iOS custom sound test in 15 seconds');
     } catch (err) {
       console.error('Error scheduling iOS custom sound test:', err);
     }

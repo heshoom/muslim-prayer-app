@@ -21,7 +21,6 @@ export const NotificationTestButton: React.FC = () => {
   };
 
   const getNotificationSummary = async () => {
-    const { t } = useTranslation();
     try {
       if ((prayerNotificationService as any).getScheduledNotificationsSummary) {
         const summary = await (prayerNotificationService as any).getScheduledNotificationsSummary();
@@ -36,7 +35,6 @@ export const NotificationTestButton: React.FC = () => {
   };
 
   const cancelAllNotifications = async () => {
-    const { t } = useTranslation();
     try {
       await prayerNotificationService.cancelAllNotifications();
       Alert.alert(t('success') || 'Success', t('allNotificationsCancelled') || 'All notifications cancelled');

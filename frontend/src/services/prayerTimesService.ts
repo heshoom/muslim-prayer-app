@@ -1,4 +1,6 @@
 import * as Location from "expo-location";
+
+import { getCalculationMethodNumber } from "../utils/calculationMethods";
 // Returns { fajr: Date, dhuhr: Date, asr: Date, maghrib: Date, isha: Date } for the given date (local time)
 export async function getPrayerTimesForDate(
   date: Date
@@ -124,8 +126,6 @@ export interface PrayerTimesResponse {
   };
   method: string;
 }
-
-import { getCalculationMethodNumber } from "../utils/calculationMethods";
 
 // Helper: Recommend calculation method by country using regional defaults
 // Mapping updated per product request:

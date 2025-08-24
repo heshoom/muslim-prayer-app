@@ -83,6 +83,7 @@ type SettingsContextType = {
     value: any
   ) => void;
   isDarkMode: boolean;
+  loaded: boolean;
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(
@@ -93,6 +94,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [settings, setSettings] = useState<SettingsType>(defaultSettings);
+  const [loaded, setLoaded] = useState(false);
   const systemColorScheme = useColorScheme();
 
   useEffect(() => {
@@ -163,6 +165,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       // Always persist the settings to ensure consistency
       await AsyncStorage.setItem("userSettings", JSON.stringify(parsed));
       setSettings(parsed);
+  setLoaded(true);
       console.log("Loaded settings on startup:", {
         onboarding: parsed.onboarding,
         hasLocation: !!parsed.location,
@@ -173,7 +176,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       // Fallback to default settings if everything fails
       const fallbackSettings = { ...defaultSettings };
       fallbackSettings.onboarding = { completed: false };
-      setSettings(fallbackSettings);
+  setSettings(fallbackSettings);
+  setLoaded(true);
     }
   };
 
@@ -209,7 +213,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       : settings.appearance.theme === "dark";
 
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, isDarkMode }}>
+    <SettingsContext.Provider value={{ settings, updateSettings, isDarkMode, loaded }}>
       {children}
     </SettingsContext.Provider>
   );

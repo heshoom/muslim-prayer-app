@@ -3,18 +3,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { PrayerTimes, PrayerTimesResponse, fetchPrayerTimes } from '../services/prayerTimesService';
 import { getCachedPrayerTimes, setCachedPrayerTimes, clearPrayerTimesCache } from '../services/prayerTimesCache';
+import { locationValidationService } from '../services/locationValidationService';
+import { useSettings } from './SettingsContext';
+import { prayerNotificationService } from '../services/prayerNotificationService';
 // background fetch is optional - guard import
 let registerBackgroundFetchAsync: any = null;
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+   
   const bf = require('../services/backgroundFetchService');
   registerBackgroundFetchAsync = bf.registerBackgroundFetchAsync;
 } catch (err) {
   console.log('Background fetch service not available:', (err && (err as any).message) || err);
 }
-import { locationValidationService } from '../services/locationValidationService';
-import { useSettings } from './SettingsContext';
-import { prayerNotificationService } from '../services/prayerNotificationService';
 
 interface PrayerTimesContextType {
   prayerTimes: PrayerTimes | null;
@@ -163,8 +163,12 @@ export const PrayerTimesProvider = ({ children }: PrayerTimesProviderProps) => {
         }
       })();
 
-      // Schedule notifications after loading prayer times
-      if (settings.notifications.enabled) {
+      // Schedule notifications after loading prayer times. Do NOT auto-request
+      // notification permissions during the onboarding flow — only schedule
+      // when onboarding has been completed or when notifications are toggled
+      // explicitly by the user. This prevents the notification prompt from
+      // appearing immediately after granting location during onboarding.
+      if (settings.notifications.enabled && settings.onboarding?.completed) {
         await setupNotifications(response.prayerTimes, response.location);
       }
 

@@ -368,19 +368,20 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
       const hour = next.getHours();
       const minute = next.getMinutes();
 
-      const trigger = Platform.select({
-        ios: ({ hour, minute, repeats: true } as any),
-        android: ({ hour, minute, repeats: true, channelId: 'prayer-times' } as any),
-        default: ({ hour, minute, repeats: true } as any),
-      }) as any;
-
+      // Schedule a one-shot time-interval trigger for the next midnight+5min
+      // occurrence. The daily rescheduler will re-plan if the app runs again.
+      const secondsUntilNext = Math.max(1, Math.ceil((next.getTime() - now.getTime()) / 1000));
       const id = await Notifications.scheduleNotificationAsync({
         content: {
           title: tEn('dailyReschedule') || 'Daily reschedule',
           body: tEn('dailyRescheduleBody') || 'Refreshing daily prayer notification schedules',
           data: { type: 'daily-reschedule' },
         },
-        trigger,
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: secondsUntilNext,
+          repeats: false,
+        } as any,
       });
 
       await AsyncStorage.setItem(KEY, '1');
@@ -469,9 +470,11 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
         }
       }
 
-      // Schedule the notification using a TIME_INTERVAL trigger (seconds from now)
+      // Schedule a one-shot time-interval trigger for the upcoming prayer
+      // and include metadata so NotificationContext can evaluate staleness.
+      const scheduledAt = notificationDate.getTime();
       const seconds = Math.max(1, Math.ceil((notificationDate.getTime() - now.getTime()) / 1000));
-      const trigger: any = {
+      const triggerTimeInterval: any = {
         type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
         seconds,
         repeats: false,
@@ -481,7 +484,7 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
         content: {
           title: `${prayerName} ${tEn('prayerTime') || 'Prayer Time'}`,
           body: settings.adhan
-            ? `${tEn('itsTimeFor') || "It's time for"} ${prayerName} ${tEn('inLocation') || 'in'} ${location}. ${tEn('mosqueEmoji') || '🕌'}`
+            ? `${tEn('itsTimeFor') || "It's time for"} ${prayerName} ${tEn('inLocation') || 'in'} ${location} ${tEn('mosqueEmoji') || ''}`
             : `${tEn('itsTimeFor') || "It's time for"} ${prayerName} ${tEn('inLocation') || 'in'} ${location}`,
           sound: soundUri,
           vibrate: settings.vibrate ? [0, 500, 250, 500] : undefined,
@@ -494,13 +497,15 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
             type: 'prayer-time',
             athanEnabled: settings.adhan,
             athanSound: settings.athanSound,
-            scheduledAt: notificationDate.getTime(),
+            scheduledAt,
+            scheduleSignature: undefined,
+            isRepeating: false,
           },
         },
-        trigger,
+        trigger: triggerTimeInterval,
       });
 
-      console.log(`Scheduled ${prayerName} notification for ${notificationDate.toLocaleString()} (in ${seconds}s), ID: ${notificationId}`);
+      console.log(`Scheduled ${prayerName} notification for ${notificationDate.toLocaleString()} (in ${seconds}s), ID: ${notificationId}, Sound: ${soundUri}`);
     } catch (error) {
       console.error(`Error scheduling ${prayerName} notification:`, error);
     }
@@ -635,42 +640,102 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
         }
       }
 
-      const scheduledAt = notificationDate.getTime();
+      // Keep a copy of the 'today' notification time for one-shot scheduling
+      const notificationDateToday = new Date(date);
+      notificationDateToday.setHours(hours, minutes, 0, 0);
 
-      // Use a TIME_INTERVAL one-time trigger for today's/tomorrow's notification.
-      const seconds = Math.max(1, Math.ceil((notificationDate.getTime() - now.getTime()) / 1000));
-      const triggerTimeInterval: any = {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds,
-        repeats: false,
-      };
+      const nextOccurrence = new Date(notificationDateToday);
+      if (hasPassedToday) {
+        // Next occurrence is tomorrow
+        nextOccurrence.setDate(nextOccurrence.getDate() + 1);
+      }
 
-      const notificationId = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: `${prayerName} ${tEn('prayerTime') || 'Prayer Time'}`,
-          body: settings.adhan
-            ? `${tEn('itsTimeFor') || "It's time for"} ${prayerName} ${tEn('inLocation') || 'in'} ${location} ${tEn('mosqueEmoji') || ''}`
-            : `${tEn('itsTimeFor') || "It's time for"} ${prayerName} ${tEn('inLocation') || 'in'} ${location}`,
-          sound: soundUri,
-          vibrate: settings.vibrate ? [0, 500, 250, 500] : undefined,
-          interruptionLevel: Platform.OS === 'ios' ? 'timeSensitive' : undefined,
-          priority: Platform.OS === 'android' ? Notifications.AndroidNotificationPriority.MAX : undefined,
-          data: {
-            prayerName,
-            prayerTime,
-            location,
-            type: 'prayer-time',
-            athanEnabled: settings.adhan,
-            athanSound: settings.athanSound,
-            scheduledAt,
-            scheduleSignature,
-            isRepeating: false,
+      // If the prayer is upcoming today, schedule a one-time time-interval
+      // notification to fire today (this avoids relying on calendar triggers
+      // which on some platforms may not fire immediately). Include the
+      // scheduleSignature so the cancellation helpers can target these
+      // specific one-off notifications when rescheduling.
+      if (!hasPassedToday) {
+        const scheduledAtOneShot = notificationDateToday.getTime();
+        const seconds = Math.max(1, Math.ceil((notificationDateToday.getTime() - now.getTime()) / 1000));
+        const triggerTimeInterval: any = {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds,
+          repeats: false,
+        };
+
+        try {
+          const oneShotId = await Notifications.scheduleNotificationAsync({
+            content: {
+              title: `${prayerName} ${tEn('prayerTime') || 'Prayer Time'}`,
+              body: settings.adhan
+                ? `${tEn('itsTimeFor') || "It's time for"} ${prayerName} ${tEn('inLocation') || 'in'} ${location} ${tEn('mosqueEmoji') || ''}`
+                : `${tEn('itsTimeFor') || "It's time for"} ${prayerName} ${tEn('inLocation') || 'in'} ${location}`,
+              sound: soundUri,
+              vibrate: settings.vibrate ? [0, 500, 250, 500] : undefined,
+              interruptionLevel: Platform.OS === 'ios' ? 'timeSensitive' : undefined,
+              priority: Platform.OS === 'android' ? Notifications.AndroidNotificationPriority.MAX : undefined,
+              data: {
+                prayerName,
+                prayerTime,
+                location,
+                type: 'prayer-time',
+                athanEnabled: settings.adhan,
+                athanSound: settings.athanSound,
+                scheduledAt: scheduledAtOneShot,
+                scheduleSignature,
+                isRepeating: false,
+              },
+            },
+            trigger: triggerTimeInterval,
+          });
+          console.log(`Scheduled one-time ${prayerName} notification for today (in ${seconds}s), ID: ${oneShotId}`);
+        } catch (err) {
+          console.error(`Failed to schedule one-time ${prayerName} notification:`, err);
+        }
+      }
+
+      // Always schedule a repeating calendar notification so future days
+      // continue to receive the prayer notification. scheduledAt is set to
+      // the next occurrence timestamp to help the NotificationContext
+      // determine staleness if needed.
+      const scheduledAt = nextOccurrence.getTime();
+      // Instead of calendar repeating triggers, schedule a one-shot
+      // time-interval trigger for the next occurrence (today or tomorrow).
+      try {
+        const secondsUntilNext = Math.max(1, Math.ceil((nextOccurrence.getTime() - now.getTime()) / 1000));
+        const id = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: `${prayerName} ${tEn('prayerTime') || 'Prayer Time'}`,
+            body: settings.adhan
+              ? `${tEn('itsTimeFor') || "It's time for"} ${prayerName} ${tEn('inLocation') || 'in'} ${location} ${tEn('mosqueEmoji') || ''}`
+              : `${tEn('itsTimeFor') || "It's time for"} ${prayerName} ${tEn('inLocation') || 'in'} ${location}`,
+            sound: soundUri,
+            vibrate: settings.vibrate ? [0, 500, 250, 500] : undefined,
+            interruptionLevel: Platform.OS === 'ios' ? 'timeSensitive' : undefined,
+            priority: Platform.OS === 'android' ? Notifications.AndroidNotificationPriority.MAX : undefined,
+            data: {
+              prayerName,
+              prayerTime,
+              location,
+              type: 'prayer-time',
+              athanEnabled: settings.adhan,
+              athanSound: settings.athanSound,
+              scheduledAt,
+              scheduleSignature,
+              isRepeating: false,
+            },
           },
-        },
-        trigger: triggerTimeInterval,
-      });
-
-      console.log(`Scheduled ${prayerName} notification for ${notificationDate.toLocaleString()} (in ${seconds}s), ID: ${notificationId}, Sound: ${soundUri}`);
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+            seconds: secondsUntilNext,
+            repeats: false,
+          } as any,
+        });
+        console.log(`Scheduled ${prayerName} notification for next occurrence (in ${secondsUntilNext}s), ID: ${id}, Sound: ${soundUri}`);
+      } catch (err) {
+        console.error(`Failed to schedule ${prayerName} notification for next occurrence:`, err);
+      }
     } catch (error) {
       console.error(`Error scheduling ${prayerName} notification:`, error);
     }

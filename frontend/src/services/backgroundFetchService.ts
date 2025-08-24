@@ -26,7 +26,7 @@ TaskManager.defineTask(BACKGROUND_FETCH_TASK, async ({ data, error }: any) => {
 
     // We'll fetch a small set of common methods and both madhabs to keep cache fresh
     const methods = ['mwl','isna','egypt','makkah','karachi','turkey'];
-    const schools: Array<'shafi' | 'hanafi'> = ['shafi', 'hanafi'];
+    const schools: ('shafi' | 'hanafi')[] = ['shafi', 'hanafi'];
     let anyFetched = false;
     for (const method of methods) {
       for (const school of schools) {

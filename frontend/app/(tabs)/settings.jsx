@@ -1,31 +1,4 @@
-// Instantly fire a notification (immediate delivery)
-const handleInstantNotification = async () => {
-  try {
-    console.log('[DEBUG] InstantNotification: Button pressed');
-    const perms = await Notifications.requestPermissionsAsync();
-    console.log('[DEBUG] InstantNotification: Permission status', perms.status);
-    if (perms.status !== 'granted') {
-      Alert.alert(t('permissionDenied') || 'Permission denied', t('allowNotifications') || 'Please allow notifications');
-      console.log('[DEBUG] InstantNotification: Permission denied');
-      return;
-    }
-    console.log('[DEBUG] InstantNotification: Scheduling notification for immediate delivery');
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: t('instantNotificationTitle') || 'Instant Notification',
-        body: t('instantNotificationBody') || 'This notification was fired instantly.',
-        sound: true,
-        vibrate: [0, 500, 250, 500],
-      },
-      trigger: null, // Immediate delivery
-    });
-    console.log('[DEBUG] InstantNotification: Notification scheduled');
-  Alert.alert(t('fired') || 'Fired', t('instantNotificationSent') || 'An instant notification was sent.');
-  } catch (error) {
-  console.error('[DEBUG] InstantNotification: Failed to fire instant notification:', error);
-  Alert.alert(t('error') || 'Error', t('failedToFireInstantNotification') || 'Failed to fire instant notification.');
-  }
-};
+// ...existing code...
 import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
@@ -56,44 +29,9 @@ import { clearPrayerTimesCache } from '@/src/services/prayerTimesCache';
 import { scheduleNotificationAt } from '@/src/utils/manualNotification';
 import * as Notifications from 'expo-notifications';
 
-// Fire Test Notification button handler
-const handleFireTestNotification = async () => {
-  try {
-    console.log('[DEBUG] FireTestNotification: Button pressed');
-    const perms = await Notifications.requestPermissionsAsync();
-    console.log('[DEBUG] FireTestNotification: Permission status', perms.status);
-    if (perms.status !== 'granted') {
-      Alert.alert(t('permissionDenied') || 'Permission denied', t('allowNotifications') || 'Please allow notifications');
-      console.log('[DEBUG] FireTestNotification: Permission denied');
-      return;
-    }
-  console.log('[DEBUG] FireTestNotification: Scheduling notification for 2s in the future');
-    const id = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Scheduled Test Notification',
-        body: 'This is a test notification from Islamic Pro.',
-        sound: true,
-        vibrate: [0, 500, 250, 500],
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: new Date(Date.now() + 5000), // 5 seconds from now
-        repeats: false,
-      },
-    });
-    console.log('[DEBUG] FireTestNotification: Notification scheduled, id=', id);
-    try {
-      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-      console.log('[DEBUG] FireTestNotification: All scheduled notifications', scheduled);
-    } catch (e) {
-      console.warn('[DEBUG] FireTestNotification: Could not list scheduled notifications', e);
-    }
-  Alert.alert(t('scheduled') || 'Scheduled', t('testNotificationScheduled') || 'A test notification will fire in 2 seconds.');
-  } catch (error) {
-    console.error('[DEBUG] FireTestNotification: Failed to schedule test notification:', error);
-  Alert.alert(t('error') || 'Error', t('failedToScheduleTestNotification') || 'Failed to schedule test notification.');
-  }
-};
+// ...existing code...
+
+// ...existing code...
 
 const Settings = () => {
   const { settings, updateSettings, isDarkMode } = useSettings();
@@ -112,6 +50,74 @@ const Settings = () => {
   useEffect(() => {
     checkLocationPermission();
   }, []);
+
+  // Instantly fire a notification (immediate delivery)
+  const handleInstantNotification = async () => {
+    try {
+      console.log('[DEBUG] InstantNotification: Button pressed');
+      const perms = await Notifications.requestPermissionsAsync();
+      console.log('[DEBUG] InstantNotification: Permission status', perms.status);
+      if (perms.status !== 'granted') {
+        Alert.alert(t('permissionDenied') || 'Permission denied', t('allowNotifications') || 'Please allow notifications');
+        console.log('[DEBUG] InstantNotification: Permission denied');
+        return;
+      }
+      console.log('[DEBUG] InstantNotification: Scheduling notification for immediate delivery');
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: t('instantNotificationTitle') || 'Instant Notification',
+          body: t('instantNotificationBody') || 'This notification was fired instantly.',
+          sound: true,
+          vibrate: [0, 500, 250, 500],
+        },
+        trigger: null, // Immediate delivery
+      });
+      console.log('[DEBUG] InstantNotification: Notification scheduled');
+      Alert.alert(t('fired') || 'Fired', t('instantNotificationSent') || 'An instant notification was sent.');
+    } catch (error) {
+      console.error('[DEBUG] InstantNotification: Failed to fire instant notification:', error);
+      Alert.alert(t('error') || 'Error', t('failedToFireInstantNotification') || 'Failed to fire instant notification.');
+    }
+  };
+
+  // Fire Test Notification button handler
+  const handleFireTestNotification = async () => {
+    try {
+      console.log('[DEBUG] FireTestNotification: Button pressed');
+      const perms = await Notifications.requestPermissionsAsync();
+      console.log('[DEBUG] FireTestNotification: Permission status', perms.status);
+      if (perms.status !== 'granted') {
+        Alert.alert(t('permissionDenied') || 'Permission denied', t('allowNotifications') || 'Please allow notifications');
+        console.log('[DEBUG] FireTestNotification: Permission denied');
+        return;
+      }
+      console.log('[DEBUG] FireTestNotification: Scheduling notification for 2s in the future');
+      const id = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Scheduled Test Notification',
+          body: 'This is a test notification from Islamic Pro.',
+          sound: true,
+          vibrate: [0, 500, 250, 500],
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: new Date(Date.now() + 5000), // 5 seconds from now
+          repeats: false,
+        },
+      });
+      console.log('[DEBUG] FireTestNotification: Notification scheduled, id=', id);
+      try {
+        const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+        console.log('[DEBUG] FireTestNotification: All scheduled notifications', scheduled);
+      } catch (e) {
+        console.warn('[DEBUG] FireTestNotification: Could not list scheduled notifications', e);
+      }
+      Alert.alert(t('scheduled') || 'Scheduled', t('testNotificationScheduled') || 'A test notification will fire in 2 seconds.');
+    } catch (error) {
+      console.error('[DEBUG] FireTestNotification: Failed to schedule test notification:', error);
+      Alert.alert(t('error') || 'Error', t('failedToScheduleTestNotification') || 'Failed to schedule test notification.');
+    }
+  };
 const handleDumpScheduledNotifications = async () => {
   try {
     console.log('[DEBUG] DumpScheduled: Button pressed');
@@ -137,6 +143,73 @@ const handleDumpScheduledNotifications = async () => {
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription?.remove();
   }, []);
+
+  // DEBUG: Schedule a 2-minute one-shot that will schedule another 2-minute one-shot when received
+  const handleSchedule2MinDebug = async () => {
+    try {
+      console.log('[DEBUG] Schedule2Min: Button pressed');
+      const perms = await Notifications.requestPermissionsAsync();
+      console.log('[DEBUG] Schedule2Min: Permission status', perms.status);
+      if (perms.status !== 'granted') {
+        Alert.alert(t('permissionDenied') || 'Permission denied', t('allowNotifications') || 'Please allow notifications');
+        console.log('[DEBUG] Schedule2Min: Permission denied');
+        return;
+      }
+      const scheduledAt = Date.now();
+      console.log('[DEBUG] Schedule2Min: Scheduling debug notification for 2 minutes from now');
+      // Compute absolute dates for cross-platform reliability
+  const dateStage1 = new Date(Date.now() + 2 * 60 * 1000);
+  // Make stage 2 fire 1 minute after stage 1 (i.e. +3 minutes from now)
+  const dateStage2 = new Date(Date.now() + 3 * 60 * 1000);
+
+      // Schedule stage 1 at +2 minutes
+      const id1 = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: t('debug2minTitle') || 'Debug: 2-minute notification (stage 1)',
+          body: t('debug2minBody') || 'This will schedule a follow-up 2-minute notification when it fires.',
+          sound: true,
+          vibrate: [0, 250, 250],
+          data: { type: 'debug-2min', stage: 1, scheduledAt },
+        },
+        trigger: Platform.select({
+          ios: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: dateStage1, repeats: false },
+          android: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 120, repeats: false },
+          default: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: dateStage1, repeats: false },
+        }),
+      });
+
+      // Schedule stage 2 at +4 minutes (so it fires ~2 minutes after stage1)
+      const id2 = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: t('debug2minTitleStage2') || 'Debug: 2-minute notification (stage 2)',
+          body: t('debug2minBodyStage2') || 'Follow-up debug notification scheduled 1 minute after stage 1.',
+          sound: true,
+          vibrate: [0, 250, 250],
+          data: { type: 'debug-2min', stage: 2, scheduledAt: Date.now() },
+        },
+        trigger: Platform.select({
+          ios: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: dateStage2, repeats: false },
+          android: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 180, repeats: false },
+          default: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: dateStage2, repeats: false },
+        }),
+      });
+
+  console.log('[DEBUG] Schedule2Min: Scheduled ids=', id1, id2);
+
+      // Immediately fetch scheduled notifications to confirm
+      try {
+        const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+        console.log('[DEBUG] Schedule2Min: All scheduled notifications after scheduling', scheduled);
+      } catch (e) {
+        console.warn('[DEBUG] Schedule2Min: Could not list scheduled notifications', e);
+      }
+
+  Alert.alert(t('scheduled') || 'Scheduled', t('debug2minScheduled') || 'Debug notifications scheduled (2m and 3m).');
+    } catch (error) {
+      console.error('[DEBUG] Schedule2Min: Failed to schedule debug notification:', error);
+      Alert.alert(t('error') || 'Error', t('failedToScheduleTestNotification') || 'Failed to schedule debug notification.');
+    }
+  };
 
   const checkLocationPermission = async () => {
     try {
@@ -375,35 +448,51 @@ const handleDumpScheduledNotifications = async () => {
                       />
                       
                       {Platform.OS === 'ios' && (
-                        <TouchableOpacity
-                          style={[
-                            styles.testButton,
-                            { backgroundColor: theme.primary },
-                          ]}
-                          onPress={async () => {
-                            try {
-                              console.log('[DEBUG] iOSTestNotification: Button pressed');
-                              await testIosNotificationSound(settings.notifications.athanSound);
-                              Alert.alert('Scheduled', 'iOS notification scheduled in ~10 seconds for sound test.');
-                            } catch (err) {
-                              console.error('[DEBUG] iOSTestNotification: Failed to schedule iOS test:', err);
-                              Alert.alert('Error', 'Failed to schedule iOS notification test.');
-                            }
-                          }}
-                        >
-                          <Text
+                        <>
+                          <TouchableOpacity
                             style={[
-                              styles.testButtonText,
-                              { color: theme.text.inverse },
+                              styles.testButton,
+                              { backgroundColor: theme.primary },
                             ]}
+                            onPress={async () => {
+                              try {
+                                console.log('[DEBUG] iOSTestNotification: Button pressed');
+                                await testIosNotificationSound(settings.notifications.athanSound);
+                                Alert.alert(
+                                  'Test Notification Scheduled',
+                                  'A test iOS notification will play the Athan sound \n\nMake sure your iPhone is NOT on silent mode (ringer switch ON) to hear the sound.'
+                                );
+                              } catch (err) {
+                                console.error('[DEBUG] iOSTestNotification: Failed to schedule iOS test:', err);
+                                Alert.alert('Error', 'Failed to schedule iOS notification test.');
+                              }
+                            }}
                           >
-                            {t('testIosNotificationSound')}
+                            <Text
+                              style={[
+                                styles.testButtonText,
+                                { color: theme.text.inverse },
+                              ]}
+                            >
+                              {t('testIosNotificationSound')}
+                            </Text>
+                          </TouchableOpacity>
+                          <Text style={{ color: theme.text.secondary, fontSize: 13, marginTop: 6, textAlign: 'center' }}>
+                            To hear the Athan sound, your iPhone must NOT be on silent mode (ringer switch ON).
                           </Text>
-                        </TouchableOpacity>
+                        </>
                       )}
                     </View>
                   )}
                 </View>
+
+                {/* DEBUG: Schedule 2-minute chained one-shot */}
+                <TouchableOpacity
+                  style={[styles.testButton, { backgroundColor: '#8e44ad', marginTop: 12 }]}
+                  onPress={handleSchedule2MinDebug}
+                >
+                  <Text style={[styles.testButtonText, { color: '#fff' }]}>Schedule 2-minute debug</Text>
+                </TouchableOpacity>
 
                 <View style={[styles.settingItem, styles.switchItem]}>
                   <View style={styles.settingHeader}>
@@ -688,7 +777,7 @@ const handleDumpScheduledNotifications = async () => {
 
             <TouchableOpacity
               style={[styles.settingItem, styles.linkItem]}
-              onPress={() => Linking.openURL("mailto:support@heshoom.com")}
+              onPress={() => Linking.openURL("https://www.islamicpro.org/support.html")}
             >
               <View style={styles.settingHeader}>
                 <View style={styles.settingTextContainer}>
@@ -707,14 +796,12 @@ const handleDumpScheduledNotifications = async () => {
 
             <TouchableOpacity
               style={[styles.settingItem, styles.linkItem]}
-              onPress={() => Linking.openURL("https://heshoom.com/islamic-pro/privacy")}
+              onPress={() => Linking.openURL("https://www.islamicpro.org/privacy.html")}
             >
               <View style={styles.settingHeader}>
                 <View style={styles.settingTextContainer}>
                   <Text style={styles.settingTitle}>{t("privacyPolicy")}</Text>
-                  <Text style={styles.settingDescription}>
-                    {t('readPrivacyPolicy')}
-                  </Text>
+  
                 </View>
                 <FontAwesome5 
                   name="external-link-alt" 
@@ -724,24 +811,7 @@ const handleDumpScheduledNotifications = async () => {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.settingItem, styles.linkItem]}
-              onPress={() => Linking.openURL("https://heshoom.com/islamic-pro/terms")}
-            >
-              <View style={styles.settingHeader}>
-                <View style={styles.settingTextContainer}>
-                  <Text style={styles.settingTitle}>{t("termsOfService")}</Text>
-                  <Text style={styles.settingDescription}>
-                    {t('readTermsOfService')}
-                  </Text>
-                </View>
-                <FontAwesome5 
-                  name="external-link-alt" 
-                  size={16} 
-                  color={theme.text.secondary} 
-                />
-              </View>
-            </TouchableOpacity>
+            {/* Terms of Service removed per update */}
 
             <TouchableOpacity
               style={[styles.settingItem, styles.linkItem]}
@@ -784,7 +854,7 @@ const handleDumpScheduledNotifications = async () => {
               <View style={styles.settingTextContainer}>
                 <Text style={styles.settingTitle}>{t("appVersion")}</Text>
                 <Text style={styles.settingDescription}>
-                  {t('appVersionText') || 'Islamic Pro v1.0.0'}
+                  {'Islamic Pro v1.0.2'}
                 </Text>
               </View>
             </View>

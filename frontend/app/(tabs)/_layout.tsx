@@ -1,16 +1,18 @@
+import DuaIcon from '@/src/components/shared/DuaIcon';
+
 import { Tabs } from 'expo-router';
 import React from 'react';
-
 import { HapticTab } from '@/src/components/layout/HapticTab';
 import { MosqueIcon } from '@/src/components/shared/MosqueIcon';
 import { ClockIcon } from '@/src/components/shared/ClockIcon';
 import { SettingsIcon } from '@/src/components/shared/SettingsIcon';
-import { AnimatedCompassIcon } from '@/src/components/shared/AnimatedCompassIcon';
+import QiblaIcon from '@/src/components/shared/QiblaIcon';
 import TabBarBackground from '@/src/components/shared/TabBarBackground';
 import AnimatedTabBar from '@/src/components/shared/AnimatedTabBar';
 import { darkTheme, lightTheme } from '@/src/constants/theme';
 import { useSettings } from '@/src/contexts/SettingsContext';
 import { useTranslation } from '@/src/i18n';
+import Svg, { Path } from 'react-native-svg';
 
 export default function TabLayout() {
   const { isDarkMode } = useSettings();
@@ -40,23 +42,30 @@ export default function TabLayout() {
         name="prayer-times"
         options={{
           title: t('prayerTimes'),
-          tabBarIcon: ({ color }) => <ClockIcon size={28} color={color} />,
+          tabBarIcon: ({ color }: { color: string }) => <ClockIcon size={28} color={color} />,
         }}
       />
       <Tabs.Screen
         name="qibla"
         options={{
           title: t('qiblaAngle') || 'Qibla',
-          tabBarIcon: ({ color, focused }) => <AnimatedCompassIcon size={28} color={color} focused={focused} />,
+          tabBarIcon: ({ color }) => <QiblaIcon size={28} color={color} />, 
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="dua"
         options={{
-          title: t('settings'),
-          tabBarIcon: ({ color }) => <SettingsIcon size={28} color={color} />,
+          title: t('dua') || 'Dua',
+          tabBarIcon: ({ color }: { color: string }) => <DuaIcon size={28} color={color} />, 
         }}
       />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            title: t('settings'),
+            tabBarIcon: ({ color }: { color: string }) => <SettingsIcon size={28} color={color} />,
+          }}
+        />
     </Tabs>
   );
 }

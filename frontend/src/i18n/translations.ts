@@ -22,7 +22,9 @@ export const translations = {
     // Navigation
     home: 'Home',
     prayerTimes: 'Prayer Times',
-    settings: 'Settings',
+  settings: 'Settings',
+  dua: 'Dua',
+  share: 'Share',
     
     // Home Page
     quickActions: 'Quick Actions',
@@ -336,7 +338,9 @@ export const translations = {
     // Navigation
     home: 'الرئيسية',
     prayerTimes: 'أوقات الصلاة',
-    settings: 'الإعدادات',
+  settings: 'الإعدادات',
+  dua: 'دعاء',
+  share: 'مشاركة',
     
     // Home Page
     quickActions: 'الإجراءات السريعة',
@@ -646,7 +650,9 @@ export const translations = {
     // Navigation
     home: 'ہوم',
     prayerTimes: 'نماز کے اوقات',
-    settings: 'سیٹنگز',
+  settings: 'سیٹنگز',
+  dua: 'دعا',
+  share: 'شیئر',
     
     // Home Page
     quickActions: 'فوری کارروائیاں',
@@ -937,7 +943,9 @@ export const translations = {
     // Navigation
     home: 'Ana Sayfa',
     prayerTimes: 'Namaz Vakitleri',
-    settings: 'Ayarlar',
+  settings: 'Ayarlar',
+  dua: 'Dua',
+  share: 'Paylaş',
     
     // Home Page
     quickActions: 'Hızlı İşlemler',

@@ -81,11 +81,12 @@ export default function Welcome() {
   const requestNotifications = async () => {
     try {
       setBusy(true);
-      // Request permission and obtain Expo push token
-      if (!Device.isDevice) {
-        Alert.alert(t('physicalDeviceRequired') || 'Physical device required', t('physicalDeviceRequiredDesc') || 'Push notifications require a physical device.');
-        setBusy(false);
-        return;
+      // Request permission. On simulators we can still request local notification
+      // permissions and test scheduling, but obtaining an Expo push token requires
+      // a physical device. Proceed on simulator but skip push token registration.
+      const runningInSimulator = !Device.isDevice;
+      if (runningInSimulator) {
+        console.log('Running in simulator — will request local notification permissions but skip push token registration');
       }
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
@@ -101,22 +102,31 @@ export default function Welcome() {
         setBusy(false);
         return;
       }
-      // resolve projectId from Constants
-      const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
-      console.log('Resolved projectId for push registration:', projectId);
-      if (!projectId) {
-        Alert.alert(t('configurationError') || 'Configuration error', t('projectIdNotFound') || 'Project ID not found. Cannot register for push notifications.');
-        setBusy(false);
-        return;
-      }
-      try {
-        const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-        console.log('Obtained Expo push token:', token);
-        setExpoPushToken(token);
+      // If we're running on a physical device, attempt to obtain an Expo push token.
+      // On simulator skip token retrieval but mark notifications as granted so local
+      // scheduling and testing can proceed.
+      if (!runningInSimulator) {
+        // resolve projectId from Constants
+        const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+        console.log('Resolved projectId for push registration:', projectId);
+        if (!projectId) {
+          Alert.alert(t('configurationError') || 'Configuration error', t('projectIdNotFound') || 'Project ID not found. Cannot register for push notifications.');
+          setBusy(false);
+          return;
+        }
+        try {
+          const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+          console.log('Obtained Expo push token:', token);
+          setExpoPushToken(token);
+          setNotifGranted(true);
+        } catch (err) {
+          console.warn('Failed to obtain push token:', err);
+          Alert.alert(t('error') || 'Error', t('failedToObtainPushToken') || 'Failed to obtain push token.');
+        }
+      } else {
+        // Simulator: permissions were granted for local notifications; continue
         setNotifGranted(true);
-      } catch (err) {
-  console.warn('Failed to obtain push token:', err);
-  Alert.alert(t('error') || 'Error', t('failedToObtainPushToken') || 'Failed to obtain push token.');
+        Alert.alert('Simulator', 'Notification permissions granted locally — push token requires a physical device.');
       }
     } catch (error) {
       console.error('Error handling notification request:', error);

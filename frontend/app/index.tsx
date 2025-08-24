@@ -9,11 +9,12 @@ import { lightTheme, darkTheme } from '@/src/constants/theme';
 export default function IndexScreen() {
   const router = useRouter();
   const { settings, isDarkMode } = useSettings();
+  const { loaded } = useSettings() as any;
   const theme = isDarkMode ? darkTheme : lightTheme;
   const [hasNavigated, setHasNavigated] = useState(false);
 
   useEffect(() => {
-    if (settings && !hasNavigated) {
+    if (loaded && settings && !hasNavigated) {
       console.log('Index: Settings loaded, onboarding completed:', settings.onboarding?.completed);
       console.log('Index: Full settings object:', JSON.stringify(settings, null, 2));
       
@@ -27,7 +28,7 @@ export default function IndexScreen() {
         router.replace('/welcome');
       }
     }
-  }, [settings, router, hasNavigated]);
+  }, [loaded, settings, router, hasNavigated]);
 
   // Show loading screen while determining route
   return (
