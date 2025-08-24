@@ -5,7 +5,7 @@ export const useTranslation = () => {
   const { settings } = useSettings();
   const currentLanguage = settings.appearance.language || 'en';
   
-  const t = (key: string): string => {
+  const t = (key: string, params?: Record<string, string>): string => {
     const keys = key.split('.');
     let value: any = translations[currentLanguage as keyof typeof translations];
     
@@ -26,7 +26,16 @@ export const useTranslation = () => {
       }
     }
     
-    return typeof value === 'string' ? value : key;
+    let result = typeof value === 'string' ? value : key;
+    
+    // Replace template parameters if provided
+    if (params && typeof result === 'string') {
+      Object.entries(params).forEach(([paramKey, paramValue]) => {
+        result = result.replace(new RegExp(`{${paramKey}}`, 'g'), paramValue);
+      });
+    }
+    
+    return result;
   };
 
   const getHijriMonths = (): string[] => {

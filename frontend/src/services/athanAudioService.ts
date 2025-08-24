@@ -1,5 +1,6 @@
 import { Audio } from 'expo-av';
 import { AppState, AppStateStatus } from 'react-native';
+import { getAppAudioFile } from '../constants/athanSounds';
 
 class AthanAudioService {
   private currentSound: Audio.Sound | null = null;
@@ -146,20 +147,7 @@ class AthanAudioService {
   }
 
   private getAthanSoundFile(athanType: string) {
-    switch (athanType) {
-      case 'makkah':
-        return require('../../assets/sounds/athan/makkah_short.aiff');
-      case 'madinah':
-        return require('../../assets/sounds/athan/madinah.aiff');
-      case 'egypt':
-        return require('../../assets/sounds/athan/egypt_short.aiff');
-      case 'turkey':
-        return require('../../assets/sounds/athan/turkey_short.aiff');
-      case 'nasiralqatami':
-        return require('../../assets/sounds/athan/nasiralqatami_short.aiff');
-      default:
-        return null; // Use system sound
-    }
+    return getAppAudioFile(athanType);
   }
 
   async stopCurrentSound(): Promise<void> {

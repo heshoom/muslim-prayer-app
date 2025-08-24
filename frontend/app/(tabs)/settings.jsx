@@ -28,6 +28,7 @@ import { useTranslation } from "@/src/i18n";
 import { clearPrayerTimesCache } from '@/src/services/prayerTimesCache';
 import { scheduleNotificationAt } from '@/src/utils/manualNotification';
 import * as Notifications from 'expo-notifications';
+import { ATHAN_SOUND_CONFIG } from '@/src/constants/athanSounds';
 
 // ...existing code...
 
@@ -247,26 +248,10 @@ const Settings = () => {
                         onValueChange={(value) =>
                           updateSettings("notifications", "athanSound", value)
                         }
-                        items={[
-                          {
-                            label: "Makkah (Abdul Rahman Al-Sudais)",
-                            value: "makkah",
-                          },
-                          {
-                            label: "Madinah (Ali Ahmed Mulla)",
-                            value: "madinah",
-                          },
-                          {
-                            label: "Egypt (Mahmoud Al-Husary)",
-                            value: "egypt",
-                          },
-                          {
-                            label: "Turkey (Hafez Mustafa Ozcan)",
-                            value: "turkey",
-                          },
-                          { label: t('nasirAlQatami') || 'Nasir Al-Qatami', value: "nasiralqatami" },
-                          { label: t('defaultSystemSound') || 'Default System Sound', value: "default" },
-                        ]}
+                        items={ATHAN_SOUND_CONFIG.availableTypes.map(type => ({
+                          label: ATHAN_SOUND_CONFIG.displayNames[type],
+                          value: type,
+                        }))}
                         title={t('selectAthanSound')}
                         theme={theme}
                       />

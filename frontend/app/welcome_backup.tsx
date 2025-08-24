@@ -39,6 +39,39 @@ const COMMON_LANGUAGES = [
   { code: 'id', label: 'Indonesian', nativeName: 'Bahasa Indonesia' },
 ];
 
+// Calculate next prayer time for onboarding display
+const getNextPrayerForOnboarding = (): { name: string; time: string } => {
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  
+  // Define prayer times (these are approximate for onboarding display)
+  const prayers = [
+    { name: 'Fajr', hour: 5, minute: 30 },
+    { name: 'Dhuhr', hour: 12, minute: 30 },
+    { name: 'Asr', hour: 16, minute: 0 },
+    { name: 'Maghrib', hour: 19, minute: 30 },
+    { name: 'Isha', hour: 21, minute: 0 },
+  ];
+  
+  // Find the next prayer
+  for (const prayer of prayers) {
+    const prayerTime = prayer.hour * 60 + prayer.minute;
+    const currentTime = currentHour * 60 + currentMinute;
+    
+    if (prayerTime > currentTime) {
+      // Format time for display
+      const timeString = `${prayer.hour}:${prayer.minute.toString().padStart(2, '0')}`;
+      return { name: prayer.name, time: timeString };
+    }
+  }
+  
+
+  
+  // If all prayers for today have passed, return Fajr for tomorrow
+  return { name: 'Fajr', time: '5:30' };
+};
+
 const CALCULATION_METHODS = [
   { key: 'ISNA', label: 'ISNA (Islamic Society of North America)' },
   { key: 'MWL', label: 'Muslim World League' },
@@ -523,17 +556,34 @@ export default function Welcome() {
   };
 
   // Step 7: Finish
-  const renderFinish = () => (
-    <View style={styles.stepContent}>
-      <View style={styles.successContainer}>
-        <Text style={styles.successIcon}>🎉</Text>
-        <Text style={[styles.title, { color: theme.primary, marginBottom: 8 }]}>
-          {t('allSet') || 'You\'re all set!'}
-        </Text>
-        <Text style={[styles.description, { color: theme.text.secondary, marginBottom: 32 }]}>
-          {t('nextPrayerAt') || 'Your next prayer is Maghrib at 7:15 PM'}
-        </Text>
-      </View>
+  const renderFinish = () => {
+    // Calculate next prayer time dynamically each time this step is rendered
+    const nextPrayer = getNextPrayerForOnboarding();
+    const timeFormat = settings?.appearance?.timeFormat || '12h';
+    
+    // Format time based on user's preference
+    const formatTime = (time: string) => {
+      const [hours, minutes] = time.split(':').map(Number);
+      if (timeFormat === '12h') {
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+        return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
+      } else {
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      }
+    };
+    
+    return (
+      <View style={styles.stepContent}>
+        <View style={styles.successContainer}>
+          <Text style={styles.successIcon}>🎉</Text>
+          <Text style={[styles.title, { color: theme.primary, marginBottom: 8 }]}>
+            {t('allSet') || 'You\'re all set!'}
+          </Text>
+          <Text style={[styles.description, { color: theme.text.secondary, marginBottom: 32 }]}>
+            {t('nextPrayerAt', { prayerName: nextPrayer.name, prayerTime: formatTime(nextPrayer.time) }) || `Your next prayer is ${nextPrayer.name} at ${formatTime(nextPrayer.time)}`}
+          </Text>
+        </View>
       
       <TouchableOpacity 
         style={[styles.primaryButton, { backgroundColor: theme.primary }]} 
@@ -544,7 +594,8 @@ export default function Welcome() {
         </Text>
       </TouchableOpacity>
     </View>
-  );
+    );
+  };
 
   const handleFinish = async () => {
     // Save all settings
@@ -575,7 +626,7 @@ export default function Welcome() {
     renderNotifications(),
     renderAppearance(),
     renderTour(),
-    renderFinish(),
+    () => renderFinish(), // Make this a function so it's called each time
   ];
 
   return (
@@ -591,7 +642,7 @@ export default function Welcome() {
       >
         {screens.map((screen, index) => (
           <View key={index} style={{ width: SCREEN_WIDTH, flex: 1 }}>
-            {screen}
+            {typeof screen === 'function' ? screen() : screen}
           </View>
         ))}
       </Animated.View>

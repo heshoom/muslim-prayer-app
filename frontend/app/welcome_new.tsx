@@ -16,6 +16,7 @@ import { useTranslation } from '@/src/i18n';
 import { lightTheme, darkTheme } from '@/src/constants/theme';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
+import { CustomPicker } from '@/src/components/shared/CustomPicker';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -63,6 +64,37 @@ const getDeviceLanguage = (): string => {
     if (locale) return locale.split('-')[0];
   } catch {}
   return 'en';
+};
+
+// Calculate next prayer time for onboarding display
+const getNextPrayerForOnboarding = (): { name: string; time: string } => {
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  
+  // Define prayer times (these are approximate for onboarding display)
+  const prayers = [
+    { name: 'Fajr', hour: 5, minute: 30 },
+    { name: 'Dhuhr', hour: 12, minute: 30 },
+    { name: 'Asr', hour: 16, minute: 0 },
+    { name: 'Maghrib', hour: 19, minute: 30 },
+    { name: 'Isha', hour: 21, minute: 0 },
+  ];
+  
+  // Find the next prayer
+  for (const prayer of prayers) {
+    const prayerTime = prayer.hour * 60 + prayer.minute;
+    const currentTime = currentHour * 60 + currentMinute;
+    
+    if (prayerTime > currentTime) {
+      // Format time for display
+      const timeString = `${prayer.hour}:${prayer.minute.toString().padStart(2, '0')}`;
+      return { name: prayer.name, time: timeString };
+    }
+  }
+  
+  // If all prayers for today have passed, return Fajr for tomorrow
+  return { name: 'Fajr', time: '5:30' };
 };
 
 const recommendMethodByCountry = (countryCodeOrName?: string): string => {
@@ -311,28 +343,18 @@ export default function Welcome() {
           {t('calculationMethod') || 'Prayer Calculation Method'}
         </Text>
 
-        {CALCULATION_METHODS.map((method) => (
-          <TouchableOpacity
-            key={method.key}
-            style={[
-              styles.methodCard,
-              {
-                backgroundColor: selectedMethod === method.key ? theme.primary : theme.surface,
-                borderColor: selectedMethod === method.key ? theme.primary : theme.border,
-              },
-            ]}
-            onPress={() => setSelectedMethod(method.key)}
-          >
-            <Text
-              style={[
-                styles.methodTitle,
-                { color: selectedMethod === method.key ? theme.text.inverse : theme.text.primary },
-              ]}
-            >
-              {method.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        <View style={styles.pickerContainer}>
+          <CustomPicker
+            selectedValue={selectedMethod}
+            onValueChange={(value) => setSelectedMethod(value)}
+            items={CALCULATION_METHODS.map(method => ({
+              label: method.label,
+              value: method.key,
+            }))}
+            title={t('selectCalculationMethod', 'Select Calculation Method')}
+            theme={theme}
+          />
+        </View>
 
         <Text style={[styles.sectionTitle, { color: theme.text.primary, marginTop: 24, marginBottom: 16 }]}>
           {t('madhab') || 'Madhhab (Asr Calculation)'}
@@ -608,17 +630,33 @@ export default function Welcome() {
   };
 
   // Step 7: Finish
-  const renderFinish = () => (
-    <View style={styles.stepContent}>
-      <View style={styles.successContainer}>
-        <Text style={styles.successIcon}>🎉</Text>
-        <Text style={[styles.title, { color: theme.primary, marginBottom: 8 }]}>
-          {t('allSet') || "You're all set!"}
-        </Text>
-        <Text style={[styles.description, { color: theme.text.secondary, marginBottom: 32 }]}>
-          {t('nextPrayerAt') || 'Your next prayer is Maghrib at 7:15 PM'}
-        </Text>
-      </View>
+  const renderFinish = () => {
+    const nextPrayer = getNextPrayerForOnboarding();
+    const timeFormat = settings?.appearance?.timeFormat || '12h';
+    
+    // Format time based on user's preference
+    const formatTime = (time: string) => {
+      const [hours, minutes] = time.split(':').map(Number);
+      if (timeFormat === '12h') {
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+        return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
+      } else {
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      }
+    };
+    
+    return (
+      <View style={styles.stepContent}>
+        <View style={styles.successContainer}>
+          <Text style={styles.successIcon}>🎉</Text>
+          <Text style={[styles.title, { color: theme.primary, marginBottom: 8 }]}>
+            {t('allSet') || "You're all set!"}
+          </Text>
+          <Text style={[styles.description, { color: theme.text.secondary, marginBottom: 32 }]}>
+            {t('nextPrayerAt', { prayerName: nextPrayer.name, prayerTime: formatTime(nextPrayer.time) }) || `Your next prayer is ${nextPrayer.name} at ${formatTime(nextPrayer.time)}`}
+          </Text>
+        </View>
       
       <TouchableOpacity 
         style={[styles.primaryButton, { backgroundColor: theme.primary }]} 
@@ -629,7 +667,8 @@ export default function Welcome() {
         </Text>
       </TouchableOpacity>
     </View>
-  );
+    );
+  };
 
   const handleFinish = async () => {
     // Save all settings
@@ -667,7 +706,7 @@ export default function Welcome() {
     renderNotifications(),
     renderAppearance(),
     renderTour(),
-    renderFinish(),
+    () => renderFinish(), // Make this a function so it's called each time
   ];
 
   return (
@@ -683,7 +722,7 @@ export default function Welcome() {
       >
         {screens.map((screen, index) => (
           <View key={index} style={{ width: SCREEN_WIDTH, flex: 1 }}>
-            {screen}
+            {typeof screen === 'function' ? screen() : screen}
           </View>
         ))}
       </Animated.View>
@@ -800,6 +839,9 @@ const styles = StyleSheet.create({
   madhhabContainer: {
     flexDirection: 'row',
     gap: 12
+  },
+  pickerContainer: {
+    marginBottom: 24
   },
   madhhabOption: {
     flex: 1,

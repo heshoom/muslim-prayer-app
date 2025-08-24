@@ -8,6 +8,7 @@ import { useTranslation } from '@/src/i18n';
 import { usePrayerTimes } from './PrayerTimesContext';
 import { athanAudioService } from '../services/athanAudioService';
 import { prayerNotificationService } from '../services/prayerNotificationService';
+import { getIosNotificationSound, getDisplayName } from '../constants/athanSounds';
 
 // Configure notifications
 Notifications.setNotificationHandler({
@@ -20,17 +21,9 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Get display name for athan type
+// Get display name for athan type - now using centralized config
 const getAthanDisplayName = (athanType: string) => {
-  switch (athanType) {
-    case 'makkah': return 'Makkah (Sheikh Al-Sudais)';
-    case 'madinah': return 'Madinah (Sheikh Ali Ahmed Mulla)';
-    case 'egypt': return 'Egypt (Sheikh Mahmoud Al-Husary)';
-    case 'turkey': return 'Turkey (Sheikh Hafez Mustafa Ozcan)';
-    case 'nasiralqatami': return 'Nasir Al-Qatami';
-    case 'default': return 'Default System Sound';
-    default: return 'Unknown Athan';
-  }
+  return getDisplayName(athanType as any);
 };
 
 type NotificationContextType = {
@@ -386,16 +379,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }
 
       const selected = athanType || settings.notifications.athanSound;
-      // Map to the bundled iOS short aiff filenames
-      const iosMap: Record<string, string> = {
-        makkah: 'makkah_short.aiff',
-        madinah: 'madinah.aiff',
-        egypt: 'egypt_short.aiff',
-        turkey: 'turkey_short.aiff',
-        nasiralqatami: 'nasiralqatami_short.aiff',
-        default: 'default',
-      };
-      const soundName = iosMap[selected] || 'default';
+      // Use centralized configuration for iOS notification sounds
+      const soundName = getIosNotificationSound(selected as any);
 
       const in15 = new Date(Date.now() + 15 * 1000);
       // Friendly notification body for users - use translations

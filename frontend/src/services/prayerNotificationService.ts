@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PrayerTimes } from './prayerTimesService';
 import { athanAudioService } from './athanAudioService';
 import { translations } from '@/src/i18n/translations';
+import { getIosNotificationSound } from '../constants/athanSounds';
 
 // Lightweight helper for services to read English translations (services run
 // outside React hooks). We purposely read from `en` here and only use this
@@ -408,21 +409,8 @@ class PrayerNotificationServiceImpl implements PrayerNotificationService {
       return 'default';
     }
 
-    // For expo-notifications, we need to use local file paths
-    // The audio files will be bundled with the app
-    const athanFiles: { [key: string]: string } = {
-      // iOS expects bundled short aiff filenames that are included in the Xcode project
-      // Android will still use default channel sound; full playback handled by app audio service
-      'makkah': 'makkah_short.aiff',
-      'madinah': 'madinah-03_short.aiff',
-      'egypt': 'egypt_short.aiff',
-      'turkey': 'turkey_short.aiff',
-      'nasiralqatami': 'nasiralqatami_short.aiff',
-    };
-
-    // For custom sounds, we'll use the default system sound for now
-    // Custom notification sounds require additional setup in native projects
-    return athanFiles[athanSound] || 'default';
+    // Use centralized configuration for iOS notification sounds
+    return getIosNotificationSound(athanSound as any);
   }
 
   private async schedulePrayerNotificationWithFutureGuard(
